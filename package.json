@@ -1,0 +1,24 @@
+{
+  "name": "codex-chess",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Cyber Chess: a playable 3D browser chess game packaged for the Codex game challenge.",
+  "scripts": {
+    "build": "esbuild src/main.tsx --bundle --format=esm --outfile=app.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"'",
+    "build:pages": "npm run build && rm -rf dist && mkdir -p dist && cp -R index.html app.js avatars media pieces_fbx dist/",
+    "start": "node scripts/static-server.mjs",
+    "smoke": "node scripts/smoke.mjs"
+  },
+  "dependencies": {
+    "chess.js": "^1.4.0",
+    "gsap": "^3.15.0",
+    "react": "^19.2.6",
+    "react-dom": "^19.2.6",
+    "three": "^0.184.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.28.0",
+    "playwright": "1.60.0"
+  }
+}

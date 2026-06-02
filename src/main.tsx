@@ -133,6 +133,12 @@ const INTRO_STORY = [
     body: 'Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime.',
   },
   {
+    image: 'media/intro/02-delves-too-deep.png',
+    kicker: 'THE DELVE',
+    title: 'TOO DEEP',
+    body: 'He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived.',
+  },
+  {
     image: 'media/intro/02-shannon-knights-kidnap.png',
     kicker: 'THE SHANNON KNIGHTS',
     title: 'THE BREACH',
@@ -604,8 +610,6 @@ function App() {
   const inputEnabled = screen === 'playing' && turn === playerColor && !thinking;
   const whiteName = playerColor === 'w' ? playerName : selected.name;
   const blackName = playerColor === 'b' ? playerName : selected.name;
-  const playerSideName = playerColor === 'w' ? 'White' : 'Black';
-  const agentSideName = aiColor === 'w' ? 'White' : 'Black';
   const fightHud = getFightHudState(gameState.fen, playerColor, aiColor);
   const enemyAvatarSrc =
     fightHud.enemyMood === 'damaged'
@@ -1331,10 +1335,11 @@ function App() {
                 </div>
                 <button
                   type="button"
-                  className="cyber-start"
+                  className="cyber-start cyber-start-art"
+                  aria-label="PLAY"
                   onClick={introVideoStarted ? beginIntroStory : startIntroSequence}
                 >
-                  {introVideoStarted ? 'ANY BUTTON' : 'START'}
+                  <span>{introVideoStarted ? 'PLAY' : 'PLAY'}</span>
                 </button>
               </div>
             )}
@@ -1355,10 +1360,14 @@ function App() {
                     ))}
                   </div>
                   <div className="story-actions">
-                    <button type="button" onClick={retreatIntroStory} disabled={storyIndex === 0}>BACK</button>
-                    <button type="button" onClick={finishIntroStory}>SKIP</button>
-                    <button type="button" className="selected" onClick={advanceIntroStory}>
-                      {storyIndex >= INTRO_STORY.length - 1 ? 'LOAD GAME' : 'NEXT'}
+                    <button type="button" className="art-button art-button-back" onClick={retreatIntroStory} disabled={storyIndex === 0}>
+                      <span>BACK</span>
+                    </button>
+                    <button type="button" className="art-button art-button-skip" onClick={finishIntroStory}>
+                      <span>SKIP</span>
+                    </button>
+                    <button type="button" className="art-button art-button-continue selected" onClick={advanceIntroStory}>
+                      <span>{storyIndex >= INTRO_STORY.length - 1 ? 'LOAD GAME' : 'NEXT'}</span>
                     </button>
                   </div>
                 </div>
@@ -1383,7 +1392,9 @@ function App() {
                         if (event.key === 'Enter') savePlayerProfile();
                       }}
                     />
-                    <button type="button" onClick={savePlayerProfile}>LOCK IN</button>
+                    <button type="button" className="art-button art-button-continue" onClick={savePlayerProfile}>
+                      <span>LOCK IN</span>
+                    </button>
                   </div>
                 </div>
               </div>
@@ -1394,35 +1405,37 @@ function App() {
                 <img className="side-bg" src={SIDE_SELECTION_BG_SRC} alt="" />
                 <div className="side-vignette" />
                 <div className="side-footer">
-                  <button type="button" onClick={() => {
+                  <button type="button" className="art-button art-button-back" onClick={() => {
                     audioRef.current?.play('menu');
                     setMenuStep('profile');
-                  }}>BACK</button>
+                  }}>
+                    <span>BACK</span>
+                  </button>
                   <div className="color-picker" role="group" aria-label="Choose your color">
                     <button
                       type="button"
-                      className={playerColor === 'w' ? 'selected' : ''}
+                      className={'art-button art-button-play-white' + (playerColor === 'w' ? ' selected' : '')}
                       onClick={() => {
                         setPlayerColor('w');
                       }}
                     >
-                      Play White
+                      <span>Play White</span>
                     </button>
                     <button
                       type="button"
-                      className={playerColor === 'b' ? 'selected' : ''}
+                      className={'art-button art-button-play-black' + (playerColor === 'b' ? ' selected' : '')}
                       onClick={() => {
                         setPlayerColor('b');
                       }}
                     >
-                      Play Black
+                      <span>Play Black</span>
                     </button>
                   </div>
-                  <button type="button" className="selected" onClick={() => {
+                  <button type="button" className="art-button art-button-continue selected" onClick={() => {
                     audioRef.current?.play('menu');
                     setMenuStep('opponent');
                   }}>
-                    CONTINUE
+                    <span>CONTINUE</span>
                   </button>
                 </div>
               </div>
@@ -1433,11 +1446,15 @@ function App() {
                   <img className="tower-bg" src={FLOPPY_TOWER_SRC} alt="" />
                   <div className="tower-overlay" />
                 <div className="tower-actions">
-                  <button type="button" onClick={() => {
+                  <button type="button" className="art-button art-button-back" onClick={() => {
                     audioRef.current?.play('menu');
                     setMenuStep('side');
-                  }}>Back</button>
-                  <button type="button" className="selected" onClick={startCampaign}>ASCEND</button>
+                  }}>
+                    <span>Back</span>
+                  </button>
+                  <button type="button" className="art-button art-button-play selected" onClick={startCampaign}>
+                    <span>ASCEND</span>
+                  </button>
                 </div>
               </div>
             )}
@@ -1469,10 +1486,6 @@ function App() {
               }}
             />
             <div className="fighter-readout">
-              <div className="fighter-label">
-                <strong>{playerName}</strong>
-                <span>{playerSideName} / LIVES {lives}</span>
-              </div>
               <div className="health-shell" aria-label={`${playerName} health ${fightHud.playerHealth}%`}>
                 <i style={{ '--health': `${fightHud.playerHealth}%` } as CSSProperties} />
               </div>
@@ -1484,10 +1497,6 @@ function App() {
           </div>
           <div className="fighter-card fighter-card-enemy">
             <div className="fighter-readout">
-              <div className="fighter-label">
-                <strong>{selected.name}</strong>
-                <span>{agentSideName} / {selected.difficulty}</span>
-              </div>
               <div className="health-shell health-shell-enemy" aria-label={`${selected.name} health ${fightHud.enemyHealth}%`}>
                 <i style={{ '--health': `${fightHud.enemyHealth}%` } as CSSProperties} />
               </div>
@@ -1561,26 +1570,28 @@ function App() {
             )}
             <div className="result-actions">
               {resultState.kind === 'win' && (
-                <button type="button" className="result-primary" onClick={advanceAfterWin}>
-                  NEXT OPPONENT
+                <button type="button" className="art-button art-button-continue result-primary" onClick={advanceAfterWin}>
+                  <span>NEXT OPPONENT</span>
                 </button>
               )}
               {resultState.kind === 'clear' && (
-                <button type="button" className="result-primary" onClick={advanceAfterWin}>
-                  RUN IT BACK
+                <button type="button" className="art-button art-button-play result-primary" onClick={advanceAfterWin}>
+                  <span>RUN IT BACK</span>
                 </button>
               )}
               {resultState.kind === 'loss' && (
-                <button type="button" className="result-primary" onClick={continueAfterLoss}>
-                  CONTINUE
+                <button type="button" className="art-button art-button-continue result-primary" onClick={continueAfterLoss}>
+                  <span>CONTINUE</span>
                 </button>
               )}
               {resultState.kind === 'game-over' && (
-                <button type="button" className="result-primary" onClick={restartCampaign}>
-                  NEW RUN
+                <button type="button" className="art-button art-button-play result-primary" onClick={restartCampaign}>
+                  <span>NEW RUN</span>
                 </button>
               )}
-              <button type="button" onClick={openMenu}>MENU</button>
+              <button type="button" className="art-button art-button-back" onClick={openMenu}>
+                <span>MENU</span>
+              </button>
             </div>
           </div>
         </div>

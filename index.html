@@ -5,20 +5,44 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Cyber Chess</title>
 <style>
+  @font-face {
+    font-family: "Commando";
+    src: url("media/fonts/commando.ttf") format("truetype");
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Eurosteal";
+    src: url("media/fonts/Eurosteal.ttf") format("truetype");
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+  }
+  @font-face {
+    font-family: "Upheaval";
+    src: url("media/fonts/upheavtt.ttf") format("truetype");
+    font-weight: 400 900;
+    font-style: normal;
+    font-display: swap;
+  }
   :root {
-    --font-arcade: "Orbitron", "Eurostile", "Microgramma", "Arial Black", monospace;
-    --font-label: "Press Start 2P", "Silkscreen", "Orbitron", "Arial Black", monospace;
-    --font-digital: "DSEG7", "Orbitron", "Courier New", monospace;
+    --font-header: "Commando", "Orbitron", "Eurostile", "Microgramma", "Arial Black", monospace;
+    --font-type: "Eurosteal", "Eurostile", "Orbitron", "Arial Black", monospace;
+    --font-story: "Upheaval", var(--font-type);
+    --font-arcade: var(--font-header);
+    --font-label: var(--font-type);
+    --font-digital: "DSEG7", var(--font-type);
     --neon-cyan: #33f6ff;
     --neon-blue: #0077ff;
     --neon-violet: #b000ff;
   }
-  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0a12; }
+  html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0a12; font-family: var(--font-type); }
   #root { width: 100vw; height: 100vh; }
   #root canvas { display: block; width: 100% !important; height: 100% !important; }
   #loading {
     position: fixed; inset: 0; display: grid; place-items: center; pointer-events: none;
-    color: #8fa6b8; font: 12px "Courier New", monospace; letter-spacing: 1px;
+    color: #8fa6b8; font: 12px var(--font-type); letter-spacing: 1px;
   }
   body[data-chess-mounted] #loading { display: none; }
   .cyber-menu {
@@ -32,7 +56,7 @@
       repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.24) 0 2px, rgba(0, 255, 204, 0.04) 2px 4px),
       radial-gradient(circle at center, rgba(255, 0, 190, 0.14), rgba(0, 0, 0, 0.52) 62%);
     color: #ddfff7;
-    font-family: var(--font-arcade);
+    font-family: var(--font-type);
   }
   .cyber-panel {
     box-sizing: border-box;
@@ -217,7 +241,7 @@
     color: #dff;
     background: #101018;
     border: 3px outset #8f8f8f;
-    font: 900 13px "Courier New", monospace;
+    font: 900 13px var(--font-type);
     cursor: pointer;
   }
   .color-picker button.selected {
@@ -374,11 +398,44 @@
   }
   .menu-step-video.pan-started .cyber-start {
     opacity: 0;
-    animation: any-button-flash 1s steps(2, end) 10s infinite;
+    animation: play-button-glitch-in 920ms steps(1, end) 10s both;
   }
-  @keyframes any-button-flash {
-    0%, 45% { opacity: 0; }
-    46%, 100% { opacity: 1; }
+  @keyframes play-button-glitch-in {
+    0% {
+      opacity: 0;
+      transform: translate3d(-12px, 3px, 0) skewX(-8deg);
+      filter: saturate(1.8) hue-rotate(42deg);
+    }
+    10% {
+      opacity: 1;
+      transform: translate3d(14px, -2px, 0) skewX(7deg);
+      filter: saturate(2.2) hue-rotate(-34deg);
+    }
+    18% {
+      opacity: 0.62;
+      transform: translate3d(-7px, 2px, 0) skewX(-4deg);
+      filter: saturate(1.9) contrast(1.35);
+    }
+    30% {
+      opacity: 1;
+      transform: translate3d(9px, 0, 0) skewX(5deg);
+      filter: saturate(2.1) hue-rotate(22deg);
+    }
+    46% {
+      opacity: 0.76;
+      transform: translate3d(-3px, -2px, 0) skewX(-2deg);
+      filter: saturate(1.55) contrast(1.25);
+    }
+    64% {
+      opacity: 1;
+      transform: translate3d(4px, 1px, 0) skewX(2deg);
+      filter: saturate(1.4);
+    }
+    100% {
+      opacity: 1;
+      transform: translate3d(0, 0, 0) skewX(0deg);
+      filter: none;
+    }
   }
   .menu-step {
     min-height: min(620px, calc(100vh - 66px));
@@ -435,7 +492,7 @@
     color: #000;
     background: #c0c0c0;
     border: 4px outset #fff;
-    font: 900 13px "Courier New", monospace;
+    font: 900 13px var(--font-type);
     cursor: pointer;
   }
   .tower-actions button.selected {
@@ -564,9 +621,10 @@
     max-width: none;
     margin: 0;
     overflow: auto;
+    font-family: var(--font-story);
     font-size: clamp(14px, 1.45vw, 20px);
-    font-weight: 900;
-    line-height: 1.24;
+    font-weight: 400;
+    line-height: 1.18;
     overflow-wrap: anywhere;
   }
   .story-progress {
@@ -599,7 +657,7 @@
     color: #000;
     background: #c0c0c0;
     border: 4px outset #fff;
-    font: 900 16px "Courier New", monospace;
+    font: 900 16px var(--font-type);
     cursor: pointer;
   }
   .story-actions button:disabled {
@@ -677,18 +735,223 @@
     color: #dff;
     background: #03050b;
     border: 3px inset #00ffcc;
-    font: 900 18px "Courier New", monospace;
+    font: 900 18px var(--font-type);
     text-transform: uppercase;
   }
   .profile-row button {
     color: #000;
     background: #fff200;
     border: 4px outset #ffe65c;
-    font: 900 13px "Courier New", monospace;
+    font: 900 13px var(--font-type);
     cursor: pointer;
   }
   .cyber-start:active {
     border-style: inset;
+  }
+  .cyber-start-art {
+    color: transparent;
+    text-shadow: none;
+  }
+  .cyber-start-art span,
+  .art-button span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .cyber-start-art::before {
+    content: "";
+    display: block;
+    width: clamp(220px, 46vw, 520px);
+    aspect-ratio: 1538 / 610;
+    margin-bottom: clamp(8px, 1.6vh, 18px);
+    background: url("media/buttons/play_button.png") center / contain no-repeat;
+    filter:
+      drop-shadow(0 0 10px rgba(255, 47, 216, 0.78))
+      drop-shadow(0 0 22px rgba(0, 196, 255, 0.42));
+  }
+  .cyber-start-art:hover::before,
+  .cyber-start-art:focus-visible::before {
+    filter:
+      drop-shadow(0 0 12px rgba(255, 47, 216, 0.95))
+      drop-shadow(0 0 28px rgba(0, 196, 255, 0.58));
+  }
+  .menu-step-video.pan-started .cyber-start-art::before {
+    animation:
+      play-art-glitch-in 920ms steps(1, end) 10s both,
+      play-art-signal-jitter 3.4s steps(1, end) 11.2s infinite;
+  }
+  @keyframes play-art-glitch-in {
+    0% {
+      transform: translate3d(-18px, 0, 0) scaleX(1.08);
+      clip-path: inset(0 0 72% 0);
+      filter:
+        drop-shadow(16px 0 0 rgba(0, 214, 255, 0.72))
+        drop-shadow(-14px 0 0 rgba(255, 0, 190, 0.72));
+    }
+    12% {
+      transform: translate3d(12px, -3px, 0) scaleX(0.94);
+      clip-path: inset(38% 0 22% 0);
+      filter:
+        drop-shadow(-18px 0 0 rgba(0, 214, 255, 0.72))
+        drop-shadow(14px 0 0 rgba(255, 0, 190, 0.72));
+    }
+    24% {
+      transform: translate3d(-8px, 2px, 0) scaleX(1.04);
+      clip-path: inset(12% 0 48% 0);
+    }
+    38% {
+      transform: translate3d(10px, 0, 0) scaleX(0.98);
+      clip-path: inset(62% 0 8% 0);
+    }
+    56% {
+      transform: translate3d(-4px, -1px, 0);
+      clip-path: inset(0 0 0 0);
+      filter:
+        drop-shadow(0 0 12px rgba(255, 47, 216, 0.92))
+        drop-shadow(0 0 28px rgba(0, 196, 255, 0.52));
+    }
+    100% {
+      transform: translate3d(0, 0, 0);
+      clip-path: inset(0 0 0 0);
+      filter:
+        drop-shadow(0 0 10px rgba(255, 47, 216, 0.78))
+        drop-shadow(0 0 22px rgba(0, 196, 255, 0.42));
+    }
+  }
+  @keyframes play-art-signal-jitter {
+    0%, 78%, 100% {
+      transform: translate3d(0, 0, 0);
+      clip-path: inset(0 0 0 0);
+    }
+    80% {
+      transform: translate3d(3px, 0, 0);
+      clip-path: inset(18% 0 58% 0);
+    }
+    82% {
+      transform: translate3d(-2px, 1px, 0);
+      clip-path: inset(55% 0 18% 0);
+    }
+    84% {
+      transform: translate3d(0, 0, 0);
+      clip-path: inset(0 0 0 0);
+    }
+  }
+  .art-button {
+    position: relative;
+    display: inline-grid !important;
+    place-items: center;
+    flex: 0 0 auto;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    color: transparent !important;
+    background-color: transparent !important;
+    background-image: var(--button-art) !important;
+    background-position: center !important;
+    background-repeat: no-repeat !important;
+    background-size: contain !important;
+    border: 0 !important;
+    box-shadow: none !important;
+    font-size: 0 !important;
+    line-height: 0 !important;
+    cursor: pointer;
+    filter:
+      drop-shadow(0 0 7px rgba(165, 55, 255, 0.48))
+      drop-shadow(0 5px 0 rgba(0, 0, 0, 0.34));
+    transition: transform 110ms ease, filter 110ms ease, opacity 110ms ease;
+  }
+  .art-button:hover,
+  .art-button:focus-visible,
+  .art-button.selected {
+    transform: translateY(-1px);
+    filter:
+      drop-shadow(0 0 10px rgba(255, 47, 216, 0.7))
+      drop-shadow(0 0 18px rgba(0, 196, 255, 0.34))
+      drop-shadow(0 5px 0 rgba(0, 0, 0, 0.34));
+  }
+  .art-button:active {
+    transform: translateY(1px) scale(0.985);
+    filter: drop-shadow(0 0 6px rgba(255, 47, 216, 0.44));
+  }
+  .art-button:disabled {
+    cursor: not-allowed;
+    opacity: 0.42;
+    filter: grayscale(0.7) brightness(0.68);
+    transform: none;
+  }
+  .art-button-back {
+    --button-art: url("media/buttons/back_button.png");
+    width: clamp(96px, 13vw, 154px);
+    aspect-ratio: 285 / 227;
+  }
+  .art-button-continue {
+    --button-art: url("media/buttons/continue_button.png");
+    width: clamp(96px, 13vw, 150px);
+    aspect-ratio: 262 / 227;
+  }
+  .art-button-skip {
+    --button-art: url("media/buttons/skip_button.png");
+    width: clamp(122px, 15vw, 180px);
+    aspect-ratio: 523 / 337;
+  }
+  .art-button-play {
+    --button-art: url("media/buttons/play_button.png");
+    width: clamp(190px, 27vw, 360px);
+    aspect-ratio: 1538 / 610;
+  }
+  .art-button-play-white {
+    --button-art: url("media/buttons/play_white.png");
+    width: clamp(170px, 23vw, 258px);
+    aspect-ratio: 484 / 278;
+  }
+  .art-button-play-black {
+    --button-art: url("media/buttons/play_black.png");
+    width: clamp(170px, 23vw, 258px);
+    aspect-ratio: 505 / 280;
+  }
+  .story-actions button.art-button,
+  .story-actions button.art-button:disabled,
+  .profile-row button.art-button,
+  .side-footer button.art-button,
+  .side-footer .color-picker button.art-button,
+  .tower-actions button.art-button,
+  .result-actions button.art-button {
+    background-color: transparent !important;
+    border: 0 !important;
+  }
+  .story-actions button.art-button {
+    width: clamp(96px, 12vw, 142px);
+  }
+  .story-actions button.art-button-skip {
+    width: clamp(112px, 14vw, 160px);
+  }
+  .story-actions button.art-button-continue {
+    width: clamp(104px, 12.5vw, 148px);
+  }
+  .profile-row button.art-button-continue {
+    justify-self: end;
+    width: min(100%, 132px);
+  }
+  .side-footer > button.art-button-back,
+  .side-footer > button.art-button-continue {
+    width: clamp(116px, 13vw, 154px);
+  }
+  .side-footer .color-picker button.art-button {
+    width: min(100%, 258px);
+  }
+  .tower-actions button.art-button-play {
+    width: clamp(210px, 28vw, 380px);
+  }
+  .result-actions button.art-button-back,
+  .result-actions button.art-button-continue {
+    width: clamp(112px, 13vw, 156px);
+  }
+  .result-actions button.art-button-play {
+    width: clamp(220px, 28vw, 380px);
   }
   .side-step {
     position: relative;
@@ -741,7 +1004,7 @@
     color: #000;
     background: #c0c0c0;
     border: 4px outset #fff;
-    font: 900 16px "Courier New", monospace;
+    font: 900 16px var(--font-type);
     cursor: pointer;
   }
   .side-footer button.selected,
@@ -764,7 +1027,7 @@
     overflow: hidden;
     color: #dff;
     background: #02050c;
-    font-family: "Courier New", monospace;
+    font-family: var(--font-type);
   }
   .enemy-load-bg,
   .enemy-load-vignette {
@@ -836,7 +1099,7 @@
     background: transparent;
     border: 0;
     box-shadow: 0 0 22px rgba(0, 255, 204, 0.08), 0 0 28px rgba(255, 0, 190, 0.08);
-    font: 700 12px "Courier New", monospace;
+    font: 700 12px var(--font-type);
     pointer-events: none;
     overflow: visible;
     transform: translateX(-50%);
@@ -938,17 +1201,17 @@
   }
   .fighter-card-player .fighter-portrait {
     left: 0;
-    object-position: 50% 36%;
+    object-position: 50% 50%;
     transform: scale(1.42);
   }
   .fighter-card-enemy .fighter-portrait {
     right: 0;
-    object-position: 50% 34%;
+    object-position: 50% 50%;
     transform: scale(1.35);
   }
   .fighter-portrait-player {
     background: #03050b;
-    object-position: 50% 34%;
+    object-position: 50% 50%;
     transform: scale(1.52);
   }
   .fighter-readout {
@@ -1084,7 +1347,7 @@
     overflow: hidden;
     color: #f5fffb;
     background: #05040c;
-    font-family: "Courier New", monospace;
+    font-family: var(--font-type);
   }
   .result-portrait,
   .result-vignette {
@@ -1370,7 +1633,7 @@
     color: #000;
     background: #c0c0c0;
     border: 4px outset #fff;
-    font: 900 14px "Courier New", monospace;
+    font: 900 14px var(--font-type);
     cursor: pointer;
   }
   .result-actions button:active {
@@ -1391,7 +1654,7 @@
     overflow: hidden;
     color: #dff;
     background: #020611;
-    font-family: "Courier New", monospace;
+    font-family: var(--font-type);
   }
   .settings-bg,
   .settings-vignette {

@@ -10,6 +10,8 @@ const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
   ['.png', 'image/png'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
   ['.mp4', 'video/mp4'],
   ['.fbx', 'application/octet-stream'],
 ]);
@@ -154,7 +156,7 @@ async function runPlayableSmoke(label, viewport) {
           image.complete &&
           image.naturalWidth >= 1600 &&
           image.naturalHeight >= 900 &&
-          image.currentSrc.includes('floppy-tower-ladder-embedded.png') &&
+          image.currentSrc.includes('floppy-tower-ladder-embedded.jpg') &&
           document.querySelectorAll('.tower-opponent, .tower-slots').length === 0;
       });
     };
@@ -245,7 +247,7 @@ async function runPlayableSmoke(label, viewport) {
     if (await page.getByRole('button', { name: /Goop EASY/ }).count()) {
       throw new Error('opponent selection should be replaced by tower ascent');
     }
-    await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
+    await ascendThroughHeroLoad('goop', 'goop-entrance.jpg', 'goop_intro.mp3');
     await page.locator('.cyber-hud').waitFor();
     if (await page.getByRole('button', { name: /^Reset$/ }).count()) {
       throw new Error('reset button should not render in the gameplay HUD');
@@ -281,14 +283,14 @@ async function runPlayableSmoke(label, viewport) {
     const madeOpeningMove = await page.evaluate((fen) => window.__chess.state.fen !== fen, startFen);
 
     await page.evaluate(() => window.__chess.forceLoss());
-    await expectEnemyResult('GOOP CLOGGED THE BOARD', 'goop-loss.png', 'Goop');
+    await expectEnemyResult('GOOP CLOGGED THE BOARD', 'goop-loss.jpg', 'Goop');
     await page.waitForFunction(() => window.__chess?.campaign?.continueSeconds <= 9);
     await page.getByRole('button', { name: 'CONTINUE' }).click();
     await page.locator('.enemy-load-screen').waitFor();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.lives === 1, null, { timeout: 12000 });
 
     await page.evaluate(() => window.__chess.forceLoss());
-    await expectEnemyResult('GOOP FLOODED THE RUN', 'goop-game-over.png', 'Goop');
+    await expectEnemyResult('GOOP FLOODED THE RUN', 'goop-game-over.jpg', 'Goop');
     await page.getByRole('button', { name: 'NEW RUN' }).click();
     await page.waitForFunction(() =>
       window.__chess?.campaign?.screen === 'intro' &&
@@ -296,7 +298,7 @@ async function runPlayableSmoke(label, viewport) {
       window.__chess?.campaign?.lives === 2
     );
     await waitForEmbeddedTower();
-    await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
+    await ascendThroughHeroLoad('goop', 'goop-entrance.jpg', 'goop_intro.mp3');
     await page.waitForFunction(() =>
       window.__chess?.campaign?.screen === 'playing' &&
       window.__chess?.campaign?.selectedId === 'goop' &&
@@ -304,31 +306,31 @@ async function runPlayableSmoke(label, viewport) {
     );
 
     await page.evaluate(() => window.__chess.forceWin());
-    await expectEnemyResult('GOOP CONTAINED', 'goop-win.png', 'Goop');
+    await expectEnemyResult('GOOP CONTAINED', 'goop-win.jpg', 'Goop');
     await page.getByText('NEXT CHALLENGER').waitFor();
     await page.getByText('Frostd4d', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'frostd4d');
     await waitForEmbeddedTower();
-    await ascendThroughHeroLoad('frostd4d', 'frostd4d-entrance.png', 'frostd4d_intro.mp3');
+    await ascendThroughHeroLoad('frostd4d', 'frostd4d-entrance.jpg', 'frostd4d_intro.mp3');
 
     await page.evaluate(() => window.__chess.forceWin());
-    await expectEnemyResult('FROSTD4D THAWED', 'frostd4d-win.png', 'Frostd4d');
+    await expectEnemyResult('FROSTD4D THAWED', 'frostd4d-win.jpg', 'Frostd4d');
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'razorblade');
     await waitForEmbeddedTower();
-    await ascendThroughHeroLoad('razorblade', 'razorblade-entrance.png', 'razorblade_intro.mp3');
+    await ascendThroughHeroLoad('razorblade', 'razorblade-entrance.jpg', 'razorblade_intro.mp3');
 
     await page.evaluate(() => window.__chess.forceWin());
-    await expectEnemyResult('RAZORBLADE DISARMED', 'razorblade-win.png', 'Razorblade');
+    await expectEnemyResult('RAZORBLADE DISARMED', 'razorblade-win.jpg', 'Razorblade');
     await page.getByText('GORDO', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'gordo');
     await waitForEmbeddedTower();
-    await ascendThroughHeroLoad('gordo', 'gordo-entrance.png', 'gordo_intro.mp3');
+    await ascendThroughHeroLoad('gordo', 'gordo-entrance.jpg', 'gordo_intro.mp3');
 
     await page.evaluate(() => window.__chess.forceWin());
-    await expectClearResult('THANKS FOR PLAYING', 'final-clear-family-reunion.png');
+    await expectClearResult('THANKS FOR PLAYING', 'final-clear-family-reunion.jpg');
     await page.getByRole('button', { name: 'RUN IT BACK' }).waitFor();
     await page.waitForFunction(() => {
       const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');

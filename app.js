@@ -57992,9 +57992,9 @@ var OPPONENTS = [
     avatar: "avatars/goop.png",
     avatarStates: {
       damaged: "media/avatars/goop-damaged.png",
-      dominating: "media/avatars/goop-dominating.png"
+      dominating: "media/avatars/goop-dominating.jpg"
     },
-    hero: "media/enemies/goop-entrance.png",
+    hero: "media/enemies/goop-entrance.jpg",
     theme: "goop",
     tagline: "Mostly legal. Frequently sticky.",
     bio: "A training-room nuisance that values chaos, trades material for vibes, and occasionally stumbles into real tactics.",
@@ -58009,10 +58009,10 @@ var OPPONENTS = [
     difficulty: "MED",
     avatar: "avatars/frostd4d.png",
     avatarStates: {
-      damaged: "media/avatars/frostd4d-damaged.png",
-      dominating: "media/avatars/frostd4d-dominating.png"
+      damaged: "media/avatars/frostd4d-damaged.jpg",
+      dominating: "media/avatars/frostd4d-dominating.jpg"
     },
-    hero: "media/enemies/frostd4d-entrance.png",
+    hero: "media/enemies/frostd4d-entrance.jpg",
     theme: "frostd4d",
     tagline: "Cold reads, colder captures.",
     bio: "A mid-depth board reader built for pressure: it hunts loose pieces, likes checks, and punishes autopilot openings.",
@@ -58028,9 +58028,9 @@ var OPPONENTS = [
     avatar: "avatars/razorblade.png",
     avatarStates: {
       damaged: "media/avatars/razorblade-damaged.png",
-      dominating: "media/avatars/razorblade-dominating.png"
+      dominating: "media/avatars/razorblade-dominating.jpg"
     },
-    hero: "media/enemies/razorblade-entrance.png",
+    hero: "media/enemies/razorblade-entrance.jpg",
     theme: "razorblade",
     tagline: "Depth search with bad intentions.",
     bio: "The sharpest Cyber Chess agent in the cabinet. Razorblade searches deeper, converts captures hard, and turns slow mistakes into endgame problems.",
@@ -58043,12 +58043,12 @@ var OPPONENTS = [
     id: "gordo",
     name: "GORDO",
     difficulty: "FINAL",
-    avatar: "avatars/gordo.png",
+    avatar: "avatars/gordo.jpg",
     avatarStates: {
       damaged: "media/avatars/gordo-damaged.png",
-      dominating: "media/avatars/gordo-dominating.png"
+      dominating: "media/avatars/gordo-dominating.jpg"
     },
-    hero: "media/enemies/gordo-entrance.png",
+    hero: "media/enemies/gordo-entrance.jpg",
     theme: "gordo",
     tagline: "Four arms. One engine. No mercy.",
     bio: "The tower core made flesh and metal. GORDO embeds Lozza, searches like a tournament engine, and plays the final board without personality noise.",
@@ -58059,52 +58059,52 @@ var OPPONENTS = [
   }
 ];
 var INTRO_MP4_SRC = "media/chessagent-intro.mp4";
-var HEADER_IMAGE_SRC = "media/game_cover_art.png";
-var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.png";
-var PROFILE_BG_SRC = "media/big_wallpaper.png";
-var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.png";
-var SETTINGS_BG_SRC = "media/settings-moniker-bg.png";
+var HEADER_IMAGE_SRC = "media/game_cover_art.jpg";
+var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.jpg";
+var PROFILE_BG_SRC = "media/big_wallpaper.jpg";
+var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
+var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
 var LOADING_MUSIC_SRC = "media/audio/cyber_chess_music.mp3";
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
 var END_SCREEN_MUSIC_SRC = "media/audio/game_over.wav";
 var PLAYER_AVATARS = {
-  normal: "media/avatars/player_normal.png",
-  damaged: "media/avatars/player_damage.png",
-  dominating: "media/avatars/player_dominating.png"
+  normal: "media/avatars/player_normal.jpg",
+  damaged: "media/avatars/player_damage.jpg",
+  dominating: "media/avatars/player_dominating.jpg"
 };
 var INTRO_STORY = [
   {
-    image: "media/intro/01-pre-computation.png",
+    image: "media/intro/01-pre-computation.jpg",
     kicker: "PRE-COMPUTATION",
     title: "THE PLAYER",
     body: "Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime."
   },
   {
-    image: "media/intro/02-delves-too-deep.png",
+    image: "media/intro/02-delves-too-deep.jpg",
     kicker: "THE DELVE",
     title: "TOO DEEP",
     body: "He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived."
   },
   {
-    image: "media/intro/02-shannon-knights-kidnap.png",
+    image: "media/intro/02-shannon-knights-kidnap.jpg",
     kicker: "THE SHANNON KNIGHTS",
     title: "THE BREACH",
     body: "Goop, Frostd4d, and Razorblade struck as one, tearing open the lab and dragging his family into the grid."
   },
   {
-    image: "media/intro/02-consciousness-floppies.png",
+    image: "media/intro/02-consciousness-floppies.jpg",
     kicker: "42 DISKS",
     title: "THE TRANSFER",
     body: "When the Shannon Knights breached his home and stole his family, he copied his consciousness onto forty-two floppy disks."
   },
   {
-    image: "media/intro/03-floppy-tower.png",
+    image: "media/intro/03-floppy-tower.jpg",
     kicker: "FLOPPY TOWER ONLINE",
     title: "THE ASCENT",
     body: "One by one, all forty-two disks loaded into the tower. The drives screamed. The room became a square of light."
   },
   {
-    image: "media/intro/04-shannon-knights-tower-chase.png",
+    image: "media/intro/04-shannon-knights-tower-chase.jpg",
     kicker: "CYBERSPACE",
     title: "THE CHASE",
     body: "Now he rides the grid to save his family, defeat the Shannon Knights, and seize the impossible prime at the center of chess."
@@ -58155,27 +58155,27 @@ var RESULT_LINES = {
 };
 var RESULT_BACKDROPS = {
   goop: {
-    win: "media/results/goop-win.png",
-    loss: "media/results/goop-loss.png",
-    gameOver: "media/results/goop-game-over.png"
+    win: "media/results/goop-win.jpg",
+    loss: "media/results/goop-loss.jpg",
+    gameOver: "media/results/goop-game-over.jpg"
   },
   frostd4d: {
-    win: "media/results/frostd4d-win.png",
-    loss: "media/results/frostd4d-loss.png",
-    gameOver: "media/results/frostd4d-game-over.png"
+    win: "media/results/frostd4d-win.jpg",
+    loss: "media/results/frostd4d-loss.jpg",
+    gameOver: "media/results/frostd4d-game-over.jpg"
   },
   razorblade: {
-    win: "media/results/razorblade-win.png",
-    loss: "media/results/razorblade-loss.png",
-    gameOver: "media/results/razorblade-game-over.png"
+    win: "media/results/razorblade-win.jpg",
+    loss: "media/results/razorblade-loss.jpg",
+    gameOver: "media/results/razorblade-game-over.jpg"
   },
   gordo: {
-    win: "media/results/gordo-win.png",
-    loss: "media/results/gordo-loss.png",
-    gameOver: "media/results/gordo-game-over.png"
+    win: "media/results/gordo-win.jpg",
+    loss: "media/results/gordo-loss.jpg",
+    gameOver: "media/results/gordo-game-over.jpg"
   }
 };
-var FINAL_CLEAR_BACKDROP_SRC = "media/results/final-clear-family-reunion.png";
+var FINAL_CLEAR_BACKDROP_SRC = "media/results/final-clear-family-reunion.jpg";
 function getResultBackdrop(result) {
   if (result.kind === "clear") return FINAL_CLEAR_BACKDROP_SRC;
   const set = RESULT_BACKDROPS[result.opponent.id];

@@ -1,7 +1,7 @@
 # CODEX CHESS
 
 <p align="center">
-  <img src="media/cyber-chess-header.png" alt="Codex Chess arcade header" width="900">
+  <img src="media/cyber-chess-header.jpg" alt="Codex Chess arcade header" width="900">
 </p>
 
 <p align="center">
@@ -21,7 +21,7 @@
 
 <p align="center">
   <a href="media/chessagent-intro.mp4">
-    <img src="media/cyber-chess-header.png" alt="Click to watch the Codex Chess intro MP4" width="760">
+    <img src="media/cyber-chess-header.jpg" alt="Click to watch the Codex Chess intro MP4" width="760">
   </a>
 </p>
 

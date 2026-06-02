@@ -9,6 +9,8 @@ const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
   ['.png', 'image/png'],
+  ['.jpg', 'image/jpeg'],
+  ['.jpeg', 'image/jpeg'],
   ['.mp4', 'video/mp4'],
   ['.fbx', 'application/octet-stream'],
 ]);
@@ -39,7 +41,7 @@ try {
         image.complete &&
         image.naturalWidth >= 1600 &&
         image.naturalHeight >= 900 &&
-        image.currentSrc.includes('floppy-tower-ladder-embedded.png') &&
+        image.currentSrc.includes('floppy-tower-ladder-embedded.jpg') &&
         document.querySelectorAll('.tower-opponent, .tower-slots').length === 0;
     });
   };
@@ -82,12 +84,12 @@ try {
     }
     await page.screenshot({ path: process.env.TOWER_SCREENSHOT, fullPage: true });
   }
-  await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
+  await ascendThroughHeroLoad('goop', 'goop-entrance.jpg', 'goop_intro.mp3');
 
   for (const [expected, hero, intro] of [
-    ['frostd4d', 'frostd4d-entrance.png', 'frostd4d_intro.mp3'],
-    ['razorblade', 'razorblade-entrance.png', 'razorblade_intro.mp3'],
-    ['gordo', 'gordo-entrance.png', 'gordo_intro.mp3'],
+    ['frostd4d', 'frostd4d-entrance.jpg', 'frostd4d_intro.mp3'],
+    ['razorblade', 'razorblade-entrance.jpg', 'razorblade_intro.mp3'],
+    ['gordo', 'gordo-entrance.jpg', 'gordo_intro.mp3'],
   ]) {
     await page.evaluate(() => window.__chess.forceWin());
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();

@@ -58471,6 +58471,7 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/High_on_the_Train_song.mp3",
   "media/audio/cyber_soaring_song.mp3",
   "media/audio/data_crasher.mp3",
+  "media/audio/bishops_touch.mp3",
   "media/audio/synthetic_dreams_cyber_eyes.mp3"
 ];
 var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];

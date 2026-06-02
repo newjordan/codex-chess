@@ -358,6 +358,7 @@ async function runPlayableSmoke(label, viewport) {
       '/media/audio/High_on_the_Train_song.mp3 net::ERR_ABORTED',
       '/media/audio/cyber_soaring_song.mp3 net::ERR_ABORTED',
       '/media/audio/data_crasher.mp3 net::ERR_ABORTED',
+      '/media/audio/bishops_touch.mp3 net::ERR_ABORTED',
       '/media/audio/synthetic_dreams_cyber_eyes.mp3 net::ERR_ABORTED',
       '/media/audio/victory_song_audio.mp3 net::ERR_ABORTED',
       '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',

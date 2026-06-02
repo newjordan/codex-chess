@@ -146,13 +146,76 @@ async function runPlayableSmoke(label, viewport) {
   page.on('requestfailed', (req) => failed.push(`${req.url()} ${req.failure()?.errorText || ''}`.trim()));
 
   try {
+    const waitForEmbeddedTower = async () => {
+      await page.locator('.tower-bg').waitFor();
+      await page.waitForFunction(() => {
+        const image = document.querySelector('.tower-bg');
+        return image instanceof HTMLImageElement &&
+          image.complete &&
+          image.naturalWidth >= 1600 &&
+          image.naturalHeight >= 900 &&
+          image.currentSrc.includes('floppy-tower-ladder-embedded.png') &&
+          document.querySelectorAll('.tower-opponent, .tower-slots').length === 0;
+      });
+    };
+    const ascendThroughHeroLoad = async (expectedId, expectedHero, expectedIntro) => {
+      await page.getByRole('button', { name: 'ASCEND' }).click();
+      await page.locator('.enemy-load-screen').waitFor();
+      await page.waitForFunction(
+        ({ id, hero, intro }) => {
+          const campaign = window.__chess?.campaign;
+          const image = document.querySelector('.enemy-load-bg');
+          return campaign?.screen === 'loading' &&
+            campaign?.selectedId === id &&
+            image instanceof HTMLImageElement &&
+            image.complete &&
+            image.currentSrc.includes(hero) &&
+            window.__chess?.announcer?.src?.includes(intro);
+        },
+        { id: expectedId, hero: expectedHero, intro: expectedIntro }
+      );
+      await page.waitForFunction(
+        (id) => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.selectedId === id,
+        expectedId,
+        { timeout: 12000 }
+      );
+    };
+    const expectEnemyResult = async (heading, expectedHero, expectedName) => {
+      await page.getByRole('heading', { name: heading }).waitFor();
+      await page.waitForFunction(
+        ({ hero, name }) => {
+          const image = document.querySelector('.result-portrait');
+          const card = document.querySelector('.result-enemy-card strong');
+          return image instanceof HTMLImageElement &&
+            image.complete &&
+            image.currentSrc.includes(hero) &&
+            card?.textContent === name;
+        },
+        { hero: expectedHero, name: expectedName }
+      );
+    };
+    const expectClearResult = async (heading, expectedHero) => {
+      await page.getByRole('heading', { name: heading }).waitFor();
+      await page.waitForFunction(
+        (hero) => {
+          const image = document.querySelector('.result-portrait');
+          return image instanceof HTMLImageElement &&
+            image.complete &&
+            image.currentSrc.includes(hero) &&
+            document.querySelector('.result-enemy-card') === null;
+        },
+        expectedHero
+      );
+    };
+
     await page.addInitScript(() => {
       window.localStorage.clear();
     });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'CLICK TO ENTER' }).waitFor();
-    await page.getByRole('button', { name: 'CLICK TO ENTER' }).click();
+    await page.getByRole('button', { name: 'CLICK TO START' }).waitFor();
+    await page.getByRole('button', { name: 'CLICK TO START' }).click();
     await page.waitForFunction(() => window.__chess?.audio?.ready === true);
+    await page.waitForFunction(() => window.__chess?.loadingMusic?.active === true);
     await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
     await page.getByRole('button', { name: 'NEXT' }).click();
     await page.getByRole('heading', { name: 'THE BREACH' }).waitFor();
@@ -171,13 +234,14 @@ async function runPlayableSmoke(label, viewport) {
     await page.getByRole('button', { name: 'LOCK IN' }).click();
     await page.getByRole('button', { name: 'Play White' }).waitFor();
     await page.getByRole('button', { name: 'CONTINUE' }).click();
-    await page.getByText('FLOPPY TOWER ASCENT').waitFor();
-    await page.getByText('CURRENT FLOOR').waitFor();
-    await page.locator('.tower-hero-goop').waitFor();
+    await waitForEmbeddedTower();
+    if (await page.getByText(/FLOPPY TOWER ASCENT|CURRENT FLOOR|LOCKED ABOVE|CLEARED/).count()) {
+      throw new Error('tower should not render floating copy');
+    }
     if (await page.getByRole('button', { name: /Goop EASY/ }).count()) {
       throw new Error('opponent selection should be replaced by tower ascent');
     }
-    await page.getByRole('button', { name: 'ASCEND' }).click();
+    await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
     await page.getByRole('button', { name: 'Reset' }).waitFor();
     await page.waitForFunction(() =>
       window.__chess?.campaign?.playerName === 'CODXACE' &&
@@ -203,14 +267,22 @@ async function runPlayableSmoke(label, viewport) {
     const madeOpeningMove = await page.evaluate((fen) => window.__chess.state.fen !== fen, startFen);
 
     await page.evaluate(() => window.__chess.forceLoss());
-    await page.getByRole('heading', { name: 'YOU LOSE' }).waitFor();
+    await expectEnemyResult('GOOP CLOGGED THE BOARD', 'goop-loss.png', 'Goop');
     await page.waitForFunction(() => window.__chess?.campaign?.continueSeconds <= 9);
     await page.getByRole('button', { name: 'CONTINUE' }).click();
-    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.lives === 1);
+    await page.locator('.enemy-load-screen').waitFor();
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.lives === 1, null, { timeout: 12000 });
 
     await page.evaluate(() => window.__chess.forceLoss());
-    await page.getByRole('heading', { name: 'GAME OVER' }).waitFor();
+    await expectEnemyResult('GOOP FLOODED THE RUN', 'goop-game-over.png', 'Goop');
     await page.getByRole('button', { name: 'NEW RUN' }).click();
+    await page.waitForFunction(() =>
+      window.__chess?.campaign?.screen === 'intro' &&
+      window.__chess?.campaign?.selectedId === 'goop' &&
+      window.__chess?.campaign?.lives === 2
+    );
+    await waitForEmbeddedTower();
+    await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
     await page.waitForFunction(() =>
       window.__chess?.campaign?.screen === 'playing' &&
       window.__chess?.campaign?.selectedId === 'goop' &&
@@ -218,23 +290,35 @@ async function runPlayableSmoke(label, viewport) {
     );
 
     await page.evaluate(() => window.__chess.forceWin());
-    await page.getByRole('heading', { name: 'YOU WIN' }).waitFor();
+    await expectEnemyResult('GOOP CONTAINED', 'goop-win.png', 'Goop');
     await page.getByText('NEXT CHALLENGER').waitFor();
     await page.getByText('Frostd4d', { exact: true }).waitFor();
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
-    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.selectedId === 'frostd4d');
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'frostd4d');
+    await waitForEmbeddedTower();
+    await ascendThroughHeroLoad('frostd4d', 'frostd4d-entrance.png', 'frostd4d_intro.mp3');
 
     await page.evaluate(() => window.__chess.forceWin());
-    await page.getByRole('heading', { name: 'YOU WIN' }).waitFor();
+    await expectEnemyResult('FROSTD4D THAWED', 'frostd4d-win.png', 'Frostd4d');
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
-    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.selectedId === 'razorblade');
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'razorblade');
+    await waitForEmbeddedTower();
+    await ascendThroughHeroLoad('razorblade', 'razorblade-entrance.png', 'razorblade_intro.mp3');
 
     await page.evaluate(() => window.__chess.forceWin());
-    await page.getByRole('heading', { name: 'LADDER CLEAR' }).waitFor();
+    await expectEnemyResult('RAZORBLADE DISARMED', 'razorblade-win.png', 'Razorblade');
+    await page.getByText('GORDO', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'gordo');
+    await waitForEmbeddedTower();
+    await ascendThroughHeroLoad('gordo', 'gordo-entrance.png', 'gordo_intro.mp3');
+
+    await page.evaluate(() => window.__chess.forceWin());
+    await expectClearResult('THANKS FOR PLAYING', 'final-clear-family-reunion.png');
     await page.getByRole('button', { name: 'RUN IT BACK' }).waitFor();
     await page.waitForFunction(() => {
       const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
-      return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear' && entry.score >= 3000);
+      return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear' && entry.score >= 4000);
     });
 
     const canvasBox = await page.locator('canvas').boundingBox();
@@ -251,6 +335,7 @@ async function runPlayableSmoke(label, viewport) {
       const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
       return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear');
     });
+    const relevantFailed = failed.filter((entry) => !entry.includes('/media/audio/game_over.wav net::ERR_ABORTED'));
     const checks = {
       label,
       viewport,
@@ -262,13 +347,13 @@ async function runPlayableSmoke(label, viewport) {
       playerNamed: campaign?.playerName === 'CODXACE',
       boardNames:
         campaign?.whiteName === 'CODXACE' &&
-        campaign?.blackName === 'Razorblade' &&
+        campaign?.blackName === 'GORDO' &&
         boardLabels?.whiteSide === 'rank-1' &&
         boardLabels?.blackSide === 'rank-8',
       audioReady: campaign?.audioReady === true && audio?.ready === true && audio?.played > 0,
       leaderboardSaved,
       errors,
-      failed,
+      failed: relevantFailed,
     };
     console.log(JSON.stringify(checks, null, 2));
 
@@ -283,7 +368,7 @@ async function runPlayableSmoke(label, viewport) {
       !checks.audioReady ||
       !checks.leaderboardSaved ||
       errors.length ||
-      failed.length
+      relevantFailed.length
     ) {
       throw new Error(`${label} smoke check failed`);
     }

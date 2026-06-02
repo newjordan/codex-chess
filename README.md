@@ -55,7 +55,7 @@ Then the Shannon Knights struck.
     <td><strong>FLOPPY TOWER ONLINE</strong><br>The disks load one by one. The room becomes light.</td>
   </tr>
   <tr>
-    <td colspan="2"><img src="media/intro/04-shannon-knights.png" alt="The Shannon Knights waiting in cyberspace"></td>
+    <td colspan="2"><img src="media/intro/04-shannon-knights-tower-chase.png" alt="The Shannon Knights waiting in cyberspace"></td>
   </tr>
   <tr>
     <td colspan="2"><strong>CYBERSPACE</strong><br>Now he must climb the tower, beat the Shannon Knights, save his family, and find the prime at the center of chess.</td>
@@ -72,7 +72,7 @@ Then the Shannon Knights struck.
 
 Ascend the Floppy Tower. You do not pick your opponent. You rise.
 
-Start at the bottom with Goop, push through Frostd4d, and survive Razorblade at the top. You have two lives for the full run. Lose once and the continue clock starts. Lose twice and the cabinet owns your score.
+Start at the bottom with Goop, push through Frostd4d and Razorblade, then face GORDO at the tower core. You have two lives for the full run. Lose once and the continue clock starts. Lose twice and the cabinet owns your score.
 
 ---
 
@@ -83,25 +83,29 @@ Start at the bottom with Goop, push through Frostd4d, and survive Razorblade at 
     <th>FLOOR 1</th>
     <th>FLOOR 2</th>
     <th>FLOOR 3</th>
+    <th>FINAL FLOOR</th>
   </tr>
   <tr>
     <td><img src="media/enemies/goop-entrance.png" alt="Goop entrance hero"></td>
     <td><img src="media/enemies/frostd4d-entrance.png" alt="Frostd4d entrance hero"></td>
     <td><img src="media/enemies/razorblade-entrance.png" alt="Razorblade entrance hero"></td>
+    <td><img src="media/enemies/gordo-entrance.png" alt="GORDO entrance hero"></td>
   </tr>
   <tr>
     <td><strong>GOOP</strong><br>Easy<br>Mostly legal. Frequently sticky.</td>
     <td><strong>FROSTD4D</strong><br>Medium<br>Cold reads, colder captures.</td>
     <td><strong>RAZORBLADE</strong><br>Hard<br>Depth search with bad intentions.</td>
+    <td><strong>GORDO</strong><br>Final<br>Four arms. One engine. No mercy.</td>
   </tr>
   <tr>
     <td><img src="avatars/goop.png" alt="Goop avatar"></td>
     <td><img src="avatars/frostd4d.png" alt="Frostd4d avatar"></td>
     <td><img src="avatars/razorblade.png" alt="Razorblade avatar"></td>
+    <td><img src="avatars/gordo.png" alt="GORDO avatar"></td>
   </tr>
 </table>
 
-Each enemy brings a custom arena mood: Goop glows green, Frostd4d freezes the background blue, and Razorblade stains the board red.
+Each enemy brings a custom arena mood: Goop glows green, Frostd4d freezes the background blue, Razorblade stains the board red, and GORDO floods the tower core with magenta and amber.
 
 ---
 
@@ -129,7 +133,7 @@ Each enemy brings a custom arena mood: Goop glows green, Frostd4d freezes the ba
 5. Press `CONTINUE`, review the tower floor, then press `ASCEND`.
 6. Click a piece, then click a legal destination square.
 7. Checkmate the current enemy to climb to the next floor.
-8. Clear Goop, Frostd4d, and Razorblade to post a local leaderboard score.
+8. Clear Goop, Frostd4d, Razorblade, and GORDO to post a local leaderboard score.
 
 Controls:
 
@@ -144,7 +148,7 @@ Controls:
 
 - 3D chess board built with React, Three.js, and chess.js.
 - Animated FBX chess pieces.
-- Three local AI personalities.
+- Three local AI personalities plus GORDO, a final boss backed by the embedded Lozza chess engine worker.
 - Fixed floppy-tower campaign progression.
 - Two-life continue system.
 - Player name registration.
@@ -152,7 +156,12 @@ Controls:
 - Local leaderboard saved in `localStorage`.
 - Browser-generated chiptune intro music.
 - Browser-generated gameplay SFX for menu actions, reveals, moves, captures, checks, wins, losses, and countdown ticks.
+- Settings panel with Full Audio, SFX Only, and Muted modes.
+- Generated moniker-themed settings background art.
+- Imported announcer clips for tower opponent reveals.
+- Imported loading-screen music for the menu and tower flow.
 - Generated story, enemy, tower, victory, and defeat art.
+- Embedded Lozza chess engine worker, included under its MIT license in `media/engines/`.
 - ElevenLabs SFX prompt notes in `media/sfx/README.md` for future static sound assets.
 
 ---

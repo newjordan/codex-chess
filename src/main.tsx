@@ -14,6 +14,8 @@ const MAX_LIVES = 2;
 const CONTINUE_SECONDS = 10;
 const PLAYER_NAME_KEY = 'cyberChessPlayerName';
 const LEADERBOARD_KEY = 'cyberChessLeaderboardV1';
+const AUDIO_MODE_KEY = 'cyberChessAudioMode';
+const AUDIO_VOLUME_KEY = 'cyberChessAudioVolume';
 const MAX_LEADERBOARD = 8;
 
 const OPPONENTS: Array<{
@@ -22,11 +24,13 @@ const OPPONENTS: Array<{
   difficulty: string;
   avatar: string;
   hero: string;
-  theme: 'goop' | 'frostd4d' | 'razorblade';
+  theme: 'goop' | 'frostd4d' | 'razorblade' | 'gordo';
   tagline: string;
   bio: string;
   speed: number;
   delay: number;
+  announcer: string;
+  introAudio: string;
 }> = [
   {
     id: 'goop',
@@ -39,6 +43,8 @@ const OPPONENTS: Array<{
     bio: 'A training-room nuisance that values chaos, trades material for vibes, and occasionally stumbles into real tactics.',
     speed: 1.7,
     delay: 760,
+    announcer: 'media/audio/goop-announcer.mp3',
+    introAudio: 'media/audio/goop_intro.mp3',
   },
   {
     id: 'frostd4d',
@@ -51,6 +57,8 @@ const OPPONENTS: Array<{
     bio: 'A mid-depth board reader built for pressure: it hunts loose pieces, likes checks, and punishes autopilot openings.',
     speed: 2.1,
     delay: 520,
+    announcer: 'media/audio/frostd4d-announcer.mp3',
+    introAudio: 'media/audio/frostd4d_intro.mp3',
   },
   {
     id: 'razorblade',
@@ -63,14 +71,35 @@ const OPPONENTS: Array<{
     bio: 'The sharpest Cyber Chess agent in the cabinet. Razorblade searches deeper, converts captures hard, and turns slow mistakes into endgame problems.',
     speed: 2.45,
     delay: 320,
+    announcer: 'media/audio/razorblade-announcer.mp3',
+    introAudio: 'media/audio/razorblade_intro.mp3',
+  },
+  {
+    id: 'gordo',
+    name: 'GORDO',
+    difficulty: 'FINAL',
+    avatar: 'avatars/gordo.png',
+    hero: 'media/enemies/gordo-entrance.png',
+    theme: 'gordo',
+    tagline: 'Four arms. One engine. No mercy.',
+    bio: 'The tower core made flesh and metal. GORDO embeds Lozza, searches like a tournament engine, and plays the final board without personality noise.',
+    speed: 2.85,
+    delay: 180,
+    announcer: 'media/audio/gordo-announcer.mp3',
+    introAudio: 'media/audio/gordo_intro.mp3',
   },
 ];
 
 const INTRO_MP4_SRC = 'media/chessagent-intro.mp4';
-const HEADER_IMAGE_SRC = 'media/cyber-chess-header.png';
-const VICTORY_PORTRAIT_SRC = 'media/campaign-victory-portrait.png';
-const DEFEAT_PORTRAIT_SRC = 'media/campaign-defeat-portrait.png';
-const FLOPPY_TOWER_SRC = 'media/floppy-tower-ladder.png';
+const HEADER_IMAGE_SRC = 'media/game_cover_art.png';
+const SIDE_SELECTION_BG_SRC = 'media/cyber-chess-header-frostd4d-v2.png';
+const PROFILE_BG_SRC = 'media/big_wallpaper.png';
+const FLOPPY_TOWER_SRC = 'media/floppy-tower-ladder-embedded.png';
+const SETTINGS_BG_SRC = 'media/settings-moniker-bg.png';
+const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
+const LOADING_MUSIC_SRC = 'media/audio/cavernous-echoes-loading-screen.mp3';
+const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
+const END_SCREEN_MUSIC_SRC = 'media/audio/game_over.wav';
 const INTRO_STORY = [
   {
     image: 'media/intro/01-pre-computation.png',
@@ -97,7 +126,7 @@ const INTRO_STORY = [
     body: 'One by one, all forty-two disks loaded into the tower. The drives screamed. The room became a square of light.',
   },
   {
-    image: 'media/intro/04-shannon-knights.png',
+    image: 'media/intro/04-shannon-knights-tower-chase.png',
     kicker: 'CYBERSPACE',
     title: 'THE CHASE',
     body: 'Now he rides the grid to save his family, defeat the Shannon Knights, and seize the impossible prime at the center of chess.',
@@ -114,6 +143,130 @@ type ResultState = {
   livesAfter: number;
 };
 
+const RESULT_LINES: Record<AiProfileId, {
+  winTitle: string;
+  winBody: (playerName: string, nextOpponent?: typeof OPPONENTS[number]) => string;
+  lossTitle: string;
+  lossBody: (playerName: string) => string;
+  gameOverTitle: string;
+  gameOverBody: (playerName: string) => string;
+  trophy: string;
+  hazard: string;
+}> = {
+  goop: {
+    winTitle: 'GOOP CONTAINED',
+    winBody: (playerName, nextOpponent) => `${playerName} burned through the slime file. ${nextOpponent?.name ?? 'The next Shannon Knight'} steps out of the cabinet.`,
+    lossTitle: 'GOOP CLOGGED THE BOARD',
+    lossBody: (playerName) => `${playerName} got stuck in Goop's crooked trades. Scrub the pieces clean before the continue counter drains.`,
+    gameOverTitle: 'GOOP FLOODED THE RUN',
+    gameOverBody: (playerName) => `Goop sealed ${playerName}'s floppies in green static. Two lives spent, the ladder resets.`,
+    trophy: 'SLIME CACHE PURGED',
+    hazard: 'CORROSIVE FILE SPILL',
+  },
+  frostd4d: {
+    winTitle: 'FROSTD4D THAWED',
+    winBody: (playerName, nextOpponent) => `${playerName} cracked the frozen search tree. ${nextOpponent?.name ?? 'The next Shannon Knight'} is already sharpening the next board.`,
+    lossTitle: 'FROSTD4D FROZE THE CLOCK',
+    lossBody: (playerName) => `${playerName} slipped on a cold read and Frostd4d locked the rank. Continue before the board ices over.`,
+    gameOverTitle: 'FROZEN OUT',
+    gameOverBody: (playerName) => `Frostd4d put ${playerName}'s run on deep freeze. Two lives spent, the tower goes dark.`,
+    trophy: 'ICE LOCK BROKEN',
+    hazard: 'SUB-ZERO MATE NET',
+  },
+  razorblade: {
+    winTitle: 'RAZORBLADE DISARMED',
+    winBody: (playerName, nextOpponent) => `${playerName} dulled Razorblade's line and survived the sharp file. ${nextOpponent?.name ?? 'GORDO'} takes control of the final board.`,
+    lossTitle: 'RAZORBLADE CUT THE LINE',
+    lossBody: (playerName) => `${playerName} let one tempo hang and Razorblade split the endgame open. Continue before the damage sticks.`,
+    gameOverTitle: 'CUT FROM THE LADDER',
+    gameOverBody: (playerName) => `Razorblade carved ${playerName}'s last disk out of the tower. Two lives spent, no file recovered.`,
+    trophy: 'EDGE ROUTINE BLUNTED',
+    hazard: 'TACTICAL LACERATION',
+  },
+  gordo: {
+    winTitle: 'GORDO OVERRIDDEN',
+    winBody: (playerName) => `${playerName} beat GORDO, cleared the Cyber Chess cabinet, and pulled the Shannon Prime out of the tower.`,
+    lossTitle: 'GORDO HELD THE CORE',
+    lossBody: (playerName) => `${playerName} hit the final engine wall. Continue before GORDO seals the prime behind another search layer.`,
+    gameOverTitle: 'CORE LOCKED',
+    gameOverBody: (playerName) => `GORDO ended ${playerName}'s run at the tower core. Two lives spent, the final board reboots.`,
+    trophy: 'PRIME CORE CAPTURED',
+    hazard: 'ENGINE CORE LOCK',
+  },
+};
+
+const RESULT_BACKDROPS: Record<AiProfileId, { win: string; loss: string; gameOver: string }> = {
+  goop: {
+    win: 'media/results/goop-win.png',
+    loss: 'media/results/goop-loss.png',
+    gameOver: 'media/results/goop-game-over.png',
+  },
+  frostd4d: {
+    win: 'media/results/frostd4d-win.png',
+    loss: 'media/results/frostd4d-loss.png',
+    gameOver: 'media/results/frostd4d-game-over.png',
+  },
+  razorblade: {
+    win: 'media/results/razorblade-win.png',
+    loss: 'media/results/razorblade-loss.png',
+    gameOver: 'media/results/razorblade-game-over.png',
+  },
+  gordo: {
+    win: 'media/results/gordo-win.png',
+    loss: 'media/results/gordo-loss.png',
+    gameOver: 'media/results/gordo-game-over.png',
+  },
+};
+
+const FINAL_CLEAR_BACKDROP_SRC = 'media/results/final-clear-family-reunion.png';
+
+function getResultBackdrop(result: ResultState) {
+  if (result.kind === 'clear') return FINAL_CLEAR_BACKDROP_SRC;
+  const set = RESULT_BACKDROPS[result.opponent.id];
+  if (result.kind === 'win') return set.win;
+  if (result.kind === 'loss') return set.loss;
+  return set.gameOver;
+}
+
+function getResultPresentation(result: ResultState, playerName: string) {
+  const lines = RESULT_LINES[result.opponent.id];
+  const livesText = `${result.livesAfter} ${result.livesAfter === 1 ? 'life' : 'lives'}`;
+
+  if (result.kind === 'clear') {
+    return {
+      title: 'THANKS FOR PLAYING',
+      body: `Upon defeating GORDO, the Hero is happily reunited with his family. But in GORDO's lab... they learned at the end of all those calculations, there were MORE floppy discs, and within those discs were... MORE. He thought he had counted them all, but the Shannon Prime has evaded the light of truth and still remains in the cold calculating darkness.\n\nThanks for Playing\n\nGame Created by Frosty40 and Codex`,
+      badge: `${lines.trophy} / ${livesText.toUpperCase()} LEFT`,
+      status: 'THE PRIME STILL HIDES',
+    };
+  }
+
+  if (result.kind === 'win') {
+    return {
+      title: lines.winTitle,
+      body: lines.winBody(playerName, result.nextOpponent),
+      badge: lines.trophy,
+      status: 'ENEMY DEFEATED',
+    };
+  }
+
+  if (result.kind === 'game-over') {
+    return {
+      title: lines.gameOverTitle,
+      body: lines.gameOverBody(playerName),
+      badge: lines.hazard,
+      status: 'GAME OVER',
+    };
+  }
+
+  return {
+    title: lines.lossTitle,
+    body: lines.lossBody(playerName),
+    badge: lines.hazard,
+    status: 'ROUND LOST',
+  };
+}
+
 type LeaderboardEntry = {
   id: string;
   name: string;
@@ -128,8 +281,10 @@ type LeaderboardEntry = {
 
 type AudioEngine = {
   play: (name: 'menu' | 'select' | 'move' | 'capture' | 'check' | 'win' | 'loss' | 'reveal' | 'tick') => void;
+  setVolume: (volume: number) => void;
   stop: () => void;
 };
+type AudioMode = 'full' | 'sfx' | 'muted';
 
 function turnFromFen(fen: string) {
   try {
@@ -153,6 +308,28 @@ function readStoredName() {
   }
 }
 
+function readStoredAudioMode(): AudioMode {
+  try {
+    const value = window.localStorage.getItem(AUDIO_MODE_KEY);
+    return value === 'sfx' || value === 'muted' ? value : 'full';
+  } catch (_) {
+    return 'full';
+  }
+}
+
+function clampAudioVolume(value: number) {
+  if (!Number.isFinite(value)) return 100;
+  return Math.max(0, Math.min(200, Math.round(value)));
+}
+
+function readStoredAudioVolume() {
+  try {
+    return clampAudioVolume(Number(window.localStorage.getItem(AUDIO_VOLUME_KEY) || 100));
+  } catch (_) {
+    return 100;
+  }
+}
+
 function readLeaderboard(): LeaderboardEntry[] {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -165,24 +342,32 @@ function readLeaderboard(): LeaderboardEntry[] {
   }
 }
 
+function mediaVolume(volume: number) {
+  return Math.max(0, Math.min(1, clampAudioVolume(volume) / 100));
+}
+
 function persistLeaderboard(entries: LeaderboardEntry[]) {
   try {
     window.localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, MAX_LEADERBOARD)));
   } catch (_) {}
 }
 
-function createAudioEngine(): AudioEngine | null {
+function createAudioEngine(getAudioMode: () => AudioMode, getAudioVolume: () => number): AudioEngine | null {
   const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
   if (!AudioCtor) return null;
 
   const ctx = new AudioCtor();
   const master = ctx.createGain();
-  master.gain.value = 0.08;
+  const setMasterVolume = (volume: number) => {
+    master.gain.setTargetAtTime(0.08 * (clampAudioVolume(volume) / 100), ctx.currentTime, 0.01);
+  };
+  master.gain.value = 0.08 * (clampAudioVolume(getAudioVolume()) / 100);
   master.connect(ctx.destination);
   window.__chess.audio = {
     ready: true,
     last: window.__chess.audio?.last || null,
     played: window.__chess.audio?.played || 0,
+    volume: clampAudioVolume(getAudioVolume()),
   };
 
   const tone = (frequency: number, start: number, duration: number, type: OscillatorType, volume: number) => {
@@ -216,12 +401,24 @@ function createAudioEngine(): AudioEngine | null {
 
   return {
     play(name) {
+      if (getAudioMode() === 'muted') {
+        window.__chess.audio = {
+          ready: true,
+          last: 'muted',
+        played: window.__chess.audio?.played || 0,
+        mode: 'muted',
+        volume: clampAudioVolume(getAudioVolume()),
+      };
+      return;
+      }
       if (ctx.state === 'suspended') ctx.resume().catch(() => undefined);
       const now = ctx.currentTime;
       window.__chess.audio = {
         ready: true,
         last: name,
         played: (window.__chess.audio?.played || 0) + 1,
+        mode: getAudioMode(),
+        volume: clampAudioVolume(getAudioVolume()),
       };
       if (name === 'menu') {
         tone(880, now, 0.08, 'square', 0.22);
@@ -251,6 +448,10 @@ function createAudioEngine(): AudioEngine | null {
         tone(1200, now, 0.045, 'square', 0.13);
       }
     },
+    setVolume(volume) {
+      setMasterVolume(volume);
+      window.__chess.audio = { ...(window.__chess.audio || {}), volume: clampAudioVolume(volume) };
+    },
     stop() {
       master.gain.setTargetAtTime(0.0001, ctx.currentTime, 0.02);
       window.setTimeout(() => ctx.close().catch(() => undefined), 120);
@@ -263,14 +464,22 @@ function App() {
   const ref = useRef<Board3DHandle>(null);
   const aiBusyRef = useRef(false);
   const lastAiFenRef = useRef('');
+  const aiRequestRef = useRef(0);
   const resultHandledFenRef = useRef('');
   const runStartedAtRef = useRef(Date.now());
   const recordedResultKeyRef = useRef('');
+  const introVideoRef = useRef<HTMLVideoElement | null>(null);
   const introMusicRef = useRef<{ stop: () => void } | null>(null);
   const audioRef = useRef<AudioEngine | null>(null);
+  const loadingMusicRef = useRef<HTMLAudioElement | null>(null);
+  const endMusicRef = useRef<HTMLAudioElement | null>(null);
+  const announcerRef = useRef<HTMLAudioElement | null>(null);
+  const lastAnnouncedRef = useRef('');
+  const audioModeRef = useRef<AudioMode>(readStoredAudioMode());
+  const audioVolumeRef = useRef(readStoredAudioVolume());
   const previousFenRef = useRef(START);
   const previousContinueSecondsRef = useRef(CONTINUE_SECONDS);
-  const [screen, setScreen] = useState<'intro' | 'playing' | 'result'>('intro');
+  const [screen, setScreen] = useState<'intro' | 'loading' | 'playing' | 'result'>('intro');
   const [menuStep, setMenuStep] = useState<'video' | 'story' | 'profile' | 'side' | 'opponent'>('video');
   const [storyIndex, setStoryIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<AiProfileId>('goop');
@@ -278,7 +487,11 @@ function App() {
   const [playerName, setPlayerName] = useState(readStoredName);
   const [playerNameInput, setPlayerNameInput] = useState(readStoredName);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(readLeaderboard);
+  const [settingsOpen, setSettingsOpen] = useState(false);
+  const [audioMode, setAudioMode] = useState<AudioMode>(audioModeRef.current);
+  const [audioVolume, setAudioVolume] = useState(audioVolumeRef.current);
   const [introVideoReady, setIntroVideoReady] = useState(false);
+  const [introVideoStarted, setIntroVideoStarted] = useState(false);
   const [thinking, setThinking] = useState(false);
   const [lives, setLives] = useState(MAX_LIVES);
   const [continueSeconds, setContinueSeconds] = useState(CONTINUE_SECONDS);
@@ -383,22 +596,39 @@ function App() {
   useEffect(() => () => {
     introMusicRef.current?.stop();
     introMusicRef.current = null;
+    loadingMusicRef.current?.pause();
+    loadingMusicRef.current = null;
+    endMusicRef.current?.pause();
+    endMusicRef.current = null;
+    announcerRef.current?.pause();
+    announcerRef.current = null;
     audioRef.current?.stop();
     audioRef.current = null;
   }, []);
 
   useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== 'Escape') return;
+      event.preventDefault();
+      if (settingsOpen) {
+        audioRef.current?.play('menu');
+        setSettingsOpen(false);
+        return;
+      }
+      ensureAudioEngine()?.play('menu');
+      setSettingsOpen(true);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [settingsOpen]);
+
+  useEffect(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
       try {
-        const previous = new Chess(previousFen);
         const current = new Chess(gameState.fen);
-        const previousPieces = previous.board().flat().filter(Boolean).length;
-        const currentPieces = current.board().flat().filter(Boolean).length;
-        audioRef.current?.play(currentPieces < previousPieces ? 'capture' : current.isCheck() ? 'check' : 'move');
-      } catch (_) {
-        audioRef.current?.play('move');
-      }
+        if (current.isCheck()) audioRef.current?.play('check');
+      } catch (_) {}
       previousFenRef.current = gameState.fen;
     }
   }, [gameState.fen]);
@@ -418,8 +648,12 @@ function App() {
     lastAiFenRef.current = gameState.fen;
     setThinking(true);
 
-    const id = window.setTimeout(() => {
-      const move = chooseAiMove(gameState.fen, selected.id, aiColor);
+    const requestId = aiRequestRef.current + 1;
+    aiRequestRef.current = requestId;
+
+    const id = window.setTimeout(async () => {
+      const move = await chooseAiMove(gameState.fen, selected.id, aiColor);
+      if (requestId !== aiRequestRef.current || screen !== 'playing') return;
       if (!move) {
         aiBusyRef.current = false;
         setThinking(false);
@@ -435,7 +669,10 @@ function App() {
       );
     }, selected.delay);
 
-    return () => window.clearTimeout(id);
+    return () => {
+      window.clearTimeout(id);
+      aiRequestRef.current += 1;
+    };
   }, [aiColor, gameState.fen, screen, selected]);
 
   useEffect(() => {
@@ -469,11 +706,29 @@ function App() {
   }, [continueSeconds, resultState, screen]);
 
   useEffect(() => {
+    if (screen === 'result' && (resultState?.kind === 'clear' || resultState?.kind === 'game-over')) {
+      if (!endMusicRef.current) {
+        endMusicRef.current = playClip(END_SCREEN_MUSIC_SRC);
+        window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: END_SCREEN_MUSIC_SRC };
+      }
+      return;
+    }
+    endMusicRef.current?.pause();
+    endMusicRef.current = null;
+    window.__chess.endMusic = { active: false, src: END_SCREEN_MUSIC_SRC };
+  }, [resultState?.kind, screen]);
+
+  useEffect(() => {
     if (screen === 'result' && resultState?.kind === 'loss' && continueSeconds !== previousContinueSecondsRef.current) {
       audioRef.current?.play('tick');
     }
     previousContinueSecondsRef.current = continueSeconds;
   }, [continueSeconds, resultState?.kind, screen]);
+
+  useEffect(() => {
+    if (screen === 'intro' && menuStep !== 'video') startLoadingMusic();
+    else if (screen !== 'intro') stopLoadingMusic();
+  }, [audioMode, audioVolume, menuStep, screen]);
 
   useEffect(() => {
     window.__chess.campaign = {
@@ -486,6 +741,9 @@ function App() {
       whiteName,
       blackName,
       leaderboard,
+      audioMode,
+      audioVolume,
+      settingsOpen,
       audioReady: Boolean(audioRef.current),
     };
     window.__chess.forceWin = () => {
@@ -514,10 +772,11 @@ function App() {
       audioRef.current?.play(forcedResult.kind === 'game-over' ? 'loss' : 'tick');
       setScreen('result');
     };
-  }, [blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, whiteName]);
+  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, whiteName]);
 
   const resetGame = () => {
     aiBusyRef.current = false;
+    aiRequestRef.current += 1;
     lastAiFenRef.current = '';
     resultHandledFenRef.current = '';
     setThinking(false);
@@ -525,27 +784,172 @@ function App() {
   };
 
   const startGame = () => {
+    stopLoadingMusic();
+    endMusicRef.current?.pause();
+    endMusicRef.current = null;
+    announcerRef.current?.pause();
     setScreen('playing');
     setResultState(null);
     resetGame();
   };
 
+  const startOpponentLoading = () => {
+    stopLoadingMusic();
+    endMusicRef.current?.pause();
+    endMusicRef.current = null;
+    ensureAudioEngine()?.play('reveal');
+    announcerRef.current?.pause();
+    setScreen('loading');
+    setResultState(null);
+
+    const clip = playAnnouncer(selected.introAudio);
+    const fallback = window.setTimeout(() => {
+      if (window.__chess.campaign?.screen === 'loading' && window.__chess.campaign?.selectedId === selected.id) {
+        startGame();
+      }
+    }, 4200);
+
+    if (clip) {
+      clip.onended = () => {
+        window.clearTimeout(fallback);
+        if (window.__chess.campaign?.screen === 'loading' && window.__chess.campaign?.selectedId === selected.id) {
+          startGame();
+        }
+      };
+    }
+  };
+
   const openMenu = () => {
+    endMusicRef.current?.pause();
+    endMusicRef.current = null;
     setMenuStep('video');
     setLives(MAX_LIVES);
     setResultState(null);
     setScreen('intro');
   };
 
+  const ensureAudioEngine = () => {
+    if (!audioRef.current) audioRef.current = createAudioEngine(() => audioModeRef.current, () => audioVolumeRef.current);
+    return audioRef.current;
+  };
+
+  const updateAudioMode = (mode: AudioMode) => {
+    audioModeRef.current = mode;
+    setAudioMode(mode);
+    try {
+      window.localStorage.setItem(AUDIO_MODE_KEY, mode);
+    } catch (_) {}
+    if (mode !== 'full') stopIntroMusic();
+    if (mode === 'muted') stopLoadingMusic();
+    else startLoadingMusic();
+    if (mode !== 'muted') ensureAudioEngine()?.play('select');
+  };
+
+  const updateAudioVolume = (volume: number) => {
+    const nextVolume = clampAudioVolume(volume);
+    audioVolumeRef.current = nextVolume;
+    setAudioVolume(nextVolume);
+    try {
+      window.localStorage.setItem(AUDIO_VOLUME_KEY, String(nextVolume));
+    } catch (_) {}
+    ensureAudioEngine()?.setVolume(nextVolume);
+    if (loadingMusicRef.current) loadingMusicRef.current.volume = mediaVolume(nextVolume) * 0.9;
+    if (announcerRef.current) announcerRef.current.volume = mediaVolume(nextVolume);
+    if (audioModeRef.current !== 'muted') audioRef.current?.play('tick');
+  };
+
+  const playClip = (src: string, options: { loop?: boolean; music?: boolean } = {}) => {
+    if (audioModeRef.current === 'muted') return null;
+    if (options.music && audioModeRef.current !== 'full') return null;
+    const audio = new Audio(src);
+    audio.loop = Boolean(options.loop);
+    audio.volume = mediaVolume(audioVolumeRef.current) * (options.music ? 0.45 : 1);
+    audio.play().catch(() => undefined);
+    return audio;
+  };
+
+  const stopLoadingMusic = () => {
+    loadingMusicRef.current?.pause();
+    loadingMusicRef.current = null;
+    window.__chess.loadingMusic = { active: false, src: LOADING_MUSIC_SRC };
+  };
+
+  const startLoadingMusic = () => {
+    if (audioModeRef.current === 'muted') return;
+    let clip = loadingMusicRef.current;
+    if (!clip) {
+      clip = new Audio(LOADING_MUSIC_SRC);
+      clip.loop = true;
+      clip.preload = 'auto';
+      loadingMusicRef.current = clip;
+    }
+    clip.volume = mediaVolume(audioVolumeRef.current) * 0.9;
+    window.__chess.loadingMusic = {
+      active: !clip.paused,
+      attempted: true,
+      blocked: false,
+      src: LOADING_MUSIC_SRC,
+    };
+    clip.play()
+      .then(() => {
+        window.__chess.loadingMusic = {
+          active: true,
+          attempted: true,
+          blocked: false,
+          src: LOADING_MUSIC_SRC,
+        };
+      })
+      .catch(() => {
+        window.__chess.loadingMusic = {
+          active: false,
+          attempted: true,
+          blocked: true,
+          src: LOADING_MUSIC_SRC,
+        };
+      });
+  };
+
+  const playAnnouncer = (src: string) => {
+    if (audioModeRef.current === 'muted') return null;
+    announcerRef.current?.pause();
+    announcerRef.current = playClip(src);
+    window.__chess.announcer = {
+      src,
+      played: (window.__chess.announcer?.played || 0) + 1,
+      selectedId,
+    };
+    return announcerRef.current;
+  };
+
+  useEffect(() => {
+    ensureAudioEngine();
+
+    const unlockAudio = () => {
+      ensureAudioEngine()?.play('menu');
+      if (screen === 'intro' && (menuStep !== 'video' || introVideoStarted)) startLoadingMusic();
+    };
+
+    window.addEventListener('pointerdown', unlockAudio, { passive: true });
+    window.addEventListener('keydown', unlockAudio);
+    window.addEventListener('touchstart', unlockAudio, { passive: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', unlockAudio);
+      window.removeEventListener('keydown', unlockAudio);
+      window.removeEventListener('touchstart', unlockAudio);
+    };
+  }, [introVideoStarted, menuStep, screen]);
+
   const startIntroMusic = () => {
-    if (!audioRef.current) audioRef.current = createAudioEngine();
+    if (audioModeRef.current !== 'full') return;
+    ensureAudioEngine();
     if (introMusicRef.current) return;
     const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
     if (!AudioCtor) return;
 
     const ctx = new AudioCtor();
     const master = ctx.createGain();
-    master.gain.value = 0.05;
+    master.gain.value = 0.05 * (audioVolumeRef.current / 100);
     master.connect(ctx.destination);
 
     const melody = [659, 784, 880, 988, 880, 784, 659, 523, 587, 659, 784, 659, 587, 523, 440, 392];
@@ -595,8 +999,21 @@ function App() {
 
   const beginIntroStory = () => {
     setStoryIndex(0);
-    startIntroMusic();
+    ensureAudioEngine();
+    lastAnnouncedRef.current = '';
+    startLoadingMusic();
     setMenuStep('story');
+  };
+
+  const startIntroSequence = () => {
+    ensureAudioEngine()?.play('menu');
+    startLoadingMusic();
+    setIntroVideoStarted(true);
+    const video = introVideoRef.current;
+    if (video) {
+      video.currentTime = 0;
+      video.play().catch(() => undefined);
+    }
   };
 
   const finishIntroStory = () => {
@@ -631,19 +1048,19 @@ function App() {
   };
 
   const startCampaign = () => {
+    stopLoadingMusic();
     setLives(MAX_LIVES);
     runStartedAtRef.current = Date.now();
     recordedResultKeyRef.current = '';
     previousFenRef.current = START;
-    audioRef.current?.play('reveal');
-    startGame();
+    startOpponentLoading();
   };
 
   const continueAfterLoss = () => {
     if (!resultState || resultState.kind !== 'loss') return;
     setLives(resultState.livesAfter);
     audioRef.current?.play('menu');
-    startGame();
+    startOpponentLoading();
   };
 
   const advanceAfterWin = () => {
@@ -654,14 +1071,19 @@ function App() {
     }
 
     if (resultState.nextOpponent) {
+      aiRequestRef.current += 1;
       setSelectedId(resultState.nextOpponent.id);
+      lastAnnouncedRef.current = '';
       audioRef.current?.play('reveal');
-      window.setTimeout(startGame, 0);
+      setResultState(null);
+      setScreen('intro');
+      setMenuStep('opponent');
     }
   };
 
   const restartCampaign = () => {
     setSelectedId(OPPONENTS[0].id);
+    lastAnnouncedRef.current = '';
     setLives(MAX_LIVES);
     setResultState(null);
     setContinueSeconds(CONTINUE_SECONDS);
@@ -669,7 +1091,8 @@ function App() {
     recordedResultKeyRef.current = '';
     previousFenRef.current = START;
     audioRef.current?.play('menu');
-    startGame();
+    setScreen('intro');
+    setMenuStep('opponent');
   };
 
   const clearLeaderboard = () => {
@@ -677,6 +1100,9 @@ function App() {
     persistLeaderboard([]);
     audioRef.current?.play('menu');
   };
+
+  const resultPresentation = resultState ? getResultPresentation(resultState, playerName) : null;
+  const resultBackdrop = resultState ? getResultBackdrop(resultState) : '';
 
   return (
     <>
@@ -686,37 +1112,57 @@ function App() {
         whiteName={whiteName}
         blackName={blackName}
         inputEnabled={inputEnabled}
+        enemyTheme={selected.theme}
+        playerColor={playerColor}
         onGameStateChange={updateGameState}
+        onMoveStart={() => {
+          playClip(PIECE_SLIDE_SFX_SRC);
+        }}
       />
 
+      {!settingsOpen && screen === 'intro' && menuStep === 'video' && (
+        <button type="button" className="settings-launcher" onClick={() => {
+          ensureAudioEngine()?.play('menu');
+          setSettingsOpen(true);
+        }}>
+          SETTINGS
+        </button>
+      )}
+
       {screen === 'intro' && (
-        <div className="cyber-menu">
-          <div className="cyber-panel">
+        <div className={
+          'cyber-menu' +
+          (menuStep === 'video' ? ' video-menu' : '') +
+          (menuStep === 'opponent' ? ' tower-menu' : '') +
+          (menuStep === 'story' ? ' story-menu' : '') +
+          (menuStep === 'profile' ? ' profile-menu' : '') +
+          (menuStep === 'side' ? ' side-menu' : '')
+        }>
+          <div className={
+            'cyber-panel' +
+            (menuStep === 'video' ? ' video-panel' : '') +
+            (menuStep === 'opponent' ? ' tower-panel' : '') +
+            (menuStep === 'story' ? ' story-panel' : '') +
+            (menuStep === 'profile' ? ' profile-panel-shell' : '') +
+            (menuStep === 'side' ? ' side-panel' : '')
+          }>
             {menuStep === 'video' && (
               <div className="menu-step menu-step-video">
-                <div className={'intro-video-shell' + (introVideoReady ? ' ready' : '')}>
-                  <video
-                    autoPlay
-                    muted
-                    playsInline
-                    preload="metadata"
-                    onCanPlay={() => setIntroVideoReady(true)}
-                    onError={() => setIntroVideoReady(false)}
-                  >
-                    <source src={INTRO_MP4_SRC} type="video/mp4" />
-                  </video>
-                  {!introVideoReady && <span>INTRO MP4 SLOT</span>}
+                <div className="intro-video-shell ready">
+                  <img className="intro-poster" src={HEADER_IMAGE_SRC} alt="" />
                 </div>
                 <button type="button" className="cyber-start" onClick={beginIntroStory}>
-                  CLICK TO ENTER
+                  ANY BUTTON
                 </button>
               </div>
             )}
 
             {menuStep === 'story' && (
               <div className="menu-step story-step">
-                <img className="story-art" src={INTRO_STORY[storyIndex].image} alt="" />
-                <div className="story-scanline" />
+                <div className="story-image-frame">
+                  <img className="story-art" src={INTRO_STORY[storyIndex].image} alt="" />
+                  <div className="story-scanline" />
+                </div>
                 <div className="story-copy">
                   <span>{INTRO_STORY[storyIndex].kicker}</span>
                   <h2>{INTRO_STORY[storyIndex].title}</h2>
@@ -739,6 +1185,8 @@ function App() {
 
             {menuStep === 'profile' && (
               <div className="menu-step profile-step">
+                <img className="profile-bg" src={PROFILE_BG_SRC} alt="" />
+                <div className="profile-vignette" />
                 <div className="profile-panel">
                   <span className="profile-kicker">PLAYER REGISTRATION</span>
                   <label htmlFor="player-name">Enter your fighter name</label>
@@ -755,103 +1203,53 @@ function App() {
                     />
                     <button type="button" onClick={savePlayerProfile}>LOCK IN</button>
                   </div>
-                  <div className="leaderboard-panel">
-                    <div className="leaderboard-heading">
-                      <strong>LOCAL LEADERBOARD</strong>
-                      {leaderboard.length > 0 && <button type="button" onClick={clearLeaderboard}>CLEAR</button>}
-                    </div>
-                    {leaderboard.length === 0 ? (
-                      <p>No local scores yet.</p>
-                    ) : (
-                      <ol>
-                        {leaderboard.map((entry) => (
-                          <li key={entry.id}>
-                            <span>{entry.name}</span>
-                            <strong>{entry.score}</strong>
-                            <em>{entry.outcome === 'clear' ? 'CLEAR' : `${entry.wins} WIN${entry.wins === 1 ? '' : 'S'}`}</em>
-                          </li>
-                        ))}
-                      </ol>
-                    )}
-                  </div>
                 </div>
               </div>
             )}
 
             {menuStep === 'side' && (
-              <div className="menu-step">
-                <div className="cyber-hero">
-                  <img className="cyber-hero-bg" src={HEADER_IMAGE_SRC} alt="" />
-                  <div className="hero-color-overlay">
-                    <div className="color-picker" role="group" aria-label="Choose your color">
-                      <button
-                        type="button"
-                        className={playerColor === 'w' ? 'selected' : ''}
-                        onClick={() => {
-                          audioRef.current?.play('select');
-                          setPlayerColor('w');
-                        }}
-                      >
-                        Play White
-                      </button>
-                      <button
-                        type="button"
-                        className={playerColor === 'b' ? 'selected' : ''}
-                        onClick={() => {
-                          audioRef.current?.play('select');
-                          setPlayerColor('b');
-                        }}
-                      >
-                        Play Black
-                      </button>
-                    </div>
+              <div className="menu-step side-step">
+                <img className="side-bg" src={SIDE_SELECTION_BG_SRC} alt="" />
+                <div className="side-vignette" />
+                <div className="side-footer">
+                  <button type="button" onClick={() => {
+                    audioRef.current?.play('menu');
+                    setMenuStep('profile');
+                  }}>BACK</button>
+                  <div className="color-picker" role="group" aria-label="Choose your color">
+                    <button
+                      type="button"
+                      className={playerColor === 'w' ? 'selected' : ''}
+                      onClick={() => {
+                        setPlayerColor('w');
+                      }}
+                    >
+                      Play White
+                    </button>
+                    <button
+                      type="button"
+                      className={playerColor === 'b' ? 'selected' : ''}
+                      onClick={() => {
+                        setPlayerColor('b');
+                      }}
+                    >
+                      Play Black
+                    </button>
                   </div>
+                  <button type="button" className="selected" onClick={() => {
+                    audioRef.current?.play('menu');
+                    setMenuStep('opponent');
+                  }}>
+                    CONTINUE
+                  </button>
                 </div>
-                <div className="intro-copy">
-                  <p>
-                    Cyber Chess is a neon board duel against local machine personalities. Claim white or black, then
-                    play directly on the 3D board while the agent answers with its own tempo, search style, and appetite
-                    for risk.
-                  </p>
-                </div>
-                <button type="button" className="cyber-start" onClick={() => {
-                  audioRef.current?.play('menu');
-                  setMenuStep('opponent');
-                }}>
-                  CONTINUE
-                </button>
               </div>
             )}
 
             {menuStep === 'opponent' && (
-              <div className="menu-step tower-step">
-                <img className="tower-bg" src={FLOPPY_TOWER_SRC} alt="" />
-                <div className="tower-overlay" />
-                <img className={'tower-hero tower-hero-' + selected.theme} src={selected.hero} alt="" />
-                <div className="tower-copy">
-                  <span>FLOPPY TOWER ASCENT</span>
-                  <h2>FLOOR {selectedIndex + 1} / {OPPONENTS.length}</h2>
-                  <p>{playerName}: {playerSideName} / {selected.name}: {agentSideName}</p>
-                </div>
-                <div className="tower-slots" aria-label="Floppy tower opponents">
-                  {OPPONENTS.map((opponent, index) => (
-                    <div
-                      key={opponent.id}
-                      className={
-                        'tower-opponent tower-opponent-' + opponent.id +
-                        (index === selectedIndex ? ' active' : '') +
-                        (index < selectedIndex ? ' cleared' : '')
-                      }
-                    >
-                      <img src={opponent.avatar} alt="" />
-                      <div>
-                        <span>{index < selectedIndex ? 'CLEARED' : index === selectedIndex ? 'CURRENT FLOOR' : 'LOCKED ABOVE'}</span>
-                        <strong>{opponent.name}</strong>
-                        <em>{opponent.difficulty} / {opponent.tagline}</em>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <div className="menu-step tower-step">
+                  <img className="tower-bg" src={FLOPPY_TOWER_SRC} alt="" />
+                  <div className="tower-overlay" />
                 <div className="tower-actions">
                   <button type="button" onClick={() => {
                     audioRef.current?.play('menu');
@@ -861,6 +1259,18 @@ function App() {
                 </div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {screen === 'loading' && (
+        <div className={'enemy-load-screen enemy-theme-' + selected.theme}>
+          <img className="enemy-load-bg" src={selected.hero} alt="" />
+          <div className="enemy-load-vignette" />
+          <div className="enemy-load-copy">
+            <span>CYBER CHESS LOADING</span>
+            <h1>{selected.name}</h1>
+            <p>{selected.tagline}</p>
           </div>
         </div>
       )}
@@ -883,34 +1293,44 @@ function App() {
         </div>
       )}
 
-      {screen === 'result' && resultState && (
+      {screen === 'result' && resultState && resultPresentation && (
         <div className={'result-screen result-screen-' + resultState.kind + ' enemy-theme-' + resultState.opponent.theme}>
           <img
             className="result-portrait"
-            src={resultState.kind === 'win' || resultState.kind === 'clear' ? VICTORY_PORTRAIT_SRC : DEFEAT_PORTRAIT_SRC}
+            src={resultBackdrop}
             alt=""
           />
           <div className="result-vignette" />
           <div className="result-copy">
-            <span className="result-kicker">CYBER CHESS LADDER</span>
-            <h1>
-              {resultState.kind === 'win' && 'YOU WIN'}
-              {resultState.kind === 'clear' && 'LADDER CLEAR'}
-              {resultState.kind === 'loss' && 'YOU LOSE'}
-              {resultState.kind === 'game-over' && 'GAME OVER'}
-            </h1>
-            <p>
-              {resultState.kind === 'win' && `${playerName} dropped ${resultState.opponent.name}. ${resultState.nextOpponent?.name} steps into the board.`}
-              {resultState.kind === 'clear' && `${playerName} beat Razorblade and cleared the Cyber Chess cabinet with ${lives} ${lives === 1 ? 'life' : 'lives'} left.`}
-              {resultState.kind === 'loss' && `${resultState.opponent.name} took the round from ${playerName}. Continue before the counter hits zero.`}
-              {resultState.kind === 'game-over' && `${resultState.opponent.name} ended ${playerName}'s run. Two lives spent.`}
-            </p>
-            <div className="result-stats">
-              <span>PLAYER: {playerName}</span>
-              <span>OPPONENT: {resultState.opponent.name}</span>
-              <span>LIVES: {resultState.livesAfter}</span>
-              {resultState.kind === 'loss' && <span>CONTINUE: {continueSeconds}</span>}
-            </div>
+            <span className="result-kicker">{resultPresentation.status}</span>
+            <h1>{resultPresentation.title}</h1>
+            <p>{resultPresentation.body}</p>
+            {resultState.kind === 'clear' && (
+              <div className="credits-video-shell">
+                <video controls preload="metadata">
+                  <source src={INTRO_MP4_SRC} type="video/mp4" />
+                </video>
+              </div>
+            )}
+            {resultState.kind !== 'clear' && (
+              <div className="result-stats">
+                <span>PLAYER: {playerName}</span>
+                <span>OPPONENT: {resultState.opponent.name}</span>
+                <span>{resultPresentation.badge}</span>
+                <span>LIVES: {resultState.livesAfter}</span>
+                {resultState.kind === 'loss' && <span>CONTINUE: {continueSeconds}</span>}
+              </div>
+            )}
+            {resultState.kind !== 'clear' && (
+              <div className="result-enemy-card">
+                <img src={resultState.opponent.avatar} alt="" />
+                <div>
+                  <span>{resultState.kind === 'win' ? 'DEFEATED ENEMY' : 'ACTIVE THREAT'}</span>
+                  <strong>{resultState.opponent.name}</strong>
+                  <em>{resultState.opponent.difficulty} / {resultState.opponent.tagline}</em>
+                </div>
+              </div>
+            )}
             {resultState.kind === 'win' && resultState.nextOpponent && (
               <div className="next-opponent-panel">
                 <img src={resultState.nextOpponent.avatar} alt="" />
@@ -944,6 +1364,54 @@ function App() {
               )}
               <button type="button" onClick={openMenu}>MENU</button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div className="settings-screen" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+          <img className="settings-bg" src={SETTINGS_BG_SRC} alt="" />
+          <div className="settings-vignette" />
+          <div className="settings-panel">
+            <span className="settings-kicker">SYSTEM OPTIONS</span>
+            <h2 id="settings-title">SETTINGS</h2>
+            <div className="settings-group">
+              <strong>AUDIO</strong>
+              <div className="settings-options" role="group" aria-label="Audio mode">
+                <button type="button" className={audioMode === 'full' ? 'selected' : ''} onClick={() => updateAudioMode('full')}>
+                  FULL AUDIO
+                </button>
+                <button type="button" className={audioMode === 'sfx' ? 'selected' : ''} onClick={() => updateAudioMode('sfx')}>
+                  SFX ONLY
+                </button>
+                <button type="button" className={audioMode === 'muted' ? 'selected' : ''} onClick={() => updateAudioMode('muted')}>
+                  MUTED
+                </button>
+              </div>
+            </div>
+            <div className="settings-readout">
+              <span>MONIKER: ONLINE</span>
+              <span>AUDIO: {audioMode === 'full' ? 'FULL AUDIO' : audioMode === 'sfx' ? 'SFX ONLY' : 'MUTED'}</span>
+              <span>VOLUME: {audioVolume}%</span>
+            </div>
+            <label className="settings-volume" htmlFor="audio-volume">
+              <span>OUTPUT LEVEL</span>
+              <input
+                id="audio-volume"
+                type="range"
+                min="0"
+                max="200"
+                step="5"
+                value={audioVolume}
+                onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
+              />
+            </label>
+            <button type="button" className="settings-close" onClick={() => {
+              audioRef.current?.play('menu');
+              setSettingsOpen(false);
+            }}>
+              CLOSE
+            </button>
           </div>
         </div>
       )}

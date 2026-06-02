@@ -1,6 +1,7 @@
 import type * as THREE from 'three';
 import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
 import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import type { Board3DEnemyTheme } from './floor';
 
 export interface Board3DHandle {
   applyMove(from: string, to: string, isCapture: boolean, flags: string, promotion?: string, speedMultiplier?: number): void;
@@ -21,8 +22,11 @@ export interface SceneContext {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
   controls: OrbitControls;
+  tick(): void;
   dispose(): void;
 }
+
+export type { Board3DEnemyTheme };
 
 export interface PieceInstance {
   group: THREE.Group;

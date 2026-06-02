@@ -1,19 +1,22 @@
 'use client';
 
 import { forwardRef, useImperativeHandle } from 'react';
-import type { Board3DGameState, Board3DHandle } from './board3d/types';
+import type { Board3DEnemyTheme, Board3DGameState, Board3DHandle } from './board3d/types';
 import { useBoard3D } from './board3d/useBoard3D';
 
 interface Board3DSceneProps {
   whiteName?: string;
   blackName?: string;
   inputEnabled?: boolean;
+  enemyTheme?: Board3DEnemyTheme;
+  playerColor?: 'w' | 'b';
   onGameStateChange?: (state: Board3DGameState) => void;
+  onMoveStart?: (isCapture: boolean) => void;
 }
 
 export const Board3DScene = forwardRef<Board3DHandle, Board3DSceneProps>(
-  ({ whiteName = 'White AI', blackName = 'Black AI', inputEnabled = true, onGameStateChange }, ref) => {
-    const { canvasRef, handleRef } = useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled);
+  ({ whiteName = 'White AI', blackName = 'Black AI', inputEnabled = true, enemyTheme = 'goop', playerColor = 'w', onGameStateChange, onMoveStart }, ref) => {
+    const { canvasRef, handleRef } = useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled, enemyTheme, playerColor, onMoveStart);
 
     useImperativeHandle(ref, () => ({
       applyMove: (...args) => handleRef.current.applyMove(...args),

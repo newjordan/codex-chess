@@ -4,7 +4,7 @@ import { useEffect, useRef } from 'react';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import * as THREE from 'three';
-import type { Board3DGameState, Board3DHandle, PieceInstance } from './types';
+import type { Board3DEnemyTheme, Board3DGameState, Board3DHandle, PieceInstance } from './types';
 import { setupScene } from './scene';
 import { createBoard } from './board';
 import { loadPieceGeometries, initPiecesFromFen, clearPieces, type Geometries } from './pieces';
@@ -28,11 +28,15 @@ export function useBoard3D(
   whiteName: string,
   blackName: string,
   onGameStateChange?: (state: Board3DGameState) => void,
-  inputEnabled = true
+  inputEnabled = true,
+  enemyTheme: Board3DEnemyTheme = 'goop',
+  playerColor: 'w' | 'b' = 'w',
+  onMoveStart?: (isCapture: boolean) => void
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameStateCallbackRef = useRef(onGameStateChange);
   const inputEnabledRef = useRef(inputEnabled);
+  const moveStartCallbackRef = useRef(onMoveStart);
   const handleRef = useRef<Board3DHandle>({
     applyMove: () => {},
     resetToPosition: () => {},
@@ -42,12 +46,13 @@ export function useBoard3D(
 
   gameStateCallbackRef.current = onGameStateChange;
   inputEnabledRef.current = inputEnabled;
+  moveStartCallbackRef.current = onMoveStart;
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = setupScene(canvas);
+    const ctx = setupScene(canvas, enemyTheme, playerColor);
     const { boardGroup } = createBoard(ctx.scene, whiteName, blackName);
     const piecesContainer = new THREE.Group();
     ctx.scene.add(piecesContainer);
@@ -399,12 +404,15 @@ export function useBoard3D(
                     resolve();
                     return;
                   }
+                  moveStartCallbackRef.current?.(isCapture);
                   animateJump(actor, to, effectsGroup, finishActorMove);
                 });
               } else {
+                moveStartCallbackRef.current?.(isCapture);
                 animateJump(actor, to, effectsGroup, finishActorMove);
               }
             } else {
+              moveStartCallbackRef.current?.(isCapture);
               animateJump(actor, to, effectsGroup, finishActorMove);
             }
           });
@@ -434,6 +442,7 @@ export function useBoard3D(
     let animId: number;
     const tick = () => {
       animId = requestAnimationFrame(tick);
+      ctx.tick();
       ctx.controls.update();
       pieceMap.forEach(inst => {
         inst.haloGroup.position.x = inst.group.position.x;
@@ -526,6 +535,26 @@ export function useBoard3D(
       emitGameState(`${piece.color === 'w' ? 'White' : 'Black'} selected ${square}`);
     };
 
+    const getCastlingMoveForRookClick = (square: string) => {
+      if (!selectedSquare) return null;
+
+      const selectedPiece = logicalChess.get(selectedSquare as Square);
+      const clickedPiece = logicalChess.get(square as Square);
+      if (
+        selectedPiece?.type !== 'k' ||
+        !clickedPiece ||
+        clickedPiece.type !== 'r' ||
+        clickedPiece.color !== selectedPiece.color ||
+        selectedPiece.color !== logicalChess.turn() ||
+        selectedSquare[1] !== square[1]
+      ) {
+        return null;
+      }
+
+      const castleFlag = square[0] > selectedSquare[0] ? 'k' : 'q';
+      return selectedMoves.find((move) => move.from === selectedSquare && move.flags.includes(castleFlag)) ?? null;
+    };
+
     const playSelectedMove = (move: VerboseMove) => {
       inputLocked = true;
       clearSelectionVisuals();
@@ -588,6 +617,12 @@ export function useBoard3D(
       const square = eventToSquare(event);
       if (!square) {
         clearSelection();
+        return;
+      }
+
+      const castlingMove = getCastlingMoveForRookClick(square);
+      if (castlingMove) {
+        playSelectedMove(castlingMove);
         return;
       }
 

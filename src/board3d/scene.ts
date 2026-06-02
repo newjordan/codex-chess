@@ -4,7 +4,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import type { SceneContext } from './types';
+import { createCellWaveEnvironment } from './floor';
+import type { Board3DEnemyTheme, SceneContext } from './types';
 
 const DotMatrixShader = {
   uniforms: {
@@ -32,7 +33,11 @@ const DotMatrixShader = {
   `,
 };
 
-export function setupScene(canvas: HTMLCanvasElement): SceneContext {
+export function setupScene(
+  canvas: HTMLCanvasElement,
+  enemyTheme: Board3DEnemyTheme = 'goop',
+  playerColor: 'w' | 'b' = 'w'
+): SceneContext {
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x000510, 0.015);
 
@@ -40,7 +45,9 @@ export function setupScene(canvas: HTMLCanvasElement): SceneContext {
   const h = canvas.clientHeight || 600;
 
   const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
-  camera.position.set(0, 12, 16);
+  const playerSideZ = playerColor === 'w' ? -1 : 1;
+  camera.position.set(0, 18, playerSideZ * 13.5);
+  camera.lookAt(0, 0, 0);
 
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
   renderer.setSize(w, h);
@@ -52,9 +59,11 @@ export function setupScene(canvas: HTMLCanvasElement): SceneContext {
   controls.enableDamping = true;
   controls.dampingFactor = 0.05;
   controls.maxPolarAngle = Math.PI / 2.1;
+  controls.minPolarAngle = Math.PI / 7;
   controls.minDistance = 8;
-  controls.maxDistance = 20;
+  controls.maxDistance = 28;
   controls.target.set(0, 0, 0);
+  controls.update();
 
   const composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
@@ -78,6 +87,10 @@ export function setupScene(canvas: HTMLCanvasElement): SceneContext {
   starsGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(starPositions), 3));
   scene.add(new THREE.Points(starsGeo, new THREE.PointsMaterial({ size: 0.08, color: 0x66aaff, transparent: true, opacity: 0.4 })));
 
+  const cellWaveEnvironment = createCellWaveEnvironment(enemyTheme);
+  scene.add(cellWaveEnvironment.mesh);
+  const clock = new THREE.Clock();
+
   const ro = new ResizeObserver(() => {
     const rw = canvas.clientWidth;
     const rh = canvas.clientHeight;
@@ -96,9 +109,13 @@ export function setupScene(canvas: HTMLCanvasElement): SceneContext {
     renderer,
     composer,
     controls,
+    tick() {
+      cellWaveEnvironment.tick(clock.getDelta());
+    },
     dispose() {
       ro.disconnect();
       controls.dispose();
+      cellWaveEnvironment.dispose();
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
       renderer.dispose();

@@ -1,6 +1,6 @@
 import { Chess } from 'chess.js';
 
-export type AiProfileId = 'goop' | 'frostd4d' | 'razorblade';
+export type AiProfileId = 'goop' | 'frostd4d' | 'razorblade' | 'gordo';
 export type PlayerColor = 'w' | 'b';
 
 export type AiMove = {
@@ -131,10 +131,59 @@ function chooseHard(game: Chess, perspective: PlayerColor): AiMove | null {
   return sample(bestMoves);
 }
 
-export function chooseAiMove(fen: string, profile: AiProfileId, aiColor: PlayerColor = 'b'): AiMove | null {
+function moveFromUci(game: Chess, uci: string): AiMove | null {
+  if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/i.test(uci)) return null;
+  const from = uci.slice(0, 2);
+  const to = uci.slice(2, 4);
+  const promotion = uci[4]?.toLowerCase();
+  return legalMoves(game).find((move) => {
+    if (move.from !== from || move.to !== to) return false;
+    return !promotion || move.promotion === promotion;
+  }) ?? null;
+}
+
+function chooseLozza(fen: string, aiColor: PlayerColor): Promise<AiMove | null> {
+  const game = new Chess(fen);
+  if (game.isGameOver() || game.turn() !== aiColor) return Promise.resolve(null);
+  const fallback = () => chooseHard(new Chess(fen), aiColor);
+
+  if (typeof Worker === 'undefined') return Promise.resolve(fallback());
+
+  return new Promise((resolve) => {
+    let worker: Worker | null = null;
+    let settled = false;
+
+    const finish = (move: AiMove | null) => {
+      if (settled) return;
+      settled = true;
+      if (worker) worker.terminate();
+      resolve(move ?? fallback());
+    };
+
+    try {
+      worker = new Worker('media/engines/lozza.js');
+      worker.onmessage = (event: MessageEvent<string>) => {
+        const line = String(event.data).trim();
+        const match = /^bestmove\s+(\S+)/i.exec(line);
+        if (match) finish(moveFromUci(game, match[1]));
+      };
+      worker.onerror = () => finish(null);
+      worker.postMessage('uci');
+      worker.postMessage('isready');
+      worker.postMessage(`position fen ${fen}`);
+      worker.postMessage('go depth 5');
+      window.setTimeout(() => finish(null), 5000);
+    } catch (_) {
+      finish(null);
+    }
+  });
+}
+
+export async function chooseAiMove(fen: string, profile: AiProfileId, aiColor: PlayerColor = 'b'): Promise<AiMove | null> {
   const game = new Chess(fen);
   if (game.isGameOver() || game.turn() !== aiColor) return null;
   if (profile === 'goop') return chooseEasy(game);
   if (profile === 'frostd4d') return chooseMedium(game, aiColor);
+  if (profile === 'gordo') return chooseLozza(fen, aiColor);
   return chooseHard(game, aiColor);
 }

@@ -15,6 +15,7 @@ const mimeTypes = new Map([
   ['.jpg', 'image/jpeg'],
   ['.jpeg', 'image/jpeg'],
   ['.ttf', 'font/ttf'],
+  ['.mp3', 'audio/mpeg'],
   ['.mp4', 'video/mp4'],
   ['.fbx', 'application/octet-stream'],
 ]);

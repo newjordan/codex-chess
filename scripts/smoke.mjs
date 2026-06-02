@@ -12,6 +12,7 @@ const mimeTypes = new Map([
   ['.png', 'image/png'],
   ['.jpg', 'image/jpeg'],
   ['.jpeg', 'image/jpeg'],
+  ['.mp3', 'audio/mpeg'],
   ['.mp4', 'video/mp4'],
   ['.fbx', 'application/octet-stream'],
 ]);
@@ -353,7 +354,7 @@ async function runPlayableSmoke(label, viewport) {
     });
     const relevantFailed = failed.filter((entry) =>
       !entry.includes('/media/audio/game_over.wav net::ERR_ABORTED') &&
-      !entry.includes('/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED')
+      !entry.includes('/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED')
     );
     const checks = {
       label,

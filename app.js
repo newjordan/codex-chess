@@ -58064,7 +58064,7 @@ var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.jpg";
 var PROFILE_BG_SRC = "media/big_wallpaper.jpg";
 var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
 var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
-var LOADING_MUSIC_SRC = "media/audio/cyber_chess_music.mp3";
+var LOADING_MUSIC_SRC = "media/audio/the_pulse_long_song.mp3";
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
 var END_SCREEN_MUSIC_SRC = "media/audio/game_over.wav";
 var PLAYER_AVATARS = {
@@ -58807,8 +58807,7 @@ function App() {
     if (loadingMusicRef.current) {
       const baseVolume = mediaVolume(nextVolume) * 0.9;
       const clip = loadingMusicRef.current;
-      const fadeRatio = loadingMusicPassRef.current >= 3 && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
-      clip.volume = baseVolume * fadeRatio;
+      clip.volume = baseVolume;
     }
     if (announcerRef.current) announcerRef.current.volume = mediaVolume(nextVolume);
     if (audioModeRef.current !== "muted") audioRef.current?.play("tick");
@@ -58836,26 +58835,25 @@ function App() {
       active: false,
       src: LOADING_MUSIC_SRC,
       pass: loadingMusicPassRef.current,
-      maxPasses: 3,
+      maxPasses: "loop",
+      loop: true,
       fading: false,
-      finished: loadingMusicFinishedRef.current
+      finished: false
     };
   };
   const startLoadingMusic = () => {
-    if (loadingMusicFinishedRef.current) return;
     if (audioModeRef.current === "muted") return;
+    loadingMusicFinishedRef.current = false;
     let clip = loadingMusicRef.current;
     if (!clip) {
       clip = new Audio(LOADING_MUSIC_SRC);
-      clip.loop = false;
+      clip.loop = true;
       clip.preload = "auto";
       loadingMusicRef.current = clip;
       if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
       const updateVolumeForPass = () => {
         const baseVolume2 = mediaVolume(audioVolumeRef.current) * 0.9;
-        const fading = loadingMusicPassRef.current >= 3;
-        const fadeRatio2 = fading && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
-        clip.volume = baseVolume2 * fadeRatio2;
+        clip.volume = baseVolume2;
         window.__chess.loadingMusic = {
           ...window.__chess.loadingMusic || {},
           active: !clip.paused,
@@ -58863,24 +58861,18 @@ function App() {
           blocked: false,
           src: LOADING_MUSIC_SRC,
           pass: loadingMusicPassRef.current,
-          maxPasses: 3,
-          fading,
-          finished: loadingMusicFinishedRef.current,
+          maxPasses: "loop",
+          loop: true,
+          fading: false,
+          finished: false,
           currentTime: clip.currentTime,
           duration: Number.isFinite(clip.duration) ? clip.duration : null
         };
       };
       const onEnded = () => {
-        if (loadingMusicPassRef.current < 3) {
-          loadingMusicPassRef.current += 1;
-          clip.currentTime = 0;
-          updateVolumeForPass();
-          clip.play().catch(() => void 0);
-          return;
-        }
-        loadingMusicFinishedRef.current = true;
+        clip.currentTime = 0;
         updateVolumeForPass();
-        stopLoadingMusic();
+        clip.play().catch(() => void 0);
       };
       const onTimeUpdate = () => updateVolumeForPass();
       loadingMusicHandlersRef.current = { onEnded, onTimeUpdate };
@@ -58888,17 +58880,17 @@ function App() {
       clip.addEventListener("timeupdate", onTimeUpdate);
     }
     const baseVolume = mediaVolume(audioVolumeRef.current) * 0.9;
-    const fadeRatio = loadingMusicPassRef.current >= 3 && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
-    clip.volume = baseVolume * fadeRatio;
+    clip.volume = baseVolume;
     window.__chess.loadingMusic = {
       active: !clip.paused,
       attempted: true,
       blocked: false,
       src: LOADING_MUSIC_SRC,
       pass: loadingMusicPassRef.current,
-      maxPasses: 3,
-      fading: loadingMusicPassRef.current >= 3,
-      finished: loadingMusicFinishedRef.current
+      maxPasses: "loop",
+      loop: true,
+      fading: false,
+      finished: false
     };
     clip.play().then(() => {
       window.__chess.loadingMusic = {
@@ -58907,9 +58899,10 @@ function App() {
         blocked: false,
         src: LOADING_MUSIC_SRC,
         pass: loadingMusicPassRef.current,
-        maxPasses: 3,
-        fading: loadingMusicPassRef.current >= 3,
-        finished: loadingMusicFinishedRef.current
+        maxPasses: "loop",
+        loop: true,
+        fading: false,
+        finished: false
       };
     }).catch(() => {
       window.__chess.loadingMusic = {
@@ -58918,9 +58911,10 @@ function App() {
         blocked: true,
         src: LOADING_MUSIC_SRC,
         pass: loadingMusicPassRef.current,
-        maxPasses: 3,
-        fading: loadingMusicPassRef.current >= 3,
-        finished: loadingMusicFinishedRef.current
+        maxPasses: "loop",
+        loop: true,
+        fading: false,
+        finished: false
       };
     });
   };

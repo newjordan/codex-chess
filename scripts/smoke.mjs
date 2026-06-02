@@ -3,6 +3,7 @@ import { createReadStream, existsSync, statSync } from 'node:fs';
 import { createServer } from 'node:http';
 import { extname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { inflateSync } from 'node:zlib';
 
 const rootDir = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const mimeTypes = new Map([
@@ -26,37 +27,277 @@ const server = createServer((req, res) => {
   createReadStream(filePath).pipe(res);
 });
 
-await new Promise((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
-const address = server.address();
-const url = `http://127.0.0.1:${address.port}/`;
-const browser = await chromium.launch({ headless: true });
-const page = await browser.newPage({ viewport: { width: 1280, height: 900 } });
+function unfilterPngScanlines(raw, width, height, bytesPerPixel) {
+  const stride = width * bytesPerPixel;
+  const out = Buffer.alloc(stride * height);
+  let inputOffset = 0;
+  let outputOffset = 0;
 
-const errors = [];
-const failed = [];
-page.on('console', (msg) => {
-  if (msg.type() === 'error') errors.push(msg.text());
-});
-page.on('pageerror', (err) => errors.push(err.message));
-page.on('requestfailed', (req) => failed.push(`${req.url()} ${req.failure()?.errorText || ''}`.trim()));
+  for (let y = 0; y < height; y += 1) {
+    const filter = raw[inputOffset];
+    inputOffset += 1;
+
+    for (let x = 0; x < stride; x += 1) {
+      const value = raw[inputOffset + x];
+      const left = x >= bytesPerPixel ? out[outputOffset + x - bytesPerPixel] : 0;
+      const up = y > 0 ? out[outputOffset + x - stride] : 0;
+      const upperLeft = y > 0 && x >= bytesPerPixel ? out[outputOffset + x - stride - bytesPerPixel] : 0;
+      let restored = value;
+
+      if (filter === 1) restored = value + left;
+      else if (filter === 2) restored = value + up;
+      else if (filter === 3) restored = value + Math.floor((left + up) / 2);
+      else if (filter === 4) {
+        const p = left + up - upperLeft;
+        const pa = Math.abs(p - left);
+        const pb = Math.abs(p - up);
+        const pc = Math.abs(p - upperLeft);
+        restored = value + (pa <= pb && pa <= pc ? left : pb <= pc ? up : upperLeft);
+      } else if (filter !== 0) {
+        throw new Error(`unsupported PNG filter ${filter}`);
+      }
+
+      out[outputOffset + x] = restored & 0xff;
+    }
+
+    inputOffset += stride;
+    outputOffset += stride;
+  }
+
+  return out;
+}
+
+function pngHasVisibleVariance(buffer) {
+  if (buffer.toString('ascii', 1, 4) !== 'PNG') throw new Error('screenshot is not a PNG');
+
+  let offset = 8;
+  let width = 0;
+  let height = 0;
+  let bitDepth = 0;
+  let colorType = 0;
+  const idat = [];
+
+  while (offset < buffer.length) {
+    const length = buffer.readUInt32BE(offset);
+    const type = buffer.toString('ascii', offset + 4, offset + 8);
+    const dataStart = offset + 8;
+    const dataEnd = dataStart + length;
+    const data = buffer.subarray(dataStart, dataEnd);
+
+    if (type === 'IHDR') {
+      width = data.readUInt32BE(0);
+      height = data.readUInt32BE(4);
+      bitDepth = data[8];
+      colorType = data[9];
+    } else if (type === 'IDAT') {
+      idat.push(data);
+    } else if (type === 'IEND') {
+      break;
+    }
+
+    offset = dataEnd + 4;
+  }
+
+  if (bitDepth !== 8 || ![2, 6].includes(colorType)) {
+    throw new Error(`unsupported PNG format bitDepth=${bitDepth} colorType=${colorType}`);
+  }
+
+  const bytesPerPixel = colorType === 6 ? 4 : 3;
+  const pixels = unfilterPngScanlines(inflateSync(Buffer.concat(idat)), width, height, bytesPerPixel);
+  const stride = width * bytesPerPixel;
+  const first = [
+    pixels[0],
+    pixels[1],
+    pixels[2],
+  ];
+  let varied = 0;
+  const step = Math.max(1, Math.floor((width * height) / 9000));
+
+  for (let i = 0; i < width * height; i += step) {
+    const pixelOffset = Math.floor(i / width) * stride + (i % width) * bytesPerPixel;
+    const delta =
+      Math.abs(pixels[pixelOffset] - first[0]) +
+      Math.abs(pixels[pixelOffset + 1] - first[1]) +
+      Math.abs(pixels[pixelOffset + 2] - first[2]);
+    if (delta > 20) varied += 1;
+    if (varied > 30) return true;
+  }
+
+  return false;
+}
+
+const externalUrl = process.env.SMOKE_URL;
+let url = externalUrl;
+if (!url) {
+  await new Promise((resolveListen) => server.listen(0, '127.0.0.1', resolveListen));
+  const address = server.address();
+  url = `http://127.0.0.1:${address.port}/`;
+}
+const browser = await chromium.launch({ headless: true });
+
+async function runPlayableSmoke(label, viewport) {
+  const page = await browser.newPage({ viewport });
+  const errors = [];
+  const failed = [];
+  page.on('console', (msg) => {
+    if (msg.type() === 'error') errors.push(msg.text());
+  });
+  page.on('pageerror', (err) => errors.push(err.message));
+  page.on('requestfailed', (req) => failed.push(`${req.url()} ${req.failure()?.errorText || ''}`.trim()));
+
+  try {
+    await page.addInitScript(() => {
+      window.localStorage.clear();
+    });
+    await page.goto(url, { waitUntil: 'domcontentloaded' });
+    await page.getByRole('button', { name: 'CLICK TO ENTER' }).waitFor();
+    await page.getByRole('button', { name: 'CLICK TO ENTER' }).click();
+    await page.waitForFunction(() => window.__chess?.audio?.ready === true);
+    await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT' }).click();
+    await page.getByRole('heading', { name: 'THE BREACH' }).waitFor();
+    await page.getByRole('button', { name: 'BACK' }).click();
+    await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT' }).click();
+    await page.getByRole('heading', { name: 'THE BREACH' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT' }).click();
+    await page.getByRole('heading', { name: 'THE TRANSFER' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT' }).click();
+    await page.getByRole('heading', { name: 'THE ASCENT' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT' }).click();
+    await page.getByRole('heading', { name: 'THE CHASE' }).waitFor();
+    await page.getByRole('button', { name: 'LOAD GAME' }).click();
+    await page.getByLabel('Enter your fighter name').fill('CODXACE');
+    await page.getByRole('button', { name: 'LOCK IN' }).click();
+    await page.getByRole('button', { name: 'Play White' }).waitFor();
+    await page.getByRole('button', { name: 'CONTINUE' }).click();
+    await page.getByText('FLOPPY TOWER ASCENT').waitFor();
+    await page.getByText('CURRENT FLOOR').waitFor();
+    await page.locator('.tower-hero-goop').waitFor();
+    if (await page.getByRole('button', { name: /Goop EASY/ }).count()) {
+      throw new Error('opponent selection should be replaced by tower ascent');
+    }
+    await page.getByRole('button', { name: 'ASCEND' }).click();
+    await page.getByRole('button', { name: 'Reset' }).waitFor();
+    await page.waitForFunction(() =>
+      window.__chess?.campaign?.playerName === 'CODXACE' &&
+      window.__chess?.boardLabels?.whiteName === 'CODXACE' &&
+      window.__chess?.boardLabels?.blackName === 'Goop' &&
+      window.__chess?.boardLabels?.whiteSide === 'rank-1' &&
+      window.__chess?.boardLabels?.blackSide === 'rank-8'
+    );
+
+    await page.waitForFunction(() => window.__chess?.board3d?.squareToClient && window.__chess?.state?.fen);
+    const startFen = await page.evaluate(() => window.__chess.state.fen);
+    const movePoints = await page.evaluate(() => ({
+      from: window.__chess.board3d.squareToClient('e2'),
+      to: window.__chess.board3d.squareToClient('e4'),
+    }));
+    if (!movePoints.from || !movePoints.to) {
+      throw new Error('could not project board squares for smoke move');
+    }
+    await page.mouse.click(movePoints.from.x, movePoints.from.y);
+    await page.waitForFunction(() => window.__chess?.state?.selectedSquare === 'e2');
+    await page.mouse.click(movePoints.to.x, movePoints.to.y);
+    await page.waitForFunction((fen) => window.__chess?.state?.fen !== fen, startFen);
+    const madeOpeningMove = await page.evaluate((fen) => window.__chess.state.fen !== fen, startFen);
+
+    await page.evaluate(() => window.__chess.forceLoss());
+    await page.getByRole('heading', { name: 'YOU LOSE' }).waitFor();
+    await page.waitForFunction(() => window.__chess?.campaign?.continueSeconds <= 9);
+    await page.getByRole('button', { name: 'CONTINUE' }).click();
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.lives === 1);
+
+    await page.evaluate(() => window.__chess.forceLoss());
+    await page.getByRole('heading', { name: 'GAME OVER' }).waitFor();
+    await page.getByRole('button', { name: 'NEW RUN' }).click();
+    await page.waitForFunction(() =>
+      window.__chess?.campaign?.screen === 'playing' &&
+      window.__chess?.campaign?.selectedId === 'goop' &&
+      window.__chess?.campaign?.lives === 2
+    );
+
+    await page.evaluate(() => window.__chess.forceWin());
+    await page.getByRole('heading', { name: 'YOU WIN' }).waitFor();
+    await page.getByText('NEXT CHALLENGER').waitFor();
+    await page.getByText('Frostd4d', { exact: true }).waitFor();
+    await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.selectedId === 'frostd4d');
+
+    await page.evaluate(() => window.__chess.forceWin());
+    await page.getByRole('heading', { name: 'YOU WIN' }).waitFor();
+    await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
+    await page.waitForFunction(() => window.__chess?.campaign?.screen === 'playing' && window.__chess?.campaign?.selectedId === 'razorblade');
+
+    await page.evaluate(() => window.__chess.forceWin());
+    await page.getByRole('heading', { name: 'LADDER CLEAR' }).waitFor();
+    await page.getByRole('button', { name: 'RUN IT BACK' }).waitFor();
+    await page.waitForFunction(() => {
+      const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
+      return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear' && entry.score >= 3000);
+    });
+
+    const canvasBox = await page.locator('canvas').boundingBox();
+    if (!canvasBox) throw new Error('could not locate canvas box');
+    const canvasScreenshot = await page.screenshot({ clip: canvasBox });
+
+    const mounted = await page.evaluate(() => window.__chess?.mounted === true);
+    const hasCanvas = await page.locator('canvas').count();
+    const renderedPixels = pngHasVisibleVariance(canvasScreenshot);
+    const campaign = await page.evaluate(() => window.__chess.campaign);
+    const boardLabels = await page.evaluate(() => window.__chess.boardLabels);
+    const audio = await page.evaluate(() => window.__chess.audio);
+    const leaderboardSaved = await page.evaluate(() => {
+      const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
+      return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear');
+    });
+    const checks = {
+      label,
+      viewport,
+      mounted,
+      hasCanvas: hasCanvas > 0,
+      moved: madeOpeningMove,
+      renderedPixels,
+      campaignClear: campaign?.resultState?.kind === 'clear',
+      playerNamed: campaign?.playerName === 'CODXACE',
+      boardNames:
+        campaign?.whiteName === 'CODXACE' &&
+        campaign?.blackName === 'Razorblade' &&
+        boardLabels?.whiteSide === 'rank-1' &&
+        boardLabels?.blackSide === 'rank-8',
+      audioReady: campaign?.audioReady === true && audio?.ready === true && audio?.played > 0,
+      leaderboardSaved,
+      errors,
+      failed,
+    };
+    console.log(JSON.stringify(checks, null, 2));
+
+    if (
+      !checks.mounted ||
+      !checks.hasCanvas ||
+      !checks.moved ||
+      !checks.renderedPixels ||
+      !checks.campaignClear ||
+      !checks.playerNamed ||
+      !checks.boardNames ||
+      !checks.audioReady ||
+      !checks.leaderboardSaved ||
+      errors.length ||
+      failed.length
+    ) {
+      throw new Error(`${label} smoke check failed`);
+    }
+  } finally {
+    await page.close();
+  }
+}
 
 try {
-  await page.goto(url, { waitUntil: 'domcontentloaded' });
-  await page.getByRole('button', { name: 'CLICK TO ENTER' }).waitFor();
-  await page.getByRole('button', { name: 'CLICK TO ENTER' }).click();
-  await page.getByRole('button', { name: 'Play White' }).waitFor();
-  await page.getByRole('button', { name: 'CONTINUE' }).click();
-  await page.getByRole('button', { name: /Goop EASY/ }).waitFor();
-
-  const mounted = await page.evaluate(() => window.__chess?.mounted === true);
-  const hasCanvas = await page.locator('canvas').count();
-  const checks = { mounted, hasCanvas: hasCanvas > 0, errors, failed };
-  console.log(JSON.stringify(checks, null, 2));
-
-  if (!checks.mounted || !checks.hasCanvas || errors.length || failed.length) {
-    throw new Error('smoke check failed');
-  }
+  await runPlayableSmoke('desktop', { width: 1280, height: 900 });
+  await runPlayableSmoke('mobile', { width: 390, height: 844 });
 } finally {
   await browser.close();
-  await new Promise((resolveClose) => server.close(resolveClose));
+  if (server.listening) {
+    await new Promise((resolveClose) => server.close(resolveClose));
+  }
 }

@@ -453,6 +453,12 @@ export function useBoard3D(
     const chessGlobal = (window as typeof window & { __chess?: any }).__chess;
     let boardDebugApi: { squareToClient(square: string): { x: number; y: number } | null } | null = null;
     if (chessGlobal) {
+      chessGlobal.boardLabels = {
+        whiteName,
+        blackName,
+        whiteSide: 'rank-1',
+        blackSide: 'rank-8',
+      };
       boardDebugApi = {
         squareToClient(square: string) {
           if (!/^[a-h][1-8]$/.test(square)) return null;
@@ -679,6 +685,9 @@ export function useBoard3D(
       clearInteractionMarkers();
       clearPieces(pieceMap, piecesContainer);
       if (chessGlobal?.board3d === boardDebugApi) delete chessGlobal.board3d;
+      if (chessGlobal?.boardLabels?.whiteName === whiteName && chessGlobal?.boardLabels?.blackName === blackName) {
+        delete chessGlobal.boardLabels;
+      }
       ctx.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps

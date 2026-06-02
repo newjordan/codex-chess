@@ -48721,12 +48721,16 @@ function createTextSprite(text, fontSize = 32, canvasSize = 64) {
     new MeshBasicMaterial({ map: tex, transparent: true, side: DoubleSide, blending: AdditiveBlending, depthWrite: false })
   );
 }
+function formatBoardName(name) {
+  const safe = name.replace(/[^a-zA-Z0-9 _.-]/g, "").replace(/\s+/g, " ").trim() || "PLAYER";
+  return safe.length > 14 ? `${safe.slice(0, 12)}..` : safe;
+}
 function createTitleSprite(text, width = 800) {
   const canvas = document.createElement("canvas");
   canvas.width = width;
   canvas.height = 128;
   const ctx = canvas.getContext("2d");
-  ctx.font = '700 60px "Orbitron", sans-serif';
+  ctx.font = '700 54px "Courier New", sans-serif';
   ctx.fillStyle = "#66ccff";
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
@@ -48780,15 +48784,15 @@ function addCoordinates(parent, whiteName, blackName) {
       parent.add(makeLines([new Vector3(B2, yPos, hz), new Vector3(B3, yPos, hz)], 4500223, 0.5));
     }
   }
-  const blackTitle = createTitleSprite(`BLACK // ${blackName.toUpperCase()}`);
-  blackTitle.position.set(-tabDist, yPos, -2.3);
+  const blackTitle = createTitleSprite(`BLACK // ${formatBoardName(blackName).toUpperCase()}`);
+  blackTitle.position.set(-tabDist, yPos, 2.3);
   blackTitle.rotation.x = -Math.PI / 2;
   blackTitle.rotation.z = Math.PI / 2;
   parent.add(blackTitle);
-  const whiteTitle = createTitleSprite(`WHITE // ${whiteName.toUpperCase()}`);
-  whiteTitle.position.set(-tabDist, yPos, 2.3);
+  const whiteTitle = createTitleSprite(`WHITE // ${formatBoardName(whiteName).toUpperCase()}`);
+  whiteTitle.position.set(-tabDist, yPos, -2.3);
   whiteTitle.rotation.x = -Math.PI / 2;
-  whiteTitle.rotation.z = Math.PI / 2;
+  whiteTitle.rotation.z = -Math.PI / 2;
   parent.add(whiteTitle);
 }
 function createBoard(scene, whiteName, blackName) {
@@ -57271,6 +57275,12 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
     const chessGlobal = window.__chess;
     let boardDebugApi = null;
     if (chessGlobal) {
+      chessGlobal.boardLabels = {
+        whiteName,
+        blackName,
+        whiteSide: "rank-1",
+        blackSide: "rank-8"
+      };
       boardDebugApi = {
         squareToClient(square) {
           if (!/^[a-h][1-8]$/.test(square)) return null;
@@ -57467,6 +57477,9 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
       clearInteractionMarkers();
       clearPieces(pieceMap, piecesContainer);
       if (chessGlobal?.board3d === boardDebugApi) delete chessGlobal.board3d;
+      if (chessGlobal?.boardLabels?.whiteName === whiteName && chessGlobal?.boardLabels?.blackName === blackName) {
+        delete chessGlobal.boardLabels;
+      }
       ctx.dispose();
     };
   }, []);
@@ -57605,12 +57618,19 @@ function chooseAiMove(fen, profile, aiColor = "b") {
 // src/main.tsx
 var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
 var START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
+var MAX_LIVES = 2;
+var CONTINUE_SECONDS = 10;
+var PLAYER_NAME_KEY = "cyberChessPlayerName";
+var LEADERBOARD_KEY = "cyberChessLeaderboardV1";
+var MAX_LEADERBOARD = 8;
 var OPPONENTS = [
   {
     id: "goop",
     name: "Goop",
     difficulty: "EASY",
     avatar: "avatars/goop.png",
+    hero: "media/enemies/goop-entrance.png",
+    theme: "goop",
     tagline: "Mostly legal. Frequently sticky.",
     bio: "A training-room nuisance that values chaos, trades material for vibes, and occasionally stumbles into real tactics.",
     speed: 1.7,
@@ -57621,6 +57641,8 @@ var OPPONENTS = [
     name: "Frostd4d",
     difficulty: "MED",
     avatar: "avatars/frostd4d.png",
+    hero: "media/enemies/frostd4d-entrance.png",
+    theme: "frostd4d",
     tagline: "Cold reads, colder captures.",
     bio: "A mid-depth board reader built for pressure: it hunts loose pieces, likes checks, and punishes autopilot openings.",
     speed: 2.1,
@@ -57631,6 +57653,8 @@ var OPPONENTS = [
     name: "Razorblade",
     difficulty: "HARD",
     avatar: "avatars/razorblade.png",
+    hero: "media/enemies/razorblade-entrance.png",
+    theme: "razorblade",
     tagline: "Depth search with bad intentions.",
     bio: "The sharpest Cyber Chess agent in the cabinet. Razorblade searches deeper, converts captures hard, and turns slow mistakes into endgame problems.",
     speed: 2.45,
@@ -57639,6 +57663,41 @@ var OPPONENTS = [
 ];
 var INTRO_MP4_SRC = "media/chessagent-intro.mp4";
 var HEADER_IMAGE_SRC = "media/cyber-chess-header.png";
+var VICTORY_PORTRAIT_SRC = "media/campaign-victory-portrait.png";
+var DEFEAT_PORTRAIT_SRC = "media/campaign-defeat-portrait.png";
+var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder.png";
+var INTRO_STORY = [
+  {
+    image: "media/intro/01-pre-computation.png",
+    kicker: "PRE-COMPUTATION",
+    title: "THE PLAYER",
+    body: "Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime."
+  },
+  {
+    image: "media/intro/02-shannon-knights-kidnap.png",
+    kicker: "THE SHANNON KNIGHTS",
+    title: "THE BREACH",
+    body: "Goop, Frostd4d, and Razorblade struck as one, tearing open the lab and dragging his family into the grid."
+  },
+  {
+    image: "media/intro/02-consciousness-floppies.png",
+    kicker: "42 DISKS",
+    title: "THE TRANSFER",
+    body: "When the Shannon Knights breached his home and stole his family, he copied his consciousness onto forty-two floppy disks."
+  },
+  {
+    image: "media/intro/03-floppy-tower.png",
+    kicker: "FLOPPY TOWER ONLINE",
+    title: "THE ASCENT",
+    body: "One by one, all forty-two disks loaded into the tower. The drives screamed. The room became a square of light."
+  },
+  {
+    image: "media/intro/04-shannon-knights.png",
+    kicker: "CYBERSPACE",
+    title: "THE CHASE",
+    body: "Now he rides the grid to save his family, defeat the Shannon Knights, and seize the impossible prime at the center of chess."
+  }
+];
 window.__chess = { mounted: false };
 function turnFromFen(fen) {
   try {
@@ -57647,27 +57706,153 @@ function turnFromFen(fen) {
     return "w";
   }
 }
+function sanitizePlayerName(value) {
+  const compact = value.replace(/\s+/g, " ").trim();
+  const safe = compact.replace(/[^a-zA-Z0-9 _.-]/g, "").slice(0, 14).trim();
+  return safe || "PLAYER 1";
+}
+function readStoredName() {
+  try {
+    return sanitizePlayerName(window.localStorage.getItem(PLAYER_NAME_KEY) || "PLAYER 1");
+  } catch (_) {
+    return "PLAYER 1";
+  }
+}
+function readLeaderboard() {
+  try {
+    const parsed = JSON.parse(window.localStorage.getItem(LEADERBOARD_KEY) || "[]");
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry) => entry && typeof entry.name === "string" && typeof entry.score === "number").slice(0, MAX_LEADERBOARD);
+  } catch (_) {
+    return [];
+  }
+}
+function persistLeaderboard(entries) {
+  try {
+    window.localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, MAX_LEADERBOARD)));
+  } catch (_) {
+  }
+}
+function createAudioEngine() {
+  const AudioCtor = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtor) return null;
+  const ctx = new AudioCtor();
+  const master = ctx.createGain();
+  master.gain.value = 0.08;
+  master.connect(ctx.destination);
+  window.__chess.audio = {
+    ready: true,
+    last: window.__chess.audio?.last || null,
+    played: window.__chess.audio?.played || 0
+  };
+  const tone = (frequency, start, duration, type, volume) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(frequency, start);
+    gain.gain.setValueAtTime(1e-4, start);
+    gain.gain.exponentialRampToValueAtTime(volume, start + 0.012);
+    gain.gain.exponentialRampToValueAtTime(1e-4, start + duration);
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(start);
+    osc.stop(start + duration + 0.03);
+  };
+  const noise = (start, duration, volume) => {
+    const buffer = ctx.createBuffer(1, Math.max(1, Math.floor(ctx.sampleRate * duration)), ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < data.length; i += 1) data[i] = (Math.random() * 2 - 1) * (1 - i / data.length);
+    const src = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    src.buffer = buffer;
+    gain.gain.setValueAtTime(volume, start);
+    gain.gain.exponentialRampToValueAtTime(1e-4, start + duration);
+    src.connect(gain);
+    gain.connect(master);
+    src.start(start);
+    src.stop(start + duration);
+  };
+  return {
+    play(name) {
+      if (ctx.state === "suspended") ctx.resume().catch(() => void 0);
+      const now = ctx.currentTime;
+      window.__chess.audio = {
+        ready: true,
+        last: name,
+        played: (window.__chess.audio?.played || 0) + 1
+      };
+      if (name === "menu") {
+        tone(880, now, 0.08, "square", 0.22);
+        tone(1320, now + 0.06, 0.08, "square", 0.14);
+      } else if (name === "select") {
+        tone(660, now, 0.05, "triangle", 0.2);
+        tone(990, now + 0.045, 0.08, "square", 0.12);
+      } else if (name === "move") {
+        tone(440, now, 0.07, "triangle", 0.12);
+        tone(740, now + 0.055, 0.11, "square", 0.12);
+      } else if (name === "capture") {
+        noise(now, 0.1, 0.24);
+        tone(180, now, 0.12, "sawtooth", 0.2);
+        tone(820, now + 0.04, 0.1, "square", 0.13);
+      } else if (name === "check") {
+        tone(740, now, 0.1, "square", 0.18);
+        tone(932, now + 0.1, 0.12, "square", 0.18);
+      } else if (name === "win") {
+        [523, 659, 784, 1046].forEach((f, i) => tone(f, now + i * 0.09, 0.16, "square", 0.16));
+      } else if (name === "loss") {
+        [392, 330, 262, 196].forEach((f, i) => tone(f, now + i * 0.11, 0.18, "sawtooth", 0.16));
+        noise(now + 0.2, 0.24, 0.12);
+      } else if (name === "reveal") {
+        [220, 330, 494, 740].forEach((f, i) => tone(f, now + i * 0.07, 0.14, "triangle", 0.15));
+        noise(now + 0.22, 0.12, 0.08);
+      } else if (name === "tick") {
+        tone(1200, now, 0.045, "square", 0.13);
+      }
+    },
+    stop() {
+      master.gain.setTargetAtTime(1e-4, ctx.currentTime, 0.02);
+      window.setTimeout(() => ctx.close().catch(() => void 0), 120);
+      window.__chess.audio = { ...window.__chess.audio || {}, ready: false };
+    }
+  };
+}
 function App() {
   const ref = (0, import_react3.useRef)(null);
   const aiBusyRef = (0, import_react3.useRef)(false);
   const lastAiFenRef = (0, import_react3.useRef)("");
+  const resultHandledFenRef = (0, import_react3.useRef)("");
+  const runStartedAtRef = (0, import_react3.useRef)(Date.now());
+  const recordedResultKeyRef = (0, import_react3.useRef)("");
+  const introMusicRef = (0, import_react3.useRef)(null);
+  const audioRef = (0, import_react3.useRef)(null);
+  const previousFenRef = (0, import_react3.useRef)(START);
+  const previousContinueSecondsRef = (0, import_react3.useRef)(CONTINUE_SECONDS);
   const [screen, setScreen] = (0, import_react3.useState)("intro");
   const [menuStep, setMenuStep] = (0, import_react3.useState)("video");
+  const [storyIndex, setStoryIndex] = (0, import_react3.useState)(0);
   const [selectedId, setSelectedId] = (0, import_react3.useState)("goop");
   const [playerColor, setPlayerColor] = (0, import_react3.useState)("w");
+  const [playerName, setPlayerName] = (0, import_react3.useState)(readStoredName);
+  const [playerNameInput, setPlayerNameInput] = (0, import_react3.useState)(readStoredName);
+  const [leaderboard, setLeaderboard] = (0, import_react3.useState)(readLeaderboard);
   const [introVideoReady, setIntroVideoReady] = (0, import_react3.useState)(false);
   const [thinking, setThinking] = (0, import_react3.useState)(false);
+  const [lives, setLives] = (0, import_react3.useState)(MAX_LIVES);
+  const [continueSeconds, setContinueSeconds] = (0, import_react3.useState)(CONTINUE_SECONDS);
+  const [resultState, setResultState] = (0, import_react3.useState)(null);
   const [gameState, setGameState] = (0, import_react3.useState)({
     status: "Loading pieces",
     fen: START,
     selectedSquare: null
   });
+  const selectedIndex = OPPONENTS.findIndex((opponent) => opponent.id === selectedId);
   const selected = OPPONENTS.find((opponent) => opponent.id === selectedId) ?? OPPONENTS[0];
+  const nextOpponent = OPPONENTS[selectedIndex + 1];
   const turn = turnFromFen(gameState.fen);
   const aiColor = playerColor === "w" ? "b" : "w";
   const inputEnabled = screen === "playing" && turn === playerColor && !thinking;
-  const whiteName = playerColor === "w" ? "YOU" : selected.name;
-  const blackName = playerColor === "b" ? "YOU" : selected.name;
+  const whiteName = playerColor === "w" ? playerName : selected.name;
+  const blackName = playerColor === "b" ? playerName : selected.name;
   const playerSideName = playerColor === "w" ? "White" : "Black";
   const agentSideName = aiColor === "w" ? "White" : "Black";
   const updateGameState = (state) => {
@@ -57677,6 +57862,57 @@ function App() {
       setThinking(false);
     }
     setGameState(state);
+  };
+  const buildResultForFen = (fen) => {
+    const game = new Chess(fen);
+    if (!game.isGameOver()) return null;
+    if (game.isCheckmate()) {
+      const winner = game.turn() === "w" ? "b" : "w";
+      if (winner === playerColor) {
+        return {
+          kind: nextOpponent ? "win" : "clear",
+          opponent: selected,
+          nextOpponent,
+          livesAfter: lives
+        };
+      }
+      const livesAfter2 = Math.max(0, lives - 1);
+      return {
+        kind: livesAfter2 > 0 ? "loss" : "game-over",
+        opponent: selected,
+        livesAfter: livesAfter2
+      };
+    }
+    const livesAfter = Math.max(0, lives - 1);
+    return {
+      kind: livesAfter > 0 ? "loss" : "game-over",
+      opponent: selected,
+      livesAfter
+    };
+  };
+  const recordRun = (result) => {
+    if (result.kind !== "clear" && result.kind !== "game-over") return;
+    const resultKey = `${result.kind}:${result.opponent.id}:${result.livesAfter}:${runStartedAtRef.current}`;
+    if (recordedResultKeyRef.current === resultKey) return;
+    recordedResultKeyRef.current = resultKey;
+    const seconds = Math.max(1, Math.round((Date.now() - runStartedAtRef.current) / 1e3));
+    const wins = result.kind === "clear" ? OPPONENTS.length : Math.max(0, selectedIndex);
+    const speedBonus = result.kind === "clear" ? Math.max(0, 900 - seconds) : 0;
+    const score = wins * 1e3 + result.livesAfter * 250 + speedBonus;
+    const entry = {
+      id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
+      name: playerName,
+      score,
+      outcome: result.kind,
+      opponent: result.opponent.name,
+      wins,
+      lives: result.livesAfter,
+      seconds,
+      completedAt: (/* @__PURE__ */ new Date()).toISOString()
+    };
+    const next = [...leaderboard, entry].sort((a, b) => b.score - a.score || a.seconds - b.seconds).slice(0, MAX_LEADERBOARD);
+    setLeaderboard(next);
+    persistLeaderboard(next);
   };
   (0, import_react3.useEffect)(() => {
     window.__chess.handle = ref.current;
@@ -57691,6 +57927,27 @@ function App() {
     }, 400);
     return () => window.clearTimeout(id);
   }, []);
+  (0, import_react3.useEffect)(() => () => {
+    introMusicRef.current?.stop();
+    introMusicRef.current = null;
+    audioRef.current?.stop();
+    audioRef.current = null;
+  }, []);
+  (0, import_react3.useEffect)(() => {
+    const previousFen = previousFenRef.current;
+    if (previousFen !== gameState.fen) {
+      try {
+        const previous = new Chess(previousFen);
+        const current = new Chess(gameState.fen);
+        const previousPieces = previous.board().flat().filter(Boolean).length;
+        const currentPieces = current.board().flat().filter(Boolean).length;
+        audioRef.current?.play(currentPieces < previousPieces ? "capture" : current.isCheck() ? "check" : "move");
+      } catch (_) {
+        audioRef.current?.play("move");
+      }
+      previousFenRef.current = gameState.fen;
+    }
+  }, [gameState.fen]);
   (0, import_react3.useEffect)(() => {
     if (screen !== "playing") return;
     const game = new Chess(gameState.fen);
@@ -57721,19 +57978,218 @@ function App() {
     }, selected.delay);
     return () => window.clearTimeout(id);
   }, [aiColor, gameState.fen, screen, selected]);
+  (0, import_react3.useEffect)(() => {
+    if (screen !== "playing" || resultHandledFenRef.current === gameState.fen) return;
+    const result = buildResultForFen(gameState.fen);
+    if (!result) return;
+    resultHandledFenRef.current = gameState.fen;
+    aiBusyRef.current = false;
+    lastAiFenRef.current = "";
+    setThinking(false);
+    setResultState(result);
+    setContinueSeconds(CONTINUE_SECONDS);
+    if (result.kind === "loss" || result.kind === "game-over") setLives(result.livesAfter);
+    recordRun(result);
+    audioRef.current?.play(result.kind === "win" || result.kind === "clear" ? "win" : "loss");
+    setScreen("result");
+  }, [gameState.fen, lives, nextOpponent, playerColor, screen, selected]);
+  (0, import_react3.useEffect)(() => {
+    if (screen !== "result" || resultState?.kind !== "loss") return;
+    if (continueSeconds <= 0) {
+      setResultState({ ...resultState, kind: "game-over", livesAfter: 0 });
+      setLives(0);
+      return;
+    }
+    const id = window.setTimeout(() => setContinueSeconds((current) => Math.max(0, current - 1)), 1e3);
+    return () => window.clearTimeout(id);
+  }, [continueSeconds, resultState, screen]);
+  (0, import_react3.useEffect)(() => {
+    if (screen === "result" && resultState?.kind === "loss" && continueSeconds !== previousContinueSecondsRef.current) {
+      audioRef.current?.play("tick");
+    }
+    previousContinueSecondsRef.current = continueSeconds;
+  }, [continueSeconds, resultState?.kind, screen]);
+  (0, import_react3.useEffect)(() => {
+    window.__chess.campaign = {
+      selectedId,
+      lives,
+      screen,
+      resultState,
+      continueSeconds,
+      playerName,
+      whiteName,
+      blackName,
+      leaderboard,
+      audioReady: Boolean(audioRef.current)
+    };
+    window.__chess.forceWin = () => {
+      const forcedResult = {
+        kind: nextOpponent ? "win" : "clear",
+        opponent: selected,
+        nextOpponent,
+        livesAfter: lives
+      };
+      setResultState(forcedResult);
+      recordRun(forcedResult);
+      audioRef.current?.play(forcedResult.kind === "clear" ? "win" : "reveal");
+      setScreen("result");
+    };
+    window.__chess.forceLoss = () => {
+      const livesAfter = Math.max(0, lives - 1);
+      const forcedResult = {
+        kind: livesAfter > 0 ? "loss" : "game-over",
+        opponent: selected,
+        livesAfter
+      };
+      setLives(livesAfter);
+      setContinueSeconds(CONTINUE_SECONDS);
+      setResultState(forcedResult);
+      recordRun(forcedResult);
+      audioRef.current?.play(forcedResult.kind === "game-over" ? "loss" : "tick");
+      setScreen("result");
+    };
+  }, [blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, whiteName]);
   const resetGame = () => {
     aiBusyRef.current = false;
     lastAiFenRef.current = "";
+    resultHandledFenRef.current = "";
     setThinking(false);
     ref.current?.resetToPosition(START);
   };
   const startGame = () => {
     setScreen("playing");
+    setResultState(null);
     resetGame();
   };
   const openMenu = () => {
     setMenuStep("video");
+    setLives(MAX_LIVES);
+    setResultState(null);
     setScreen("intro");
+  };
+  const startIntroMusic = () => {
+    if (!audioRef.current) audioRef.current = createAudioEngine();
+    if (introMusicRef.current) return;
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    const ctx = new AudioCtor();
+    const master = ctx.createGain();
+    master.gain.value = 0.05;
+    master.connect(ctx.destination);
+    const melody = [659, 784, 880, 988, 880, 784, 659, 523, 587, 659, 784, 659, 587, 523, 440, 392];
+    const bass = [130, 130, 196, 196, 174, 174, 220, 196];
+    let step = 0;
+    const playTone = (frequency, start, duration, type, gainValue) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = type;
+      osc.frequency.setValueAtTime(frequency, start);
+      gain.gain.setValueAtTime(1e-4, start);
+      gain.gain.exponentialRampToValueAtTime(gainValue, start + 0.015);
+      gain.gain.exponentialRampToValueAtTime(1e-4, start + duration);
+      osc.connect(gain);
+      gain.connect(master);
+      osc.start(start);
+      osc.stop(start + duration + 0.02);
+    };
+    const tick = () => {
+      const now = ctx.currentTime;
+      playTone(melody[step % melody.length], now, 0.105, "square", 0.42);
+      if (step % 2 === 0) playTone(melody[(step + 4) % melody.length] / 2, now, 0.09, "square", 0.16);
+      if (step % 4 === 0) playTone(bass[Math.floor(step / 4) % bass.length], now, 0.16, "triangle", 0.24);
+      step += 1;
+    };
+    tick();
+    const interval = window.setInterval(tick, 145);
+    introMusicRef.current = {
+      stop() {
+        window.clearInterval(interval);
+        const now = ctx.currentTime;
+        master.gain.cancelScheduledValues(now);
+        master.gain.setValueAtTime(master.gain.value, now);
+        master.gain.linearRampToValueAtTime(1e-4, now + 0.08);
+        window.setTimeout(() => ctx.close().catch(() => void 0), 120);
+      }
+    };
+  };
+  const stopIntroMusic = () => {
+    introMusicRef.current?.stop();
+    introMusicRef.current = null;
+  };
+  const beginIntroStory = () => {
+    setStoryIndex(0);
+    startIntroMusic();
+    setMenuStep("story");
+  };
+  const finishIntroStory = () => {
+    stopIntroMusic();
+    audioRef.current?.play("menu");
+    setMenuStep("profile");
+  };
+  const advanceIntroStory = () => {
+    audioRef.current?.play("menu");
+    if (storyIndex >= INTRO_STORY.length - 1) {
+      finishIntroStory();
+      return;
+    }
+    setStoryIndex((current) => Math.min(INTRO_STORY.length - 1, current + 1));
+  };
+  const retreatIntroStory = () => {
+    audioRef.current?.play("menu");
+    setStoryIndex((current) => Math.max(0, current - 1));
+  };
+  const savePlayerProfile = () => {
+    const nextName = sanitizePlayerName(playerNameInput);
+    setPlayerName(nextName);
+    setPlayerNameInput(nextName);
+    try {
+      window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
+    } catch (_) {
+    }
+    audioRef.current?.play("menu");
+    setMenuStep("side");
+  };
+  const startCampaign = () => {
+    setLives(MAX_LIVES);
+    runStartedAtRef.current = Date.now();
+    recordedResultKeyRef.current = "";
+    previousFenRef.current = START;
+    audioRef.current?.play("reveal");
+    startGame();
+  };
+  const continueAfterLoss = () => {
+    if (!resultState || resultState.kind !== "loss") return;
+    setLives(resultState.livesAfter);
+    audioRef.current?.play("menu");
+    startGame();
+  };
+  const advanceAfterWin = () => {
+    if (!resultState) return;
+    if (resultState.kind === "clear") {
+      restartCampaign();
+      return;
+    }
+    if (resultState.nextOpponent) {
+      setSelectedId(resultState.nextOpponent.id);
+      audioRef.current?.play("reveal");
+      window.setTimeout(startGame, 0);
+    }
+  };
+  const restartCampaign = () => {
+    setSelectedId(OPPONENTS[0].id);
+    setLives(MAX_LIVES);
+    setResultState(null);
+    setContinueSeconds(CONTINUE_SECONDS);
+    runStartedAtRef.current = Date.now();
+    recordedResultKeyRef.current = "";
+    previousFenRef.current = START;
+    audioRef.current?.play("menu");
+    startGame();
+  };
+  const clearLeaderboard = () => {
+    setLeaderboard([]);
+    persistLeaderboard([]);
+    audioRef.current?.play("menu");
   };
   return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
     /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
@@ -57745,7 +58201,7 @@ function App() {
         inputEnabled,
         onGameStateChange: updateGameState
       },
-      `${selected.id}-${playerColor}`
+      `${selected.id}-${playerColor}-${playerName}`
     ),
     screen === "intro" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cyber-menu", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-panel", children: [
       menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step menu-step-video", children: [
@@ -57764,8 +58220,54 @@ function App() {
           ),
           !introVideoReady && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "INTRO MP4 SLOT" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "cyber-start", onClick: () => setMenuStep("side"), children: "CLICK TO ENTER" })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "cyber-start", onClick: beginIntroStory, children: "CLICK TO ENTER" })
       ] }),
+      menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step story-step", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "story-art", src: INTRO_STORY[storyIndex].image, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-scanline" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-copy", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: INTRO_STORY[storyIndex].kicker }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: INTRO_STORY[storyIndex].title }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: INTRO_STORY[storyIndex].body }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-progress", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-actions", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: retreatIntroStory, disabled: storyIndex === 0, children: "BACK" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: finishIntroStory, children: "SKIP" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "selected", onClick: advanceIntroStory, children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" })
+          ] })
+        ] })
+      ] }),
+      menuStep === "profile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "menu-step profile-step", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "profile-kicker", children: "PLAYER REGISTRATION" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { htmlFor: "player-name", children: "Enter your fighter name" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-row", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "input",
+            {
+              id: "player-name",
+              value: playerNameInput,
+              maxLength: 24,
+              autoComplete: "nickname",
+              onChange: (event) => setPlayerNameInput(event.currentTarget.value),
+              onKeyDown: (event) => {
+                if (event.key === "Enter") savePlayerProfile();
+              }
+            }
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: savePlayerProfile, children: "LOCK IN" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "leaderboard-panel", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "leaderboard-heading", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "LOCAL LEADERBOARD" }),
+            leaderboard.length > 0 && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: clearLeaderboard, children: "CLEAR" })
+          ] }),
+          leaderboard.length === 0 ? /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "No local scores yet." }) : /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("ol", { children: leaderboard.map((entry) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("li", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: entry.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: entry.score }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("em", { children: entry.outcome === "clear" ? "CLEAR" : `${entry.wins} WIN${entry.wins === 1 ? "" : "S"}` })
+          ] }, entry.id)) })
+        ] })
+      ] }) }),
       menuStep === "side" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-hero", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "cyber-hero-bg", src: HEADER_IMAGE_SRC, alt: "" }),
@@ -57775,7 +58277,10 @@ function App() {
               {
                 type: "button",
                 className: playerColor === "w" ? "selected" : "",
-                onClick: () => setPlayerColor("w"),
+                onClick: () => {
+                  audioRef.current?.play("select");
+                  setPlayerColor("w");
+                },
                 children: "Play White"
               }
             ),
@@ -57784,55 +58289,152 @@ function App() {
               {
                 type: "button",
                 className: playerColor === "b" ? "selected" : "",
-                onClick: () => setPlayerColor("b"),
+                onClick: () => {
+                  audioRef.current?.play("select");
+                  setPlayerColor("b");
+                },
                 children: "Play Black"
               }
             )
           ] }) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "intro-copy", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Cyber Chess is a neon board duel against local machine personalities. Claim white or black, then play directly on the 3D board while the agent answers with its own tempo, search style, and appetite for risk." }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "cyber-start", onClick: () => setMenuStep("opponent"), children: "CONTINUE" })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "cyber-start", onClick: () => {
+          audioRef.current?.play("menu");
+          setMenuStep("opponent");
+        }, children: "CONTINUE" })
       ] }),
-      menuStep === "opponent" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "matchup-line", children: [
-          "YOU: ",
-          playerSideName,
-          " / ",
-          selected.name,
-          ": ",
-          agentSideName
+      menuStep === "opponent" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step tower-step", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "tower-bg", src: FLOPPY_TOWER_SRC, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "tower-overlay" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "tower-hero tower-hero-" + selected.theme, src: selected.hero, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "tower-copy", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "FLOPPY TOWER ASCENT" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h2", { children: [
+            "FLOOR ",
+            selectedIndex + 1,
+            " / ",
+            OPPONENTS.length
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+            playerName,
+            ": ",
+            playerSideName,
+            " / ",
+            selected.name,
+            ": ",
+            agentSideName
+          ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "opponent-grid", children: OPPONENTS.map((opponent) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-          "button",
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "tower-slots", "aria-label": "Floppy tower opponents", children: OPPONENTS.map((opponent, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+          "div",
           {
-            type: "button",
-            className: "opponent-card" + (selectedId === opponent.id ? " selected" : ""),
-            onClick: () => setSelectedId(opponent.id),
+            className: "tower-opponent tower-opponent-" + opponent.id + (index === selectedIndex ? " active" : "") + (index < selectedIndex ? " cleared" : ""),
             children: [
               /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: opponent.avatar, alt: "" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "opponent-name", children: opponent.name }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "opponent-difficulty", children: opponent.difficulty }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "opponent-tagline", children: opponent.tagline }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "opponent-bio", children: opponent.bio })
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: index < selectedIndex ? "CLEARED" : index === selectedIndex ? "CURRENT FLOOR" : "LOCKED ABOVE" }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: opponent.name }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("em", { children: [
+                  opponent.difficulty,
+                  " / ",
+                  opponent.tagline
+                ] })
+              ] })
             ]
           },
           opponent.id
         )) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "intro-copy", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Goop is loose and messy, Frostd4d is controlled and tactical, and Razorblade is built to punish slow plans. The board labels update to the matchup, so the side you choose is the side you command." }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "color-picker", role: "group", "aria-label": "Choose your color", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => setMenuStep("side"), children: "Back" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "selected", onClick: startGame, children: "BEGIN" })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "tower-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+            audioRef.current?.play("menu");
+            setMenuStep("side");
+          }, children: "Back" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "selected", onClick: startCampaign, children: "ASCEND" })
         ] })
       ] })
     ] }) }),
-    screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-hud", children: [
+    screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-hud enemy-theme-" + selected.theme, children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: selected.avatar, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: selected.name }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: thinking ? `${selected.name} (${agentSideName}) is thinking...` : gameState.status })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
+          playerName,
+          " vs ",
+          selected.name
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: thinking ? `${selected.name} (${agentSideName}) is thinking...` : `${gameState.status} / Lives ${lives}` })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: resetGame, children: "Reset" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: openMenu, children: "Menu" })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+        audioRef.current?.play("menu");
+        resetGame();
+      }, children: "Reset" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+        audioRef.current?.play("menu");
+        openMenu();
+      }, children: "Menu" })
+    ] }),
+    screen === "result" && resultState && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-screen result-screen-" + resultState.kind + " enemy-theme-" + resultState.opponent.theme, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "img",
+        {
+          className: "result-portrait",
+          src: resultState.kind === "win" || resultState.kind === "clear" ? VICTORY_PORTRAIT_SRC : DEFEAT_PORTRAIT_SRC,
+          alt: ""
+        }
+      ),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "result-vignette" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-copy", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "result-kicker", children: "CYBER CHESS LADDER" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("h1", { children: [
+          resultState.kind === "win" && "YOU WIN",
+          resultState.kind === "clear" && "LADDER CLEAR",
+          resultState.kind === "loss" && "YOU LOSE",
+          resultState.kind === "game-over" && "GAME OVER"
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("p", { children: [
+          resultState.kind === "win" && `${playerName} dropped ${resultState.opponent.name}. ${resultState.nextOpponent?.name} steps into the board.`,
+          resultState.kind === "clear" && `${playerName} beat Razorblade and cleared the Cyber Chess cabinet with ${lives} ${lives === 1 ? "life" : "lives"} left.`,
+          resultState.kind === "loss" && `${resultState.opponent.name} took the round from ${playerName}. Continue before the counter hits zero.`,
+          resultState.kind === "game-over" && `${resultState.opponent.name} ended ${playerName}'s run. Two lives spent.`
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-stats", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+            "PLAYER: ",
+            playerName
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+            "OPPONENT: ",
+            resultState.opponent.name
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+            "LIVES: ",
+            resultState.livesAfter
+          ] }),
+          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+            "CONTINUE: ",
+            continueSeconds
+          ] })
+        ] }),
+        resultState.kind === "win" && resultState.nextOpponent && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "next-opponent-panel", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: resultState.nextOpponent.avatar, alt: "" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NEXT CHALLENGER" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: resultState.nextOpponent.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("em", { children: [
+              resultState.nextOpponent.difficulty,
+              " / ",
+              resultState.nextOpponent.tagline
+            ] })
+          ] })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-actions", children: [
+          resultState.kind === "win" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "result-primary", onClick: advanceAfterWin, children: "NEXT OPPONENT" }),
+          resultState.kind === "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "result-primary", onClick: advanceAfterWin, children: "RUN IT BACK" }),
+          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "result-primary", onClick: continueAfterLoss, children: "CONTINUE" }),
+          resultState.kind === "game-over" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "result-primary", onClick: restartCampaign, children: "NEW RUN" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: openMenu, children: "MENU" })
+        ] })
+      ] })
     ] })
   ] });
 }

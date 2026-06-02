@@ -5,6 +5,8 @@ import { fileURLToPath } from 'node:url';
 
 const rootDir = resolve(fileURLToPath(new URL('..', import.meta.url)));
 const port = Number(process.env.PORT || 5173);
+const host = process.env.HOST || '0.0.0.0';
+const displayHost = host === '0.0.0.0' ? '127.0.0.1' : host;
 const mimeTypes = new Map([
   ['.html', 'text/html; charset=utf-8'],
   ['.js', 'text/javascript; charset=utf-8'],
@@ -29,6 +31,9 @@ const server = createServer((req, res) => {
   createReadStream(filePath).pipe(res);
 });
 
-server.listen(port, '127.0.0.1', () => {
-  console.log(`Cyber Chess: http://127.0.0.1:${port}/`);
+server.listen(port, host, () => {
+  console.log(`Cyber Chess local: http://${displayHost}:${port}/`);
+  if (host === '0.0.0.0') {
+    console.log(`Cyber Chess network: http://<this-machine-ip>:${port}/`);
+  }
 });

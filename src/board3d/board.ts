@@ -198,11 +198,16 @@ function createTextSprite(text: string, fontSize = 32, canvasSize = 64): THREE.M
   );
 }
 
+function formatBoardName(name: string) {
+  const safe = name.replace(/[^a-zA-Z0-9 _.-]/g, '').replace(/\s+/g, ' ').trim() || 'PLAYER';
+  return safe.length > 14 ? `${safe.slice(0, 12)}..` : safe;
+}
+
 function createTitleSprite(text: string, width = 800): THREE.Mesh {
   const canvas = document.createElement('canvas');
   canvas.width = width; canvas.height = 128;
   const ctx = canvas.getContext('2d')!;
-  ctx.font = '700 60px "Orbitron", sans-serif';
+  ctx.font = '700 54px "Courier New", sans-serif';
   ctx.fillStyle = '#66ccff';
   ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
   ctx.shadowColor = '#44aaff'; ctx.shadowBlur = 12;
@@ -256,16 +261,16 @@ function addCoordinates(parent: THREE.Group, whiteName: string, blackName: strin
     }
   }
 
-  const blackTitle = createTitleSprite(`BLACK // ${blackName.toUpperCase()}`);
-  blackTitle.position.set(-tabDist, yPos, -2.3);
+  const blackTitle = createTitleSprite(`BLACK // ${formatBoardName(blackName).toUpperCase()}`);
+  blackTitle.position.set(-tabDist, yPos, 2.3);
   blackTitle.rotation.x = -Math.PI / 2;
   blackTitle.rotation.z = Math.PI / 2;
   parent.add(blackTitle);
 
-  const whiteTitle = createTitleSprite(`WHITE // ${whiteName.toUpperCase()}`);
-  whiteTitle.position.set(-tabDist, yPos, 2.3);
+  const whiteTitle = createTitleSprite(`WHITE // ${formatBoardName(whiteName).toUpperCase()}`);
+  whiteTitle.position.set(-tabDist, yPos, -2.3);
   whiteTitle.rotation.x = -Math.PI / 2;
-  whiteTitle.rotation.z = Math.PI / 2;
+  whiteTitle.rotation.z = -Math.PI / 2;
   parent.add(whiteTitle);
 }
 

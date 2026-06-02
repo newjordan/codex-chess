@@ -117,9 +117,18 @@ const PROFILE_BG_SRC = 'media/big_wallpaper.jpg';
 const FLOPPY_TOWER_SRC = 'media/floppy-tower-ladder-embedded.jpg';
 const SETTINGS_BG_SRC = 'media/settings-moniker-bg.jpg';
 const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
-const LOADING_MUSIC_SRC = 'media/audio/the_pulse_long_song.mp3';
+const SOUNDTRACK_SOURCES = [
+  'media/audio/the_pulse_long_song.mp3',
+  'media/audio/The_Pulse_of_the_Board_2.mp3',
+  'media/audio/High_on_the_Train_song.mp3',
+  'media/audio/cyber_soaring_song.mp3',
+  'media/audio/data_crasher.mp3',
+  'media/audio/synthetic_dreams_cyber_eyes.mp3',
+] as const;
+const LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
-const END_SCREEN_MUSIC_SRC = 'media/audio/game_over.wav';
+const VICTORY_MUSIC_SRC = 'media/audio/victory_song_audio.mp3';
+const GAME_OVER_MUSIC_SRC = 'media/audio/checkmeat_you_lose_song.mp3';
 const PLAYER_AVATARS = {
   normal: 'media/avatars/player_normal.jpg',
   damaged: 'media/avatars/player_damage.jpg',
@@ -133,7 +142,7 @@ const INTRO_STORY = [
     body: 'Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime.',
   },
   {
-    image: 'media/intro/02-delves-too-deep.jpg',
+    image: 'media/intro/flower_delve.jpg',
     kicker: 'THE DELVE',
     title: 'TOO DEEP',
     body: 'He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived.',
@@ -573,7 +582,9 @@ function App() {
     onTimeUpdate: () => void;
   } | null>(null);
   const endMusicRef = useRef<HTMLAudioElement | null>(null);
+  const endMusicSrcRef = useRef('');
   const announcerRef = useRef<HTMLAudioElement | null>(null);
+  const loadingMusicIndexRef = useRef(0);
   const lastAnnouncedRef = useRef('');
   const audioModeRef = useRef<AudioMode>(readStoredAudioMode());
   const audioVolumeRef = useRef(readStoredAudioVolume());
@@ -711,6 +722,7 @@ function App() {
     loadingMusicHandlersRef.current = null;
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = '';
     announcerRef.current?.pause();
     announcerRef.current = null;
     audioRef.current?.stop();
@@ -818,15 +830,19 @@ function App() {
 
   useEffect(() => {
     if (screen === 'result' && (resultState?.kind === 'clear' || resultState?.kind === 'game-over')) {
-      if (!endMusicRef.current) {
-        endMusicRef.current = playClip(END_SCREEN_MUSIC_SRC);
-        window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: END_SCREEN_MUSIC_SRC };
+      const resultMusicSrc = resultState.kind === 'clear' ? VICTORY_MUSIC_SRC : GAME_OVER_MUSIC_SRC;
+      if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
+        endMusicRef.current?.pause();
+        endMusicRef.current = playClip(resultMusicSrc, { music: true });
+        endMusicSrcRef.current = resultMusicSrc;
+        window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: resultMusicSrc };
       }
       return;
     }
     endMusicRef.current?.pause();
     endMusicRef.current = null;
-    window.__chess.endMusic = { active: false, src: END_SCREEN_MUSIC_SRC };
+    endMusicSrcRef.current = '';
+    window.__chess.endMusic = { active: false, src: '' };
   }, [resultState?.kind, screen]);
 
   useEffect(() => {
@@ -896,6 +912,7 @@ function App() {
   const startGame = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = '';
     setScreen('playing');
     setResultState(null);
     resetGame();
@@ -904,6 +921,7 @@ function App() {
   const startOpponentLoading = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = '';
     ensureAudioEngine()?.play('reveal');
     announcerRef.current?.pause();
     setScreen('loading');
@@ -929,6 +947,7 @@ function App() {
   const openMenu = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = '';
     setMenuStep('video');
     setLives(MAX_LIVES);
     setResultState(null);
@@ -991,10 +1010,12 @@ function App() {
     loadingMusicHandlersRef.current = null;
     window.__chess.loadingMusic = {
       active: false,
-      src: LOADING_MUSIC_SRC,
+      src: SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
       pass: loadingMusicPassRef.current,
-      maxPasses: 'loop',
+      maxPasses: 'playlist',
       loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: loadingMusicIndexRef.current,
       fading: false,
       finished: false,
     };
@@ -1005,8 +1026,8 @@ function App() {
     loadingMusicFinishedRef.current = false;
     let clip = loadingMusicRef.current;
     if (!clip) {
-      clip = new Audio(LOADING_MUSIC_SRC);
-      clip.loop = true;
+      clip = new Audio(SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length]);
+      clip.loop = false;
       clip.preload = 'auto';
       loadingMusicRef.current = clip;
       if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
@@ -1018,10 +1039,12 @@ function App() {
           active: !clip.paused,
           attempted: true,
           blocked: false,
-          src: LOADING_MUSIC_SRC,
+          src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
           pass: loadingMusicPassRef.current,
-          maxPasses: 'loop',
+          maxPasses: 'playlist',
           loop: true,
+          playlist: [...SOUNDTRACK_SOURCES],
+          index: loadingMusicIndexRef.current,
           fading: false,
           finished: false,
           currentTime: clip.currentTime,
@@ -1029,6 +1052,9 @@ function App() {
         };
       };
       const onEnded = () => {
+        loadingMusicPassRef.current += 1;
+        loadingMusicIndexRef.current = (loadingMusicIndexRef.current + 1) % SOUNDTRACK_SOURCES.length;
+        clip.src = SOUNDTRACK_SOURCES[loadingMusicIndexRef.current];
         clip.currentTime = 0;
         updateVolumeForPass();
         clip.play().catch(() => undefined);
@@ -1044,10 +1070,12 @@ function App() {
       active: !clip.paused,
       attempted: true,
       blocked: false,
-      src: LOADING_MUSIC_SRC,
+      src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
       pass: loadingMusicPassRef.current,
-      maxPasses: 'loop',
+      maxPasses: 'playlist',
       loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: loadingMusicIndexRef.current,
       fading: false,
       finished: false,
     };
@@ -1057,10 +1085,12 @@ function App() {
           active: true,
           attempted: true,
           blocked: false,
-          src: LOADING_MUSIC_SRC,
+          src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
           pass: loadingMusicPassRef.current,
-          maxPasses: 'loop',
+          maxPasses: 'playlist',
           loop: true,
+          playlist: [...SOUNDTRACK_SOURCES],
+          index: loadingMusicIndexRef.current,
           fading: false,
           finished: false,
         };
@@ -1070,10 +1100,12 @@ function App() {
           active: false,
           attempted: true,
           blocked: true,
-          src: LOADING_MUSIC_SRC,
+          src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
           pass: loadingMusicPassRef.current,
-          maxPasses: 'loop',
+          maxPasses: 'playlist',
           loop: true,
+          playlist: [...SOUNDTRACK_SOURCES],
+          index: loadingMusicIndexRef.current,
           fading: false,
           finished: false,
         };

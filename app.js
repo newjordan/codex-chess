@@ -29885,6 +29885,180 @@ var CylinderGeometry = class _CylinderGeometry extends BufferGeometry {
     return new _CylinderGeometry(data.radiusTop, data.radiusBottom, data.height, data.radialSegments, data.heightSegments, data.openEnded, data.thetaStart, data.thetaLength);
   }
 };
+var PolyhedronGeometry = class _PolyhedronGeometry extends BufferGeometry {
+  /**
+   * Constructs a new polyhedron geometry.
+   *
+   * @param {Array<number>} [vertices] - A flat array of vertices describing the base shape.
+   * @param {Array<number>} [indices] - A flat array of indices describing the base shape.
+   * @param {number} [radius=1] - The radius of the shape.
+   * @param {number} [detail=0] - How many levels to subdivide the geometry. The more detail, the smoother the shape.
+   */
+  constructor(vertices = [], indices = [], radius = 1, detail = 0) {
+    super();
+    this.type = "PolyhedronGeometry";
+    this.parameters = {
+      vertices,
+      indices,
+      radius,
+      detail
+    };
+    const vertexBuffer = [];
+    const uvBuffer = [];
+    subdivide(detail);
+    applyRadius(radius);
+    generateUVs();
+    this.setAttribute("position", new Float32BufferAttribute(vertexBuffer, 3));
+    this.setAttribute("normal", new Float32BufferAttribute(vertexBuffer.slice(), 3));
+    this.setAttribute("uv", new Float32BufferAttribute(uvBuffer, 2));
+    if (detail === 0) {
+      this.computeVertexNormals();
+    } else {
+      this.normalizeNormals();
+    }
+    function subdivide(detail2) {
+      const a = new Vector3();
+      const b = new Vector3();
+      const c = new Vector3();
+      for (let i = 0; i < indices.length; i += 3) {
+        getVertexByIndex(indices[i + 0], a);
+        getVertexByIndex(indices[i + 1], b);
+        getVertexByIndex(indices[i + 2], c);
+        subdivideFace(a, b, c, detail2);
+      }
+    }
+    function subdivideFace(a, b, c, detail2) {
+      const cols = detail2 + 1;
+      const v = [];
+      for (let i = 0; i <= cols; i++) {
+        v[i] = [];
+        const aj = a.clone().lerp(c, i / cols);
+        const bj = b.clone().lerp(c, i / cols);
+        const rows = cols - i;
+        for (let j = 0; j <= rows; j++) {
+          if (j === 0 && i === cols) {
+            v[i][j] = aj;
+          } else {
+            v[i][j] = aj.clone().lerp(bj, j / rows);
+          }
+        }
+      }
+      for (let i = 0; i < cols; i++) {
+        for (let j = 0; j < 2 * (cols - i) - 1; j++) {
+          const k = Math.floor(j / 2);
+          if (j % 2 === 0) {
+            pushVertex(v[i][k + 1]);
+            pushVertex(v[i + 1][k]);
+            pushVertex(v[i][k]);
+          } else {
+            pushVertex(v[i][k + 1]);
+            pushVertex(v[i + 1][k + 1]);
+            pushVertex(v[i + 1][k]);
+          }
+        }
+      }
+    }
+    function applyRadius(radius2) {
+      const vertex2 = new Vector3();
+      for (let i = 0; i < vertexBuffer.length; i += 3) {
+        vertex2.x = vertexBuffer[i + 0];
+        vertex2.y = vertexBuffer[i + 1];
+        vertex2.z = vertexBuffer[i + 2];
+        vertex2.normalize().multiplyScalar(radius2);
+        vertexBuffer[i + 0] = vertex2.x;
+        vertexBuffer[i + 1] = vertex2.y;
+        vertexBuffer[i + 2] = vertex2.z;
+      }
+    }
+    function generateUVs() {
+      const vertex2 = new Vector3();
+      for (let i = 0; i < vertexBuffer.length; i += 3) {
+        vertex2.x = vertexBuffer[i + 0];
+        vertex2.y = vertexBuffer[i + 1];
+        vertex2.z = vertexBuffer[i + 2];
+        const u = azimuth(vertex2) / 2 / Math.PI + 0.5;
+        const v = inclination(vertex2) / Math.PI + 0.5;
+        uvBuffer.push(u, 1 - v);
+      }
+      correctUVs();
+      correctSeam();
+    }
+    function correctSeam() {
+      for (let i = 0; i < uvBuffer.length; i += 6) {
+        const x0 = uvBuffer[i + 0];
+        const x1 = uvBuffer[i + 2];
+        const x2 = uvBuffer[i + 4];
+        const max2 = Math.max(x0, x1, x2);
+        const min = Math.min(x0, x1, x2);
+        if (max2 > 0.9 && min < 0.1) {
+          if (x0 < 0.2) uvBuffer[i + 0] += 1;
+          if (x1 < 0.2) uvBuffer[i + 2] += 1;
+          if (x2 < 0.2) uvBuffer[i + 4] += 1;
+        }
+      }
+    }
+    function pushVertex(vertex2) {
+      vertexBuffer.push(vertex2.x, vertex2.y, vertex2.z);
+    }
+    function getVertexByIndex(index, vertex2) {
+      const stride = index * 3;
+      vertex2.x = vertices[stride + 0];
+      vertex2.y = vertices[stride + 1];
+      vertex2.z = vertices[stride + 2];
+    }
+    function correctUVs() {
+      const a = new Vector3();
+      const b = new Vector3();
+      const c = new Vector3();
+      const centroid = new Vector3();
+      const uvA = new Vector2();
+      const uvB = new Vector2();
+      const uvC = new Vector2();
+      for (let i = 0, j = 0; i < vertexBuffer.length; i += 9, j += 6) {
+        a.set(vertexBuffer[i + 0], vertexBuffer[i + 1], vertexBuffer[i + 2]);
+        b.set(vertexBuffer[i + 3], vertexBuffer[i + 4], vertexBuffer[i + 5]);
+        c.set(vertexBuffer[i + 6], vertexBuffer[i + 7], vertexBuffer[i + 8]);
+        uvA.set(uvBuffer[j + 0], uvBuffer[j + 1]);
+        uvB.set(uvBuffer[j + 2], uvBuffer[j + 3]);
+        uvC.set(uvBuffer[j + 4], uvBuffer[j + 5]);
+        centroid.copy(a).add(b).add(c).divideScalar(3);
+        const azi = azimuth(centroid);
+        correctUV(uvA, j + 0, a, azi);
+        correctUV(uvB, j + 2, b, azi);
+        correctUV(uvC, j + 4, c, azi);
+      }
+    }
+    function correctUV(uv, stride, vector, azimuth2) {
+      if (azimuth2 < 0 && uv.x === 1) {
+        uvBuffer[stride] = uv.x - 1;
+      }
+      if (vector.x === 0 && vector.z === 0) {
+        uvBuffer[stride] = azimuth2 / 2 / Math.PI + 0.5;
+      }
+    }
+    function azimuth(vector) {
+      return Math.atan2(vector.z, -vector.x);
+    }
+    function inclination(vector) {
+      return Math.atan2(-vector.y, Math.sqrt(vector.x * vector.x + vector.z * vector.z));
+    }
+  }
+  copy(source) {
+    super.copy(source);
+    this.parameters = Object.assign({}, source.parameters);
+    return this;
+  }
+  /**
+   * Factory method for creating an instance of this class from the given
+   * JSON object.
+   *
+   * @param {Object} data - A JSON object representing the serialized geometry.
+   * @return {PolyhedronGeometry} A new instance.
+   */
+  static fromJSON(data) {
+    return new _PolyhedronGeometry(data.vertices, data.indices, data.radius, data.detail);
+  }
+};
 var _v0 = /* @__PURE__ */ new Vector3();
 var _v1$1 = /* @__PURE__ */ new Vector3();
 var _normal = /* @__PURE__ */ new Vector3();
@@ -30773,6 +30947,133 @@ function addContour(vertices, contour) {
     vertices.push(contour[i].y);
   }
 }
+var IcosahedronGeometry = class _IcosahedronGeometry extends PolyhedronGeometry {
+  /**
+   * Constructs a new icosahedron geometry.
+   *
+   * @param {number} [radius=1] - Radius of the icosahedron.
+   * @param {number} [detail=0] - Setting this to a value greater than `0` adds vertices making it no longer a icosahedron.
+   */
+  constructor(radius = 1, detail = 0) {
+    const t = (1 + Math.sqrt(5)) / 2;
+    const vertices = [
+      -1,
+      t,
+      0,
+      1,
+      t,
+      0,
+      -1,
+      -t,
+      0,
+      1,
+      -t,
+      0,
+      0,
+      -1,
+      t,
+      0,
+      1,
+      t,
+      0,
+      -1,
+      -t,
+      0,
+      1,
+      -t,
+      t,
+      0,
+      -1,
+      t,
+      0,
+      1,
+      -t,
+      0,
+      -1,
+      -t,
+      0,
+      1
+    ];
+    const indices = [
+      0,
+      11,
+      5,
+      0,
+      5,
+      1,
+      0,
+      1,
+      7,
+      0,
+      7,
+      10,
+      0,
+      10,
+      11,
+      1,
+      5,
+      9,
+      5,
+      11,
+      4,
+      11,
+      10,
+      2,
+      10,
+      7,
+      6,
+      7,
+      1,
+      8,
+      3,
+      9,
+      4,
+      3,
+      4,
+      2,
+      3,
+      2,
+      6,
+      3,
+      6,
+      8,
+      3,
+      8,
+      9,
+      4,
+      9,
+      5,
+      2,
+      4,
+      11,
+      6,
+      2,
+      10,
+      8,
+      6,
+      7,
+      9,
+      8,
+      1
+    ];
+    super(vertices, indices, radius, detail);
+    this.type = "IcosahedronGeometry";
+    this.parameters = {
+      radius,
+      detail
+    };
+  }
+  /**
+   * Factory method for creating an instance of this class from the given
+   * JSON object.
+   *
+   * @param {Object} data - A JSON object representing the serialized geometry.
+   * @return {IcosahedronGeometry} A new instance.
+   */
+  static fromJSON(data) {
+    return new _IcosahedronGeometry(data.radius, data.detail);
+  }
+};
 var PlaneGeometry = class _PlaneGeometry extends BufferGeometry {
   /**
    * Constructs a new plane geometry.
@@ -48725,6 +49026,101 @@ function createCellWaveEnvironment(theme) {
     }
   };
 }
+function createAmbientCircuitLayer(theme) {
+  const colors = THEME_COLORS[theme];
+  const group = new Group();
+  group.renderOrder = -18;
+  const uniforms = {
+    uTime: { value: 0 },
+    uColor: { value: new Color(colors[2]) }
+  };
+  const shellMaterial = new ShaderMaterial({
+    uniforms,
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    wireframe: true,
+    vertexShader: `
+      uniform float uTime;
+      varying vec3 vNormalWorld;
+      void main() {
+        vec3 normalWorld = normalize(mat3(modelMatrix) * normal);
+        vNormalWorld = normalWorld;
+        vec3 pos = position + normal * (sin(position.y * 0.22 + position.x * 0.09 + position.z * 0.07 + uTime * 0.34) * 0.08);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(pos, 1.0);
+      }
+    `,
+    fragmentShader: `
+      precision highp float;
+      uniform float uTime;
+      uniform vec3 uColor;
+      varying vec3 vNormalWorld;
+
+      void main() {
+        float busPulse = sin((vNormalWorld.x * 4.0 + vNormalWorld.y * 6.0 - vNormalWorld.z * 3.0) + uTime * 0.8) * 0.5 + 0.5;
+        float gate = smoothstep(0.52, 0.92, busPulse);
+        vec3 color = mix(uColor * 0.55, vec3(0.45, 0.92, 1.0), gate * 0.45);
+        gl_FragColor = vec4(color, 0.034 + gate * 0.035);
+      }
+    `
+  });
+  const shell = new Mesh(new SphereGeometry(47.2, 28, 14), shellMaterial);
+  shell.renderOrder = -18;
+  group.add(shell);
+  const cageMaterial = new MeshBasicMaterial({
+    color: colors[1],
+    transparent: true,
+    opacity: 0.045,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    wireframe: true
+  });
+  const cage = new Mesh(new IcosahedronGeometry(45.7, 2), cageMaterial);
+  cage.rotation.set(0.18, 0.42, 0.08);
+  cage.renderOrder = -17;
+  group.add(cage);
+  const ringMaterial = new LineBasicMaterial({
+    color: colors[2],
+    transparent: true,
+    opacity: 0.08,
+    depthWrite: false,
+    blending: AdditiveBlending
+  });
+  const ringGeometry = new BufferGeometry().setFromPoints(
+    Array.from({ length: 145 }, (_, i) => {
+      const a = i / 144 * Math.PI * 2;
+      return new Vector3(Math.cos(a) * 43.8, 0, Math.sin(a) * 43.8);
+    })
+  );
+  const rings = [new LineLoop(ringGeometry, ringMaterial), new LineLoop(ringGeometry, ringMaterial), new LineLoop(ringGeometry, ringMaterial)];
+  rings[0].rotation.x = Math.PI / 2;
+  rings[1].rotation.z = Math.PI / 2;
+  rings[2].rotation.set(Math.PI / 2, Math.PI / 3, 0);
+  rings.forEach((ring) => {
+    ring.renderOrder = -16;
+    group.add(ring);
+  });
+  return {
+    group,
+    tick(delta) {
+      uniforms.uTime.value += delta;
+      shell.rotation.y += delta * 0.018;
+      cage.rotation.y -= delta * 0.012;
+      cage.rotation.x += delta * 6e-3;
+      rings[0].rotation.z += delta * 0.01;
+      rings[1].rotation.x -= delta * 8e-3;
+      rings[2].rotation.y += delta * 6e-3;
+    },
+    dispose() {
+      shell.geometry.dispose();
+      shellMaterial.dispose();
+      cage.geometry.dispose();
+      cageMaterial.dispose();
+      ringGeometry.dispose();
+      ringMaterial.dispose();
+    }
+  };
+}
 
 // src/board3d/scene.ts
 var DotMatrixShader = {
@@ -48795,6 +49191,8 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
   scene.add(new Points(starsGeo, new PointsMaterial({ size: 0.08, color: 6728447, transparent: true, opacity: 0.4 })));
   const cellWaveEnvironment = createCellWaveEnvironment(enemyTheme);
   scene.add(cellWaveEnvironment.mesh);
+  const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
+  scene.add(ambientCircuitLayer.group);
   const clock = new Clock();
   const ro = new ResizeObserver(() => {
     const rw = canvas.clientWidth;
@@ -48814,12 +49212,15 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
     composer,
     controls,
     tick() {
-      cellWaveEnvironment.tick(clock.getDelta());
+      const delta = clock.getDelta();
+      cellWaveEnvironment.tick(delta);
+      ambientCircuitLayer.tick(delta);
     },
     dispose() {
       ro.disconnect();
       controls.dispose();
       cellWaveEnvironment.dispose();
+      ambientCircuitLayer.dispose();
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
       renderer.dispose();
@@ -58064,9 +58465,18 @@ var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.jpg";
 var PROFILE_BG_SRC = "media/big_wallpaper.jpg";
 var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
 var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
-var LOADING_MUSIC_SRC = "media/audio/the_pulse_long_song.mp3";
+var SOUNDTRACK_SOURCES = [
+  "media/audio/the_pulse_long_song.mp3",
+  "media/audio/The_Pulse_of_the_Board_2.mp3",
+  "media/audio/High_on_the_Train_song.mp3",
+  "media/audio/cyber_soaring_song.mp3",
+  "media/audio/data_crasher.mp3",
+  "media/audio/synthetic_dreams_cyber_eyes.mp3"
+];
+var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
-var END_SCREEN_MUSIC_SRC = "media/audio/game_over.wav";
+var VICTORY_MUSIC_SRC = "media/audio/victory_song_audio.mp3";
+var GAME_OVER_MUSIC_SRC = "media/audio/checkmeat_you_lose_song.mp3";
 var PLAYER_AVATARS = {
   normal: "media/avatars/player_normal.jpg",
   damaged: "media/avatars/player_damage.jpg",
@@ -58080,7 +58490,7 @@ var INTRO_STORY = [
     body: "Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime."
   },
   {
-    image: "media/intro/02-delves-too-deep.jpg",
+    image: "media/intro/flower_delve.jpg",
     kicker: "THE DELVE",
     title: "TOO DEEP",
     body: "He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived."
@@ -58455,7 +58865,9 @@ function App() {
   const loadingMusicFinishedRef = (0, import_react3.useRef)(false);
   const loadingMusicHandlersRef = (0, import_react3.useRef)(null);
   const endMusicRef = (0, import_react3.useRef)(null);
+  const endMusicSrcRef = (0, import_react3.useRef)("");
   const announcerRef = (0, import_react3.useRef)(null);
+  const loadingMusicIndexRef = (0, import_react3.useRef)(0);
   const lastAnnouncedRef = (0, import_react3.useRef)("");
   const audioModeRef = (0, import_react3.useRef)(readStoredAudioMode());
   const audioVolumeRef = (0, import_react3.useRef)(readStoredAudioVolume());
@@ -58578,6 +58990,7 @@ function App() {
     loadingMusicHandlersRef.current = null;
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = "";
     announcerRef.current?.pause();
     announcerRef.current = null;
     audioRef.current?.stop();
@@ -58672,15 +59085,19 @@ function App() {
   }, [continueSeconds, resultState, screen]);
   (0, import_react3.useEffect)(() => {
     if (screen === "result" && (resultState?.kind === "clear" || resultState?.kind === "game-over")) {
-      if (!endMusicRef.current) {
-        endMusicRef.current = playClip(END_SCREEN_MUSIC_SRC);
-        window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: END_SCREEN_MUSIC_SRC };
+      const resultMusicSrc = resultState.kind === "clear" ? VICTORY_MUSIC_SRC : GAME_OVER_MUSIC_SRC;
+      if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
+        endMusicRef.current?.pause();
+        endMusicRef.current = playClip(resultMusicSrc, { music: true });
+        endMusicSrcRef.current = resultMusicSrc;
+        window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: resultMusicSrc };
       }
       return;
     }
     endMusicRef.current?.pause();
     endMusicRef.current = null;
-    window.__chess.endMusic = { active: false, src: END_SCREEN_MUSIC_SRC };
+    endMusicSrcRef.current = "";
+    window.__chess.endMusic = { active: false, src: "" };
   }, [resultState?.kind, screen]);
   (0, import_react3.useEffect)(() => {
     if (screen === "result" && resultState?.kind === "loss" && continueSeconds !== previousContinueSecondsRef.current) {
@@ -58745,6 +59162,7 @@ function App() {
   const startGame = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = "";
     setScreen("playing");
     setResultState(null);
     resetGame();
@@ -58752,6 +59170,7 @@ function App() {
   const startOpponentLoading = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = "";
     ensureAudioEngine()?.play("reveal");
     announcerRef.current?.pause();
     setScreen("loading");
@@ -58774,6 +59193,7 @@ function App() {
   const openMenu = () => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
+    endMusicSrcRef.current = "";
     setMenuStep("video");
     setLives(MAX_LIVES);
     setResultState(null);
@@ -58833,10 +59253,12 @@ function App() {
     loadingMusicHandlersRef.current = null;
     window.__chess.loadingMusic = {
       active: false,
-      src: LOADING_MUSIC_SRC,
+      src: SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
       pass: loadingMusicPassRef.current,
-      maxPasses: "loop",
+      maxPasses: "playlist",
       loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: loadingMusicIndexRef.current,
       fading: false,
       finished: false
     };
@@ -58846,8 +59268,8 @@ function App() {
     loadingMusicFinishedRef.current = false;
     let clip = loadingMusicRef.current;
     if (!clip) {
-      clip = new Audio(LOADING_MUSIC_SRC);
-      clip.loop = true;
+      clip = new Audio(SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length]);
+      clip.loop = false;
       clip.preload = "auto";
       loadingMusicRef.current = clip;
       if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
@@ -58859,10 +59281,12 @@ function App() {
           active: !clip.paused,
           attempted: true,
           blocked: false,
-          src: LOADING_MUSIC_SRC,
+          src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
           pass: loadingMusicPassRef.current,
-          maxPasses: "loop",
+          maxPasses: "playlist",
           loop: true,
+          playlist: [...SOUNDTRACK_SOURCES],
+          index: loadingMusicIndexRef.current,
           fading: false,
           finished: false,
           currentTime: clip.currentTime,
@@ -58870,6 +59294,9 @@ function App() {
         };
       };
       const onEnded = () => {
+        loadingMusicPassRef.current += 1;
+        loadingMusicIndexRef.current = (loadingMusicIndexRef.current + 1) % SOUNDTRACK_SOURCES.length;
+        clip.src = SOUNDTRACK_SOURCES[loadingMusicIndexRef.current];
         clip.currentTime = 0;
         updateVolumeForPass();
         clip.play().catch(() => void 0);
@@ -58885,10 +59312,12 @@ function App() {
       active: !clip.paused,
       attempted: true,
       blocked: false,
-      src: LOADING_MUSIC_SRC,
+      src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
       pass: loadingMusicPassRef.current,
-      maxPasses: "loop",
+      maxPasses: "playlist",
       loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: loadingMusicIndexRef.current,
       fading: false,
       finished: false
     };
@@ -58897,10 +59326,12 @@ function App() {
         active: true,
         attempted: true,
         blocked: false,
-        src: LOADING_MUSIC_SRC,
+        src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
         pass: loadingMusicPassRef.current,
-        maxPasses: "loop",
+        maxPasses: "playlist",
         loop: true,
+        playlist: [...SOUNDTRACK_SOURCES],
+        index: loadingMusicIndexRef.current,
         fading: false,
         finished: false
       };
@@ -58909,10 +59340,12 @@ function App() {
         active: false,
         attempted: true,
         blocked: true,
-        src: LOADING_MUSIC_SRC,
+        src: clip.currentSrc || SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
         pass: loadingMusicPassRef.current,
-        maxPasses: "loop",
+        maxPasses: "playlist",
         loop: true,
+        playlist: [...SOUNDTRACK_SOURCES],
+        index: loadingMusicIndexRef.current,
         fading: false,
         finished: false
       };

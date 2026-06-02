@@ -4,7 +4,7 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { createCellWaveEnvironment } from './floor';
+import { createAmbientCircuitLayer, createCellWaveEnvironment } from './floor';
 import type { Board3DEnemyTheme, SceneContext } from './types';
 
 const DotMatrixShader = {
@@ -89,6 +89,8 @@ export function setupScene(
 
   const cellWaveEnvironment = createCellWaveEnvironment(enemyTheme);
   scene.add(cellWaveEnvironment.mesh);
+  const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
+  scene.add(ambientCircuitLayer.group);
   const clock = new THREE.Clock();
 
   const ro = new ResizeObserver(() => {
@@ -110,12 +112,15 @@ export function setupScene(
     composer,
     controls,
     tick() {
-      cellWaveEnvironment.tick(clock.getDelta());
+      const delta = clock.getDelta();
+      cellWaveEnvironment.tick(delta);
+      ambientCircuitLayer.tick(delta);
     },
     dispose() {
       ro.disconnect();
       controls.dispose();
       cellWaveEnvironment.dispose();
+      ambientCircuitLayer.dispose();
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
       renderer.dispose();

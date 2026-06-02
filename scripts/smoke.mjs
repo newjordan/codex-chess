@@ -352,9 +352,18 @@ async function runPlayableSmoke(label, viewport) {
       const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
       return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear');
     });
+    const intentionallyInterruptedAudio = [
+      '/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED',
+      '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
+      '/media/audio/High_on_the_Train_song.mp3 net::ERR_ABORTED',
+      '/media/audio/cyber_soaring_song.mp3 net::ERR_ABORTED',
+      '/media/audio/data_crasher.mp3 net::ERR_ABORTED',
+      '/media/audio/synthetic_dreams_cyber_eyes.mp3 net::ERR_ABORTED',
+      '/media/audio/victory_song_audio.mp3 net::ERR_ABORTED',
+      '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',
+    ];
     const relevantFailed = failed.filter((entry) =>
-      !entry.includes('/media/audio/game_over.wav net::ERR_ABORTED') &&
-      !entry.includes('/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED')
+      !intentionallyInterruptedAudio.some((audio) => entry.includes(audio))
     );
     const checks = {
       label,

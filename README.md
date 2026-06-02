@@ -5,12 +5,12 @@
 </p>
 
 <p align="center">
-  <strong>OFFICIAL CYBERSPACE INSTRUCTION BOOKLET</strong><br>
-  For one player. Browser required. No cartridge blowing necessary.
+  <strong>Cyber Chess</strong><br>
+  For one player. Browser required. No cartridge!
 </p>
 
 <p align="center">
-  <a href="https://newjordan.github.io/codex-chess/">PLAY THE GAME</a>
+  <a href="https://newjordan.github.io/codex-chess/">Meat the Machine</a>
   &nbsp;|&nbsp;
   <a href="media/chessagent-intro.mp4">WATCH THE INTRO MP4</a>
 </p>
@@ -28,99 +28,6 @@
 <video src="media/chessagent-intro.mp4" controls width="900"></video>
 
 If the video player does not appear in your browser, open `media/chessagent-intro.mp4`.
-
----
-
-## THE STORY SO FAR
-
-Before the age of neon boards, the greatest chess mind alive chased a forbidden rumor hidden deep in computation: the Shannon Prime.
-
-Then the Shannon Knights struck.
-
-<table>
-  <tr>
-    <td width="50%"><img src="media/intro/01-pre-computation.png" alt="The player before computation"></td>
-    <td width="50%"><img src="media/intro/02-shannon-knights-kidnap.png" alt="The Shannon Knights kidnapping the family"></td>
-  </tr>
-  <tr>
-    <td><strong>PRE-COMPUTATION</strong><br>The brilliant player studies the impossible prime.</td>
-    <td><strong>THE BREACH</strong><br>Goop, Frostd4d, and Razorblade tear open the lab and kidnap his family.</td>
-  </tr>
-  <tr>
-    <td><img src="media/intro/02-consciousness-floppies.png" alt="Consciousness copied to floppy disks"></td>
-    <td><img src="media/intro/03-floppy-tower.png" alt="The floppy tower loading forty-two disks"></td>
-  </tr>
-  <tr>
-    <td><strong>42 DISKS</strong><br>He transfers his mind onto forty-two floppy disks.</td>
-    <td><strong>FLOPPY TOWER ONLINE</strong><br>The disks load one by one. The room becomes light.</td>
-  </tr>
-  <tr>
-    <td colspan="2"><img src="media/intro/04-shannon-knights-tower-chase.png" alt="The Shannon Knights waiting in cyberspace"></td>
-  </tr>
-  <tr>
-    <td colspan="2"><strong>CYBERSPACE</strong><br>Now he must climb the tower, beat the Shannon Knights, save his family, and find the prime at the center of chess.</td>
-  </tr>
-</table>
-
----
-
-## YOUR MISSION
-
-<p align="center">
-  <img src="media/floppy-tower-ladder.png" alt="The floppy tower ladder" width="760">
-</p>
-
-Ascend the Floppy Tower. You do not pick your opponent. You rise.
-
-Start at the bottom with Goop, push through Frostd4d and Razorblade, then face GORDO at the tower core. You have two lives for the full run. Lose once and the continue clock starts. Lose twice and the cabinet owns your score.
-
----
-
-## KNOW YOUR ENEMIES
-
-<table>
-  <tr>
-    <th>FLOOR 1</th>
-    <th>FLOOR 2</th>
-    <th>FLOOR 3</th>
-    <th>FINAL FLOOR</th>
-  </tr>
-  <tr>
-    <td><img src="media/enemies/goop-entrance.png" alt="Goop entrance hero"></td>
-    <td><img src="media/enemies/frostd4d-entrance.png" alt="Frostd4d entrance hero"></td>
-    <td><img src="media/enemies/razorblade-entrance.png" alt="Razorblade entrance hero"></td>
-    <td><img src="media/enemies/gordo-entrance.png" alt="GORDO entrance hero"></td>
-  </tr>
-  <tr>
-    <td><strong>GOOP</strong><br>Easy<br>Mostly legal. Frequently sticky.</td>
-    <td><strong>FROSTD4D</strong><br>Medium<br>Cold reads, colder captures.</td>
-    <td><strong>RAZORBLADE</strong><br>Hard<br>Depth search with bad intentions.</td>
-    <td><strong>GORDO</strong><br>Final<br>Four arms. One engine. No mercy.</td>
-  </tr>
-  <tr>
-    <td><img src="avatars/goop.png" alt="Goop avatar"></td>
-    <td><img src="avatars/frostd4d.png" alt="Frostd4d avatar"></td>
-    <td><img src="avatars/razorblade.png" alt="Razorblade avatar"></td>
-    <td><img src="avatars/gordo.png" alt="GORDO avatar"></td>
-  </tr>
-</table>
-
-Each enemy brings a custom arena mood: Goop glows green, Frostd4d freezes the background blue, Razorblade stains the board red, and GORDO floods the tower core with magenta and amber.
-
----
-
-## VICTORY AND DEFEAT
-
-<table>
-  <tr>
-    <td width="50%"><img src="media/campaign-victory-portrait.png" alt="Victory portrait"></td>
-    <td width="50%"><img src="media/campaign-defeat-portrait.png" alt="Defeat portrait"></td>
-  </tr>
-  <tr>
-    <td><strong>YOU WIN</strong><br>Clear a floor and the next challenger appears.</td>
-    <td><strong>YOU LOSE</strong><br>Hit continue before the countdown expires.</td>
-  </tr>
-</table>
 
 ---
 

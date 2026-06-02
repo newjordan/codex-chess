@@ -120,16 +120,19 @@ const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
 const SOUNDTRACK_SOURCES = [
   'media/audio/the_pulse_long_song.mp3',
   'media/audio/The_Pulse_of_the_Board_2.mp3',
-  'media/audio/High_on_the_Train_song.mp3',
   'media/audio/cyber_soaring_song.mp3',
   'media/audio/data_crasher.mp3',
   'media/audio/bishops_touch.mp3',
+  'media/audio/cyber_chess_music.mp3',
   'media/audio/synthetic_dreams_cyber_eyes.mp3',
 ] as const;
 const LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
-const VICTORY_MUSIC_SRC = 'media/audio/victory_song_audio.mp3';
-const GAME_OVER_MUSIC_SRC = 'media/audio/checkmeat_you_lose_song.mp3';
+const VICTORY_MUSIC_SOURCES = [
+  'media/audio/victorious_1.mp3',
+  'media/audio/victorioius_2.mp3',
+] as const;
+const GAME_OVER_MUSIC_SRC = 'media/audio/game_over.mp3';
 const PLAYER_AVATARS = {
   normal: 'media/avatars/player_normal.jpg',
   damaged: 'media/avatars/player_damage.jpg',
@@ -830,8 +833,11 @@ function App() {
   }, [continueSeconds, resultState, screen]);
 
   useEffect(() => {
-    if (screen === 'result' && (resultState?.kind === 'clear' || resultState?.kind === 'game-over')) {
-      const resultMusicSrc = resultState.kind === 'clear' ? VICTORY_MUSIC_SRC : GAME_OVER_MUSIC_SRC;
+    if (screen === 'result' && resultState) {
+      const resultMusicSrc =
+        resultState.kind === 'win' ? VICTORY_MUSIC_SOURCES[0] :
+        resultState.kind === 'clear' ? VICTORY_MUSIC_SOURCES[1] :
+        GAME_OVER_MUSIC_SRC;
       if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
         endMusicRef.current?.pause();
         endMusicRef.current = playClip(resultMusicSrc, { music: true });
@@ -1324,11 +1330,11 @@ function App() {
       />
 
       {!settingsOpen && screen === 'intro' && menuStep === 'video' && (
-        <button type="button" className="settings-launcher" onClick={() => {
+        <button type="button" className="settings-launcher" aria-label="SETTINGS" onClick={() => {
           ensureAudioEngine()?.play('menu');
           setSettingsOpen(true);
         }}>
-          SETTINGS
+          <span>SETTINGS</span>
         </button>
       )}
 
@@ -1370,15 +1376,23 @@ function App() {
                 <div className="story-image-frame">
                   <img className="story-art" src={INTRO_STORY[storyIndex].image} alt="" />
                   <div className="story-scanline" />
-                </div>
-                <div className="story-copy">
-                  <span>{INTRO_STORY[storyIndex].kicker}</span>
-                  <h2>{INTRO_STORY[storyIndex].title}</h2>
-                  <p>{INTRO_STORY[storyIndex].body}</p>
-                  <div className="story-progress">
-                    {INTRO_STORY.map((_, index) => (
-                      <i key={index} className={index === storyIndex ? 'active' : ''} />
-                    ))}
+                  <div className="story-copy" aria-live="polite" aria-labelledby={`story-title-${storyIndex}`}>
+                    <span className="story-kicker">{INTRO_STORY[storyIndex].kicker}</span>
+                    <h2 id={`story-title-${storyIndex}`} className="story-title">{INTRO_STORY[storyIndex].title}</h2>
+                    <p
+                      key={`${storyIndex}-${INTRO_STORY[storyIndex].body}`}
+                      className="story-terminal-text"
+                      style={{
+                        '--story-text-duration': `${Math.max(3.4, Math.min(7.2, INTRO_STORY[storyIndex].body.length * 0.052))}s`,
+                      } as CSSProperties}
+                    >
+                      {INTRO_STORY[storyIndex].body}
+                    </p>
+                    <div className="story-progress" aria-hidden="true">
+                      {INTRO_STORY.map((_, index) => (
+                        <i key={index} className={index === storyIndex ? 'active' : ''} />
+                      ))}
+                    </div>
                   </div>
                   <div className="story-actions">
                     <button type="button" className="art-button art-button-back" onClick={retreatIntroStory} disabled={storyIndex === 0}>
@@ -1624,18 +1638,21 @@ function App() {
           <div className="settings-vignette" />
           <div className="settings-panel">
             <span className="settings-kicker">SYSTEM OPTIONS</span>
-            <h2 id="settings-title">SETTINGS</h2>
+            <h2 id="settings-title"><span>SETTINGS</span></h2>
             <div className="settings-group">
-              <strong>AUDIO</strong>
+              <strong className="settings-section-art">AUDIO</strong>
               <div className="settings-options" role="group" aria-label="Audio mode">
-                <button type="button" className={audioMode === 'full' ? 'selected' : ''} onClick={() => updateAudioMode('full')}>
-                  FULL AUDIO
+                <button type="button" className={'settings-toggle' + (audioMode === 'full' ? ' selected' : '')} onClick={() => updateAudioMode('full')}>
+                  <span className="settings-toggle-label">FULL AUDIO</span>
+                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
-                <button type="button" className={audioMode === 'sfx' ? 'selected' : ''} onClick={() => updateAudioMode('sfx')}>
-                  SFX ONLY
+                <button type="button" className={'settings-toggle' + (audioMode === 'sfx' ? ' selected' : '')} onClick={() => updateAudioMode('sfx')}>
+                  <span className="settings-toggle-label">SFX ONLY</span>
+                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
-                <button type="button" className={audioMode === 'muted' ? 'selected' : ''} onClick={() => updateAudioMode('muted')}>
-                  MUTED
+                <button type="button" className={'settings-toggle' + (audioMode === 'muted' ? ' selected' : '')} onClick={() => updateAudioMode('muted')}>
+                  <span className="settings-toggle-label">MUTED</span>
+                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -1647,45 +1664,52 @@ function App() {
             {screen === 'playing' && (
               <div className="settings-group">
                 <strong>GAME</strong>
-                <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
-                  <button type="button" onClick={() => {
-                    audioRef.current?.play('menu');
-                    resetGame();
-                    setSettingsOpen(false);
-                  }}>
-                    RESET BOARD
-                  </button>
-                  <button type="button" onClick={() => {
-                    audioRef.current?.play('menu');
-                    setSettingsOpen(false);
-                    openMenu();
-                  }}>
-                    MAIN MENU
-                  </button>
-                </div>
-              </div>
-            )}
-            <label className="settings-volume" htmlFor="audio-volume">
-              <span>OUTPUT LEVEL</span>
-              <input
-                id="audio-volume"
-                type="range"
-                min="0"
-                max="200"
-                step="5"
-                value={audioVolume}
-                onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
-              />
-            </label>
-            <button type="button" className="settings-close" onClick={() => {
-              audioRef.current?.play('menu');
-              setSettingsOpen(false);
-            }}>
-              CLOSE
-            </button>
-          </div>
-        </div>
-      )}
+	                <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
+	                  <button type="button" className="art-button art-button-reset" onClick={() => {
+	                    audioRef.current?.play('menu');
+	                    resetGame();
+	                    setSettingsOpen(false);
+	                  }}>
+	                    <span>RESET BOARD</span>
+	                  </button>
+	                  <button type="button" className="art-button art-button-back" onClick={() => {
+	                    audioRef.current?.play('menu');
+	                    setSettingsOpen(false);
+	                    openMenu();
+	                  }}>
+	                    <span>MAIN MENU</span>
+	                  </button>
+	                </div>
+	              </div>
+	            )}
+	            <label className="settings-volume" htmlFor="audio-volume">
+	              <span>OUTPUT LEVEL</span>
+	              <span
+	                className="settings-slider-shell"
+	                style={{ '--settings-volume-progress': `${Math.min(100, Math.max(0, audioVolume / 2))}%` } as CSSProperties}
+	              >
+	                <input
+	                  id="audio-volume"
+	                  type="range"
+	                  min="0"
+	                  max="200"
+	                  step="5"
+	                  value={audioVolume}
+	                  onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
+	                />
+	              </span>
+	            </label>
+	            <div className="settings-actions">
+	              <button type="button" className="art-button art-button-close" onClick={() => {
+	                audioRef.current?.play('menu');
+	                setSettingsOpen(false);
+	              }}>
+	                <span>CLOSE</span>
+	              </button>
+	            </div>
+	          </div>
+	        </div>
+	      )}
     </>
   );
 }

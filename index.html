@@ -13,13 +13,6 @@
     font-display: swap;
   }
   @font-face {
-    font-family: "Eurosteal";
-    src: url("media/fonts/Eurosteal.ttf") format("truetype");
-    font-weight: 400 900;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
     font-family: "Upheaval";
     src: url("media/fonts/upheavtt.ttf") format("truetype");
     font-weight: 400 900;
@@ -27,9 +20,9 @@
     font-display: swap;
   }
   :root {
-    --font-header: "Commando", "Orbitron", "Eurostile", "Microgramma", "Arial Black", monospace;
-    --font-type: "Eurosteal", "Eurostile", "Orbitron", "Arial Black", monospace;
-    --font-story: "Upheaval", var(--font-type);
+    --font-header: "Commando", "Orbitron", "Arial Black", monospace;
+    --font-type: "Upheaval", "Orbitron", "Arial Black", monospace;
+    --font-story: "Upheaval", "Arial Black", monospace;
     --font-arcade: var(--font-header);
     --font-label: var(--font-type);
     --font-digital: "DSEG7", var(--font-type);
@@ -477,14 +470,13 @@
   .tower-actions {
     position: absolute;
     z-index: 3;
-    left: 50%;
-    bottom: 16px;
+    left: clamp(12px, 2.4vw, 34px);
+    right: clamp(12px, 2.4vw, 34px);
+    bottom: clamp(14px, 2.4vh, 30px);
     display: flex;
+    justify-content: space-between;
+    align-items: center;
     gap: 10px;
-    transform: translateX(-50%);
-  }
-  .tower-panel .tower-actions {
-    bottom: clamp(8px, 1.2vh, 16px);
   }
   .tower-actions button {
     min-width: 138px;
@@ -518,20 +510,14 @@
     height: 100vh;
     min-height: 0;
     overflow: hidden;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) minmax(118px, auto);
-    gap: 0;
+    display: block;
     padding: 0;
-    align-content: stretch;
     background: #02050c;
     border: 0;
   }
   .story-image-frame {
     position: relative;
-    grid-column: 1;
-    grid-row: 1;
-    display: grid;
-    place-items: center;
+    display: block;
     width: 100%;
     height: 100%;
     min-height: 0;
@@ -542,11 +528,10 @@
   }
   .story-art,
   .story-scanline {
-    grid-column: 1;
-    grid-row: 1;
+    position: absolute;
+    inset: 0;
   }
   .story-art {
-    position: relative;
     z-index: 0;
     width: 100%;
     height: 100%;
@@ -558,9 +543,18 @@
     background: transparent;
     transform: none;
   }
-  .story-scanline {
-    position: relative;
+  .story-image-frame::after {
+    content: "";
+    position: absolute;
+    inset: 0;
     z-index: 1;
+    pointer-events: none;
+    background:
+      linear-gradient(90deg, rgba(0, 0, 0, 0.78), rgba(0, 0, 0, 0.22) 48%, rgba(0, 0, 0, 0.58)),
+      linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.1) 52%, rgba(0, 0, 0, 0.78));
+  }
+  .story-scanline {
+    z-index: 2;
     width: 100%;
     height: 100%;
     pointer-events: none;
@@ -569,86 +563,121 @@
       linear-gradient(180deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.08) 45%, rgba(0, 0, 0, 0.26));
   }
   .story-copy {
-    position: relative;
-    z-index: 1;
-    grid-column: 1;
-    grid-row: 2;
-    align-self: end;
+    position: absolute;
+    z-index: 3;
+    left: clamp(14px, 4vw, 58px);
+    bottom: clamp(104px, 15vh, 146px);
     display: grid;
-    grid-template-columns: minmax(220px, 0.34fr) minmax(0, 1fr) minmax(280px, auto);
-    grid-template-rows: auto auto;
-    grid-template-areas:
-      "kicker body actions"
-      "title body actions";
-    align-items: end;
-    gap: 8px 14px;
-    width: auto;
+    gap: clamp(6px, 1.1vh, 10px);
+    width: min(760px, calc(100vw - clamp(28px, 8vw, 116px)));
     margin: 0;
-    min-height: 118px;
-    max-height: 34vh;
-    padding: 12px 18px;
-    color: #dff;
+    max-height: calc(100vh - clamp(166px, 24vh, 216px));
+    padding: clamp(13px, 2vw, 22px);
+    overflow: hidden;
+    color: #dffcff;
     background:
-      linear-gradient(90deg, rgba(0, 255, 204, 0.06) 1px, transparent 1px),
-      linear-gradient(0deg, rgba(0, 255, 204, 0.06) 1px, transparent 1px),
-      rgba(2, 5, 12, 0.96);
-    background-size: 18px 18px;
-    border: 0;
-    border-top: 3px solid #00ffcc;
-    text-shadow: 0 2px 0 #000;
+      linear-gradient(90deg, rgba(0, 255, 204, 0.11) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(0, 255, 204, 0.09) 1px, transparent 1px),
+      linear-gradient(135deg, rgba(0, 255, 204, 0.2), rgba(255, 47, 216, 0.1) 44%, rgba(2, 5, 12, 0.86) 74%),
+      rgba(1, 6, 13, 0.82);
+    background-size: 16px 16px, 16px 16px, auto, auto;
+    border: 1px solid rgba(0, 255, 204, 0.72);
+    box-shadow:
+      inset 0 0 0 1px rgba(255, 242, 0, 0.16),
+      inset 0 0 32px rgba(0, 255, 204, 0.14),
+      0 0 22px rgba(0, 255, 204, 0.22),
+      0 0 36px rgba(255, 47, 216, 0.12);
+    font-family: var(--font-story);
+    text-shadow: 0 2px 0 #000, 0 0 10px rgba(0, 255, 204, 0.46);
   }
-  .story-copy span {
-    grid-area: kicker;
+  .story-copy::before {
+    content: ">";
+    position: absolute;
+    left: 8px;
+    top: 7px;
+    color: #fff200;
+    font: 400 14px var(--font-story);
+    text-shadow: 0 0 8px #fff200;
+  }
+  .story-copy::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background:
+      repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 5px),
+      linear-gradient(180deg, transparent, rgba(0, 255, 204, 0.08), transparent);
+    opacity: 0.42;
+    mix-blend-mode: screen;
+  }
+  .story-copy .story-kicker {
     min-width: 0;
+    padding-left: 12px;
     color: #7dffcc;
+    font-family: var(--font-story);
     font-size: clamp(13px, 1.25vw, 18px);
-    font-weight: 900;
+    font-weight: 400;
+    letter-spacing: 0.04em;
     overflow-wrap: anywhere;
   }
-  .story-copy h2 {
-    grid-area: title;
+  .story-copy .story-title {
     min-width: 0;
     margin: 0;
     color: #fff200;
-    font-size: clamp(28px, 3.4vw, 48px);
+    font-family: var(--font-story);
+    font-size: clamp(30px, 4.6vw, 62px);
+    font-weight: 400;
     line-height: 1;
+    letter-spacing: 0;
     overflow-wrap: anywhere;
   }
   .story-copy p {
-    grid-area: body;
     min-width: 0;
-    max-height: calc(34vh - 28px);
     max-width: none;
     margin: 0;
-    overflow: auto;
+    max-height: 0;
+    overflow: hidden;
     font-family: var(--font-story);
-    font-size: clamp(14px, 1.45vw, 20px);
+    font-size: clamp(17px, 2vw, 27px);
     font-weight: 400;
-    line-height: 1.18;
+    line-height: 1.12;
     overflow-wrap: anywhere;
+    animation: story-terminal-reveal var(--story-text-duration, 5.2s) steps(18, end) 180ms both;
+  }
+  .story-copy p::after {
+    content: "_";
+    display: inline-block;
+    margin-left: 4px;
+    color: #fff200;
+    animation: story-caret-blink 780ms steps(1, end) infinite;
   }
   .story-progress {
-    grid-area: progress;
     display: flex;
     gap: 6px;
-    margin-top: 2px;
+    margin-top: 4px;
   }
   .story-progress i {
-    width: 20px;
+    width: clamp(16px, 2.2vw, 26px);
     height: 6px;
-    background: #26374b;
+    background: rgba(38, 55, 75, 0.82);
     border: 1px solid #00ffcc;
+    box-shadow: inset 0 0 5px rgba(0, 0, 0, 0.72);
   }
   .story-progress i.active {
     background: #fff200;
     border-color: #fff200;
+    box-shadow: 0 0 10px rgba(255, 242, 0, 0.72);
   }
   .story-actions {
-    grid-area: actions;
+    position: absolute;
+    z-index: 4;
+    right: clamp(10px, 3vw, 42px);
+    bottom: max(12px, env(safe-area-inset-bottom));
     display: flex;
     flex-wrap: nowrap;
     justify-content: flex-end;
-    gap: 7px;
+    align-items: center;
+    gap: clamp(5px, 1vw, 10px);
     margin-top: 0;
   }
   .story-actions button {
@@ -657,7 +686,7 @@
     color: #000;
     background: #c0c0c0;
     border: 4px outset #fff;
-    font: 900 16px var(--font-type);
+    font: 400 16px var(--font-story);
     cursor: pointer;
   }
   .story-actions button:disabled {
@@ -669,6 +698,20 @@
   .story-actions button.selected {
     background: #fff200;
     border-color: #ffe65c;
+  }
+  @keyframes story-terminal-reveal {
+    0% {
+      max-height: 0;
+      filter: saturate(1.7) brightness(1.12);
+    }
+    100% {
+      max-height: 9em;
+      filter: none;
+    }
+  }
+  @keyframes story-caret-blink {
+    0%, 45% { opacity: 1; }
+    46%, 100% { opacity: 0; }
   }
   .profile-step {
     position: relative;
@@ -913,6 +956,16 @@
     width: clamp(170px, 23vw, 258px);
     aspect-ratio: 505 / 280;
   }
+  .art-button-reset {
+    --button-art: url("media/buttons/reset.png");
+    width: clamp(112px, 16vw, 172px);
+    aspect-ratio: 200 / 74;
+  }
+  .art-button-close {
+    --button-art: url("media/buttons/close.png");
+    width: clamp(118px, 17vw, 180px);
+    aspect-ratio: 243 / 94;
+  }
   .story-actions button.art-button,
   .story-actions button.art-button:disabled,
   .profile-row button.art-button,
@@ -1073,10 +1126,42 @@
     line-height: 1.08;
   }
   .settings-launcher {
-    display: none;
+    position: fixed;
+    right: clamp(10px, 1.8vw, 24px);
+    top: clamp(10px, 1.5vw, 20px);
+    z-index: 12;
+    width: clamp(112px, 12vw, 178px);
+    aspect-ratio: 445 / 204;
+    color: transparent;
+    background: transparent url("media/buttons/settings.png") center / contain no-repeat;
+    border: 0;
+    filter:
+      drop-shadow(0 0 9px rgba(0, 255, 204, 0.46))
+      drop-shadow(0 4px 0 rgba(0, 0, 0, 0.42));
+    cursor: pointer;
+    font-size: 0;
+    line-height: 0;
+    transition: transform 110ms ease, filter 110ms ease;
+  }
+  .settings-launcher span,
+  .settings-panel h2 span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+  .settings-launcher:hover,
+  .settings-launcher:focus-visible {
+    transform: translateY(-1px);
+    filter:
+      drop-shadow(0 0 12px rgba(255, 242, 0, 0.7))
+      drop-shadow(0 0 18px rgba(0, 255, 204, 0.42))
+      drop-shadow(0 4px 0 rgba(0, 0, 0, 0.42));
   }
   .settings-launcher:active {
-    border-style: inset;
+    transform: translateY(1px) scale(0.985);
   }
   .cyber-hud {
     --player-health-edge: #020812;
@@ -1201,17 +1286,17 @@
   }
   .fighter-card-player .fighter-portrait {
     left: 0;
-    object-position: 50% 50%;
+    object-position: 50% 38%;
     transform: scale(1.42);
   }
   .fighter-card-enemy .fighter-portrait {
     right: 0;
-    object-position: 50% 50%;
+    object-position: 50% 38%;
     transform: scale(1.35);
   }
   .fighter-portrait-player {
     background: #03050b;
-    object-position: 50% 50%;
+    object-position: 50% 38%;
     transform: scale(1.52);
   }
   .fighter-readout {
@@ -1263,8 +1348,8 @@
     position: absolute;
     left: 0;
     right: 0;
-    top: 36%;
-    height: 45%;
+    top: 32.5%;
+    height: 53%;
     overflow: hidden;
     background: transparent;
     border: 0;
@@ -1676,15 +1761,22 @@
   .settings-panel {
     position: relative;
     z-index: 1;
-    width: min(430px, calc(100vw - 44px));
-    padding: 18px;
+    width: min(520px, calc(100vw - 44px));
+    padding: 42px 40px 34px;
     background:
-      linear-gradient(90deg, rgba(0, 255, 204, 0.06) 1px, transparent 1px),
-      linear-gradient(0deg, rgba(0, 255, 204, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+      linear-gradient(0deg, rgba(0, 255, 204, 0.05) 1px, transparent 1px),
+      linear-gradient(135deg, rgba(255, 47, 216, 0.2), rgba(0, 255, 204, 0.1) 44%, rgba(2, 6, 18, 0.92) 72%),
       rgba(2, 6, 18, 0.88);
-    background-size: 18px 18px;
-    border: 3px ridge #00ffcc;
-    box-shadow: 0 0 0 3px #000, 0 0 32px rgba(0, 255, 204, 0.26);
+    background-position: center;
+    background-repeat: repeat, repeat, no-repeat, no-repeat;
+    background-size: 18px 18px, 18px 18px, auto, auto;
+    border: 2px solid rgba(255, 47, 216, 0.72);
+    box-shadow:
+      inset 0 0 0 1px rgba(0, 255, 204, 0.32),
+      inset 0 0 42px rgba(255, 47, 216, 0.18),
+      0 0 34px rgba(0, 255, 204, 0.24),
+      0 0 46px rgba(255, 47, 216, 0.14);
     text-shadow: 0 2px 0 #000;
   }
   .settings-kicker {
@@ -1694,10 +1786,13 @@
     font-weight: 900;
   }
   .settings-panel h2 {
-    margin: 4px 0 16px;
-    color: #fff200;
-    font-size: 42px;
-    line-height: 0.95;
+    margin: 2px 0 18px;
+    width: min(270px, 74%);
+    aspect-ratio: 445 / 204;
+    color: transparent;
+    background: url("media/buttons/settings.png") center / contain no-repeat;
+    font-size: 0;
+    line-height: 0;
   }
   .story-copy h2,
   .enemy-load-copy h1,
@@ -1720,28 +1815,58 @@
     color: #dff;
     font-size: 13px;
   }
+  .settings-section-art {
+    width: 148px;
+    aspect-ratio: 260 / 83;
+    color: transparent !important;
+    background: url("media/buttons/audio_tag.png") left center / contain no-repeat;
+    font-size: 0 !important;
+    line-height: 0;
+  }
   .settings-options {
     display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 9px;
   }
   .settings-options-game {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-  .settings-options button,
-  .settings-close {
-    min-height: 40px;
+  .settings-toggle {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 74px;
+    align-items: center;
+    gap: 10px;
+    min-height: 48px;
+    padding: 6px 8px 6px 14px;
     color: #dff;
-    background: #101018;
-    border: 3px outset #8f8f8f;
+    background:
+      linear-gradient(90deg, rgba(0, 255, 204, 0.08), rgba(255, 47, 216, 0.06)),
+      rgba(2, 6, 18, 0.72);
+    border: 1px solid rgba(0, 255, 204, 0.44);
+    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.68), 0 0 10px rgba(0, 255, 204, 0.08);
     font: 900 12px var(--font-label);
     cursor: pointer;
+    text-align: left;
+    text-shadow: 0 0 5px rgba(0, 255, 204, 0.72), 0 2px 0 #000;
   }
-  .settings-options button.selected {
-    color: #001410;
-    background: #7dffcc;
-    border-color: #b7fff0;
-    border-style: inset;
+  .settings-toggle.selected {
+    border-color: rgba(255, 242, 0, 0.68);
+    box-shadow: inset 0 0 16px rgba(255, 242, 0, 0.12), 0 0 14px rgba(255, 242, 0, 0.18);
+  }
+  .settings-toggle-switch {
+    display: block;
+    width: 74px;
+    aspect-ratio: 147 / 64;
+    background: url("media/buttons/off_button.png") center / contain no-repeat;
+    filter: drop-shadow(0 0 7px rgba(0, 0, 0, 0.72));
+  }
+  .settings-toggle.selected .settings-toggle-switch {
+    background-image: url("media/buttons/on_button.png");
+    filter: drop-shadow(0 0 8px rgba(255, 242, 0, 0.6));
+  }
+  .settings-toggle-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .settings-readout {
     display: grid;
@@ -1754,25 +1879,84 @@
   .settings-volume {
     display: grid;
     gap: 8px;
-    margin: 0 0 16px;
+    margin: 2px 0 16px;
     color: #dff;
     font-size: 12px;
     font-weight: 900;
   }
-  .settings-volume input {
+  .settings-slider-shell {
+    --settings-volume-progress: 50%;
+    position: relative;
+    display: block;
+    height: 58px;
     width: 100%;
-    accent-color: #7dffcc;
+  }
+  .settings-slider-shell::before,
+  .settings-slider-shell::after {
+    position: absolute;
+    left: 0;
+    top: 50%;
+    height: 50px;
+    content: "";
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+  .settings-slider-shell::before {
+    right: 0;
+    background: url("media/buttons/slider_off.png") center / 100% 100% no-repeat;
+  }
+  .settings-slider-shell::after {
+    width: var(--settings-volume-progress);
+    background: url("media/buttons/slider_fulll.png") left center / auto 100% no-repeat;
+    filter: drop-shadow(0 0 8px rgba(255, 242, 0, 0.38));
+  }
+  .settings-volume input {
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    width: 100%;
+    height: 58px;
+    margin: 0;
+    appearance: none;
+    background: transparent;
     cursor: pointer;
   }
-  .settings-close {
-    width: 100%;
-    color: #000;
-    background: #fff200;
-    border-color: #ffe65c;
+  .settings-volume input::-webkit-slider-runnable-track {
+    height: 50px;
+    background: transparent;
+    border: 0;
   }
-  .settings-close:active,
-  .settings-options button:active {
-    border-style: inset;
+  .settings-volume input::-webkit-slider-thumb {
+    width: 50px;
+    height: 61px;
+    appearance: none;
+    background: url("media/buttons/slider_head.png") center / contain no-repeat;
+    border: 0;
+    filter: drop-shadow(0 0 8px rgba(255, 242, 0, 0.64));
+  }
+  .settings-volume input::-moz-range-track {
+    height: 50px;
+    background: transparent;
+    border: 0;
+  }
+  .settings-volume input::-moz-range-thumb {
+    width: 50px;
+    height: 61px;
+    background: url("media/buttons/slider_head.png") center / contain no-repeat;
+    border: 0;
+  }
+  .settings-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+  }
+  .settings-actions .art-button {
+    width: clamp(112px, 31vw, 162px);
+  }
+  .settings-options-game .art-button {
+    justify-self: center;
   }
   .story-copy span,
   .matchup-line,
@@ -1843,60 +2027,61 @@
       object-position: center center;
     }
     .tower-actions {
-      width: calc(100% - 24px);
+      left: 8px;
+      right: 8px;
       bottom: 10px;
     }
     .tower-actions button {
-      flex: 1 1 0;
+      flex: 0 0 auto;
       min-width: 0;
+      max-width: 42vw;
     }
     .story-step {
       width: 100vw;
       height: 100vh;
       min-height: 0;
-      grid-template-columns: 1fr;
-      grid-template-rows: minmax(0, 1fr) auto;
-      gap: 0;
       padding: 0;
       overflow: hidden;
-    }
-    .story-image-frame {
-      grid-column: 1;
-      grid-row: 1;
     }
     .story-art {
       object-position: center center;
       transform: none;
     }
-    .story-copy {
-      grid-column: 1;
-      grid-row: 2;
-      grid-template-columns: 1fr;
-      grid-template-rows: auto auto auto auto auto;
-      grid-template-areas:
-        "kicker"
-        "title"
-        "body"
-        "progress"
-        "actions";
-      gap: 7px;
-      width: auto;
-      max-height: 46vh;
-      margin: 0;
-      padding: 10px;
-      border-top: 3px solid #00ffcc;
+    .story-image-frame::after {
+      background:
+        linear-gradient(180deg, rgba(0, 0, 0, 0.46), rgba(0, 0, 0, 0.18) 34%, rgba(0, 0, 0, 0.88)),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.5), transparent 58%, rgba(0, 0, 0, 0.32));
     }
-    .story-copy h2 {
-      font-size: 28px;
+    .story-copy {
+      left: 10px;
+      right: 10px;
+      bottom: calc(max(12px, env(safe-area-inset-bottom)) + clamp(74px, 15vh, 96px));
+      width: auto;
+      max-height: calc(100vh - clamp(148px, 27vh, 194px));
+      padding: 12px;
+      gap: 6px;
+    }
+    .story-copy .story-kicker {
+      padding-left: 10px;
+      font-size: 12px;
+    }
+    .story-copy .story-title {
+      font-size: clamp(28px, 10vw, 44px);
       line-height: 1;
     }
     .story-copy p {
-      max-height: 17vh;
-      font-size: 13px;
-      line-height: 1.18;
+      font-size: clamp(15px, 4.8vw, 20px);
+      line-height: 1.12;
     }
     .story-progress {
-      margin-top: 4px;
+      margin-top: 2px;
+    }
+    .story-actions {
+      left: 8px;
+      right: 8px;
+      bottom: max(8px, env(safe-area-inset-bottom));
+      justify-content: center;
+      gap: 5px;
     }
     .story-actions button {
       flex: 1 1 92px;
@@ -1949,7 +2134,8 @@
       padding: 14px;
     }
     .settings-panel h2 {
-      font-size: 34px;
+      width: min(260px, 86%);
+      font-size: 0;
     }
     .settings-options {
       grid-template-columns: 1fr;

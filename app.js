@@ -58468,16 +58468,19 @@ var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
 var SOUNDTRACK_SOURCES = [
   "media/audio/the_pulse_long_song.mp3",
   "media/audio/The_Pulse_of_the_Board_2.mp3",
-  "media/audio/High_on_the_Train_song.mp3",
   "media/audio/cyber_soaring_song.mp3",
   "media/audio/data_crasher.mp3",
   "media/audio/bishops_touch.mp3",
+  "media/audio/cyber_chess_music.mp3",
   "media/audio/synthetic_dreams_cyber_eyes.mp3"
 ];
 var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
-var VICTORY_MUSIC_SRC = "media/audio/victory_song_audio.mp3";
-var GAME_OVER_MUSIC_SRC = "media/audio/checkmeat_you_lose_song.mp3";
+var VICTORY_MUSIC_SOURCES = [
+  "media/audio/victorious_1.mp3",
+  "media/audio/victorioius_2.mp3"
+];
+var GAME_OVER_MUSIC_SRC = "media/audio/game_over.mp3";
 var PLAYER_AVATARS = {
   normal: "media/avatars/player_normal.jpg",
   damaged: "media/avatars/player_damage.jpg",
@@ -59085,8 +59088,8 @@ function App() {
     return () => window.clearTimeout(id);
   }, [continueSeconds, resultState, screen]);
   (0, import_react3.useEffect)(() => {
-    if (screen === "result" && (resultState?.kind === "clear" || resultState?.kind === "game-over")) {
-      const resultMusicSrc = resultState.kind === "clear" ? VICTORY_MUSIC_SRC : GAME_OVER_MUSIC_SRC;
+    if (screen === "result" && resultState) {
+      const resultMusicSrc = resultState.kind === "win" ? VICTORY_MUSIC_SOURCES[0] : resultState.kind === "clear" ? VICTORY_MUSIC_SOURCES[1] : GAME_OVER_MUSIC_SRC;
       if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
         endMusicRef.current?.pause();
         endMusicRef.current = playClip(resultMusicSrc, { music: true });
@@ -59539,10 +59542,10 @@ function App() {
       },
       `${selected.id}-${playerColor}-${playerName}`
     ),
-    !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-launcher", onClick: () => {
+    !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-launcher", "aria-label": "SETTINGS", onClick: () => {
       ensureAudioEngine()?.play("menu");
       setSettingsOpen(true);
-    }, children: "SETTINGS" }),
+    }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
     screen === "intro" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cyber-menu" + (menuStep === "video" ? " video-menu" : "") + (menuStep === "opponent" ? " tower-menu" : "") + (menuStep === "story" ? " story-menu" : "") + (menuStep === "profile" ? " profile-menu" : "") + (menuStep === "side" ? " side-menu" : ""), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-panel" + (menuStep === "video" ? " video-panel" : "") + (menuStep === "opponent" ? " tower-panel" : "") + (menuStep === "story" ? " story-panel" : "") + (menuStep === "profile" ? " profile-panel-shell" : "") + (menuStep === "side" ? " side-panel" : ""), children: [
       menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step menu-step-video" + (introVideoStarted ? " pan-started" : ""), children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "intro-video-shell ready", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "intro-poster", src: HEADER_IMAGE_SRC, alt: "" }) }),
@@ -59557,23 +59560,31 @@ function App() {
           }
         )
       ] }),
-      menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step story-step", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-image-frame", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "story-art", src: INTRO_STORY[storyIndex].image, alt: "" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-scanline" })
+      menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "menu-step story-step", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-image-frame", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "story-art", src: INTRO_STORY[storyIndex].image, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-scanline" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-copy", "aria-live": "polite", "aria-labelledby": `story-title-${storyIndex}`, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "story-kicker", children: INTRO_STORY[storyIndex].kicker }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: `story-title-${storyIndex}`, className: "story-title", children: INTRO_STORY[storyIndex].title }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            "p",
+            {
+              className: "story-terminal-text",
+              style: {
+                "--story-text-duration": `${Math.max(3.4, Math.min(7.2, INTRO_STORY[storyIndex].body.length * 0.052))}s`
+              },
+              children: INTRO_STORY[storyIndex].body
+            },
+            `${storyIndex}-${INTRO_STORY[storyIndex].body}`
+          ),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-progress", "aria-hidden": "true", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-copy", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: INTRO_STORY[storyIndex].kicker }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { children: INTRO_STORY[storyIndex].title }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: INTRO_STORY[storyIndex].body }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-progress", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-actions", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, disabled: storyIndex === 0, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SKIP" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) })
-          ] })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, disabled: storyIndex === 0, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SKIP" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) })
         ] })
-      ] }),
+      ] }) }),
       menuStep === "profile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step profile-step", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "profile-bg", src: PROFILE_BG_SRC, alt: "" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "profile-vignette" }),
@@ -59763,13 +59774,22 @@ function App() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-kicker", children: "SYSTEM OPTIONS" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: "SETTINGS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "AUDIO" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "settings-section-art", children: "AUDIO" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: audioMode === "full" ? "selected" : "", onClick: () => updateAudioMode("full"), children: "FULL AUDIO" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: audioMode === "sfx" ? "selected" : "", onClick: () => updateAudioMode("sfx"), children: "SFX ONLY" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: audioMode === "muted" ? "selected" : "", onClick: () => updateAudioMode("muted"), children: "MUTED" })
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
+            ] })
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-readout", children: [
@@ -59787,37 +59807,44 @@ function App() {
         screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
               audioRef.current?.play("menu");
               resetGame();
               setSettingsOpen(false);
-            }, children: "RESET BOARD" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
               audioRef.current?.play("menu");
               setSettingsOpen(false);
               openMenu();
-            }, children: "MAIN MENU" })
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "OUTPUT LEVEL" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-            "input",
+            "span",
             {
-              id: "audio-volume",
-              type: "range",
-              min: "0",
-              max: "200",
-              step: "5",
-              value: audioVolume,
-              onChange: (event) => updateAudioVolume(Number(event.currentTarget.value))
+              className: "settings-slider-shell",
+              style: { "--settings-volume-progress": `${Math.min(100, Math.max(0, audioVolume / 2))}%` },
+              children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                "input",
+                {
+                  id: "audio-volume",
+                  type: "range",
+                  min: "0",
+                  max: "200",
+                  step: "5",
+                  value: audioVolume,
+                  onChange: (event) => updateAudioVolume(Number(event.currentTarget.value))
+                }
+              )
             }
           )
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-close", onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
           audioRef.current?.play("menu");
           setSettingsOpen(false);
-        }, children: "CLOSE" })
+        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
       ] })
     ] })
   ] });

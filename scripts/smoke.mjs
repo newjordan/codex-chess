@@ -145,6 +145,9 @@ async function runPlayableSmoke(label, viewport) {
   page.on('console', (msg) => {
     if (msg.type() === 'error') errors.push(msg.text());
   });
+  page.on('response', (res) => {
+    if (res.status() === 404) errors.push(`404 ${res.url()}`);
+  });
   page.on('pageerror', (err) => errors.push(err.message));
   page.on('requestfailed', (req) => failed.push(`${req.url()} ${req.failure()?.errorText || ''}`.trim()));
 
@@ -355,13 +358,14 @@ async function runPlayableSmoke(label, viewport) {
     const intentionallyInterruptedAudio = [
       '/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED',
       '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
-      '/media/audio/High_on_the_Train_song.mp3 net::ERR_ABORTED',
       '/media/audio/cyber_soaring_song.mp3 net::ERR_ABORTED',
       '/media/audio/data_crasher.mp3 net::ERR_ABORTED',
       '/media/audio/bishops_touch.mp3 net::ERR_ABORTED',
+      '/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED',
       '/media/audio/synthetic_dreams_cyber_eyes.mp3 net::ERR_ABORTED',
-      '/media/audio/victory_song_audio.mp3 net::ERR_ABORTED',
-      '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',
+      '/media/audio/victorious_1.mp3 net::ERR_ABORTED',
+      '/media/audio/victorioius_2.mp3 net::ERR_ABORTED',
+      '/media/audio/game_over.mp3 net::ERR_ABORTED',
     ];
     const relevantFailed = failed.filter((entry) =>
       !intentionallyInterruptedAudio.some((audio) => entry.includes(audio))

@@ -212,10 +212,12 @@ async function runPlayableSmoke(label, viewport) {
       window.localStorage.clear();
     });
     await page.goto(url, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'CLICK TO START' }).waitFor();
-    await page.getByRole('button', { name: 'CLICK TO START' }).click();
+    const startButton = page.getByRole('button', { name: /^(CLICK TO START|START)$/ });
+    await startButton.waitFor();
+    await startButton.click();
     await page.waitForFunction(() => window.__chess?.audio?.ready === true);
     await page.waitForFunction(() => window.__chess?.loadingMusic?.active === true);
+    await page.getByRole('button', { name: 'ANY BUTTON' }).click();
     await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
     await page.getByRole('button', { name: 'NEXT' }).click();
     await page.getByRole('heading', { name: 'THE BREACH' }).waitFor();
@@ -242,7 +244,17 @@ async function runPlayableSmoke(label, viewport) {
       throw new Error('opponent selection should be replaced by tower ascent');
     }
     await ascendThroughHeroLoad('goop', 'goop-entrance.png', 'goop_intro.mp3');
-    await page.getByRole('button', { name: 'Reset' }).waitFor();
+    await page.locator('.cyber-hud').waitFor();
+    if (await page.getByRole('button', { name: /^Reset$/ }).count()) {
+      throw new Error('reset button should not render in the gameplay HUD');
+    }
+    if (await page.getByRole('button', { name: /^Menu$/ }).count()) {
+      throw new Error('menu button should not render in the gameplay HUD');
+    }
+    await page.keyboard.press('Escape');
+    await page.getByRole('button', { name: 'RESET BOARD' }).waitFor();
+    await page.getByRole('button', { name: 'MAIN MENU' }).waitFor();
+    await page.getByRole('button', { name: 'CLOSE' }).click();
     await page.waitForFunction(() =>
       window.__chess?.campaign?.playerName === 'CODXACE' &&
       window.__chess?.boardLabels?.whiteName === 'CODXACE' &&
@@ -335,7 +347,10 @@ async function runPlayableSmoke(label, viewport) {
       const leaderboard = JSON.parse(window.localStorage.getItem('cyberChessLeaderboardV1') || '[]');
       return leaderboard.some((entry) => entry.name === 'CODXACE' && entry.outcome === 'clear');
     });
-    const relevantFailed = failed.filter((entry) => !entry.includes('/media/audio/game_over.wav net::ERR_ABORTED'));
+    const relevantFailed = failed.filter((entry) =>
+      !entry.includes('/media/audio/game_over.wav net::ERR_ABORTED') &&
+      !entry.includes('/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED')
+    );
     const checks = {
       label,
       viewport,

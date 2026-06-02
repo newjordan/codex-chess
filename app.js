@@ -57990,6 +57990,10 @@ var OPPONENTS = [
     name: "Goop",
     difficulty: "EASY",
     avatar: "avatars/goop.png",
+    avatarStates: {
+      damaged: "media/avatars/goop-damaged.png",
+      dominating: "media/avatars/goop-dominating.png"
+    },
     hero: "media/enemies/goop-entrance.png",
     theme: "goop",
     tagline: "Mostly legal. Frequently sticky.",
@@ -58004,6 +58008,10 @@ var OPPONENTS = [
     name: "Frostd4d",
     difficulty: "MED",
     avatar: "avatars/frostd4d.png",
+    avatarStates: {
+      damaged: "media/avatars/frostd4d-damaged.png",
+      dominating: "media/avatars/frostd4d-dominating.png"
+    },
     hero: "media/enemies/frostd4d-entrance.png",
     theme: "frostd4d",
     tagline: "Cold reads, colder captures.",
@@ -58018,6 +58026,10 @@ var OPPONENTS = [
     name: "Razorblade",
     difficulty: "HARD",
     avatar: "avatars/razorblade.png",
+    avatarStates: {
+      damaged: "media/avatars/razorblade-damaged.png",
+      dominating: "media/avatars/razorblade-dominating.png"
+    },
     hero: "media/enemies/razorblade-entrance.png",
     theme: "razorblade",
     tagline: "Depth search with bad intentions.",
@@ -58032,6 +58044,10 @@ var OPPONENTS = [
     name: "GORDO",
     difficulty: "FINAL",
     avatar: "avatars/gordo.png",
+    avatarStates: {
+      damaged: "media/avatars/gordo-damaged.png",
+      dominating: "media/avatars/gordo-dominating.png"
+    },
     hero: "media/enemies/gordo-entrance.png",
     theme: "gordo",
     tagline: "Four arms. One engine. No mercy.",
@@ -58048,9 +58064,14 @@ var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.png";
 var PROFILE_BG_SRC = "media/big_wallpaper.png";
 var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.png";
 var SETTINGS_BG_SRC = "media/settings-moniker-bg.png";
-var LOADING_MUSIC_SRC = "media/audio/cavernous-echoes-loading-screen.mp3";
+var LOADING_MUSIC_SRC = "media/audio/cyber_chess_music.mp3";
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
 var END_SCREEN_MUSIC_SRC = "media/audio/game_over.wav";
+var PLAYER_AVATARS = {
+  normal: "media/avatars/player_normal.png",
+  damaged: "media/avatars/player_damage.png",
+  dominating: "media/avatars/player_dominating.png"
+};
 var INTRO_STORY = [
   {
     image: "media/intro/01-pre-computation.png",
@@ -58200,6 +58221,65 @@ function turnFromFen(fen) {
   } catch (_) {
     return "w";
   }
+}
+function clampPercent(value) {
+  return Math.max(0, Math.min(100, Math.round(value)));
+}
+function getWhiteMaterialScore(fen) {
+  const values = {
+    p: 1,
+    n: 3,
+    b: 3,
+    r: 5,
+    q: 9
+  };
+  const board = fen.split(" ")[0] || "";
+  let score = 0;
+  for (const char of board) {
+    const lower = char.toLowerCase();
+    const value = values[lower] ?? 0;
+    if (!value) continue;
+    score += char === lower ? -value : value;
+  }
+  return score;
+}
+function getPieceCounts(fen) {
+  const board = fen.split(" ")[0] || "";
+  let white = 0;
+  let black = 0;
+  for (const char of board) {
+    if (char >= "A" && char <= "Z") white += 1;
+    else if (char >= "a" && char <= "z") black += 1;
+  }
+  return { white, black };
+}
+function getFightHudState(fen, playerColor, aiColor) {
+  const playerAdvantage = (playerColor === "w" ? 1 : -1) * getWhiteMaterialScore(fen);
+  let playerInCheck = false;
+  let enemyInCheck = false;
+  try {
+    const game = new Chess(fen);
+    if (game.isCheck()) {
+      playerInCheck = game.turn() === playerColor;
+      enemyInCheck = game.turn() === aiColor;
+    }
+  } catch (_) {
+  }
+  const pieceCounts = getPieceCounts(fen);
+  const playerPieces = playerColor === "w" ? pieceCounts.white : pieceCounts.black;
+  const enemyPieces = aiColor === "w" ? pieceCounts.white : pieceCounts.black;
+  const playerHealth = clampPercent(playerPieces / 16 * 100);
+  const enemyHealth = clampPercent(enemyPieces / 16 * 100);
+  const playerMood = playerHealth <= 68 ? "damaged" : enemyHealth <= 58 ? "dominating" : "normal";
+  const enemyMood = enemyHealth <= 68 ? "damaged" : playerHealth <= 58 ? "dominating" : "neutral";
+  return {
+    playerAdvantage,
+    playerHealth,
+    enemyHealth,
+    playerMood,
+    enemyMood,
+    pressure: playerInCheck ? "CHECK DANGER" : enemyInCheck ? "CHECK PRESSURE" : playerAdvantage >= 4 ? "ADVANTAGE" : playerAdvantage <= -4 ? "DANGER" : "EVEN FIGHT"
+  };
 }
 function sanitizePlayerName(value) {
   const compact = value.replace(/\s+/g, " ").trim();
@@ -58365,6 +58445,9 @@ function App() {
   const introMusicRef = (0, import_react3.useRef)(null);
   const audioRef = (0, import_react3.useRef)(null);
   const loadingMusicRef = (0, import_react3.useRef)(null);
+  const loadingMusicPassRef = (0, import_react3.useRef)(0);
+  const loadingMusicFinishedRef = (0, import_react3.useRef)(false);
+  const loadingMusicHandlersRef = (0, import_react3.useRef)(null);
   const endMusicRef = (0, import_react3.useRef)(null);
   const announcerRef = (0, import_react3.useRef)(null);
   const lastAnnouncedRef = (0, import_react3.useRef)("");
@@ -58404,6 +58487,8 @@ function App() {
   const blackName = playerColor === "b" ? playerName : selected.name;
   const playerSideName = playerColor === "w" ? "White" : "Black";
   const agentSideName = aiColor === "w" ? "White" : "Black";
+  const fightHud = getFightHudState(gameState.fen, playerColor, aiColor);
+  const enemyAvatarSrc = fightHud.enemyMood === "damaged" ? selected.avatarStates.damaged : fightHud.enemyMood === "dominating" ? selected.avatarStates.dominating : selected.avatar;
   const updateGameState = (state) => {
     window.__chess.state = state;
     if (turnFromFen(state.fen) !== aiColor) {
@@ -58479,8 +58564,14 @@ function App() {
   (0, import_react3.useEffect)(() => () => {
     introMusicRef.current?.stop();
     introMusicRef.current = null;
+    const handlers = loadingMusicHandlersRef.current;
+    if (loadingMusicRef.current && handlers) {
+      loadingMusicRef.current.removeEventListener("ended", handlers.onEnded);
+      loadingMusicRef.current.removeEventListener("timeupdate", handlers.onTimeUpdate);
+    }
     loadingMusicRef.current?.pause();
     loadingMusicRef.current = null;
+    loadingMusicHandlersRef.current = null;
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     announcerRef.current?.pause();
@@ -58595,7 +58686,6 @@ function App() {
   }, [continueSeconds, resultState?.kind, screen]);
   (0, import_react3.useEffect)(() => {
     if (screen === "intro" && menuStep !== "video") startLoadingMusic();
-    else if (screen !== "intro") stopLoadingMusic();
   }, [audioMode, audioVolume, menuStep, screen]);
   (0, import_react3.useEffect)(() => {
     window.__chess.campaign = {
@@ -58649,16 +58739,13 @@ function App() {
     ref.current?.resetToPosition(START);
   };
   const startGame = () => {
-    stopLoadingMusic();
     endMusicRef.current?.pause();
     endMusicRef.current = null;
-    announcerRef.current?.pause();
     setScreen("playing");
     setResultState(null);
     resetGame();
   };
   const startOpponentLoading = () => {
-    stopLoadingMusic();
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     ensureAudioEngine()?.play("reveal");
@@ -58713,7 +58800,12 @@ function App() {
     } catch (_) {
     }
     ensureAudioEngine()?.setVolume(nextVolume);
-    if (loadingMusicRef.current) loadingMusicRef.current.volume = mediaVolume(nextVolume) * 0.9;
+    if (loadingMusicRef.current) {
+      const baseVolume = mediaVolume(nextVolume) * 0.9;
+      const clip = loadingMusicRef.current;
+      const fadeRatio = loadingMusicPassRef.current >= 3 && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
+      clip.volume = baseVolume * fadeRatio;
+    }
     if (announcerRef.current) announcerRef.current.volume = mediaVolume(nextVolume);
     if (audioModeRef.current !== "muted") audioRef.current?.play("tick");
   };
@@ -58727,39 +58819,104 @@ function App() {
     return audio;
   };
   const stopLoadingMusic = () => {
-    loadingMusicRef.current?.pause();
+    const clip = loadingMusicRef.current;
+    const handlers = loadingMusicHandlersRef.current;
+    if (clip && handlers) {
+      clip.removeEventListener("ended", handlers.onEnded);
+      clip.removeEventListener("timeupdate", handlers.onTimeUpdate);
+    }
+    clip?.pause();
     loadingMusicRef.current = null;
-    window.__chess.loadingMusic = { active: false, src: LOADING_MUSIC_SRC };
+    loadingMusicHandlersRef.current = null;
+    window.__chess.loadingMusic = {
+      active: false,
+      src: LOADING_MUSIC_SRC,
+      pass: loadingMusicPassRef.current,
+      maxPasses: 3,
+      fading: false,
+      finished: loadingMusicFinishedRef.current
+    };
   };
   const startLoadingMusic = () => {
+    if (loadingMusicFinishedRef.current) return;
     if (audioModeRef.current === "muted") return;
     let clip = loadingMusicRef.current;
     if (!clip) {
       clip = new Audio(LOADING_MUSIC_SRC);
-      clip.loop = true;
+      clip.loop = false;
       clip.preload = "auto";
       loadingMusicRef.current = clip;
+      if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
+      const updateVolumeForPass = () => {
+        const baseVolume2 = mediaVolume(audioVolumeRef.current) * 0.9;
+        const fading = loadingMusicPassRef.current >= 3;
+        const fadeRatio2 = fading && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
+        clip.volume = baseVolume2 * fadeRatio2;
+        window.__chess.loadingMusic = {
+          ...window.__chess.loadingMusic || {},
+          active: !clip.paused,
+          attempted: true,
+          blocked: false,
+          src: LOADING_MUSIC_SRC,
+          pass: loadingMusicPassRef.current,
+          maxPasses: 3,
+          fading,
+          finished: loadingMusicFinishedRef.current,
+          currentTime: clip.currentTime,
+          duration: Number.isFinite(clip.duration) ? clip.duration : null
+        };
+      };
+      const onEnded = () => {
+        if (loadingMusicPassRef.current < 3) {
+          loadingMusicPassRef.current += 1;
+          clip.currentTime = 0;
+          updateVolumeForPass();
+          clip.play().catch(() => void 0);
+          return;
+        }
+        loadingMusicFinishedRef.current = true;
+        updateVolumeForPass();
+        stopLoadingMusic();
+      };
+      const onTimeUpdate = () => updateVolumeForPass();
+      loadingMusicHandlersRef.current = { onEnded, onTimeUpdate };
+      clip.addEventListener("ended", onEnded);
+      clip.addEventListener("timeupdate", onTimeUpdate);
     }
-    clip.volume = mediaVolume(audioVolumeRef.current) * 0.9;
+    const baseVolume = mediaVolume(audioVolumeRef.current) * 0.9;
+    const fadeRatio = loadingMusicPassRef.current >= 3 && Number.isFinite(clip.duration) && clip.duration > 0 ? Math.max(0, 1 - clip.currentTime / clip.duration) : 1;
+    clip.volume = baseVolume * fadeRatio;
     window.__chess.loadingMusic = {
       active: !clip.paused,
       attempted: true,
       blocked: false,
-      src: LOADING_MUSIC_SRC
+      src: LOADING_MUSIC_SRC,
+      pass: loadingMusicPassRef.current,
+      maxPasses: 3,
+      fading: loadingMusicPassRef.current >= 3,
+      finished: loadingMusicFinishedRef.current
     };
     clip.play().then(() => {
       window.__chess.loadingMusic = {
         active: true,
         attempted: true,
         blocked: false,
-        src: LOADING_MUSIC_SRC
+        src: LOADING_MUSIC_SRC,
+        pass: loadingMusicPassRef.current,
+        maxPasses: 3,
+        fading: loadingMusicPassRef.current >= 3,
+        finished: loadingMusicFinishedRef.current
       };
     }).catch(() => {
       window.__chess.loadingMusic = {
         active: false,
         attempted: true,
         blocked: true,
-        src: LOADING_MUSIC_SRC
+        src: LOADING_MUSIC_SRC,
+        pass: loadingMusicPassRef.current,
+        maxPasses: 3,
+        fading: loadingMusicPassRef.current >= 3,
+        finished: loadingMusicFinishedRef.current
       };
     });
   };
@@ -58885,7 +59042,6 @@ function App() {
     setMenuStep("side");
   };
   const startCampaign = () => {
-    stopLoadingMusic();
     setLives(MAX_LIVES);
     runStartedAtRef.current = Date.now();
     recordedResultKeyRef.current = "";
@@ -58956,9 +59112,17 @@ function App() {
       setSettingsOpen(true);
     }, children: "SETTINGS" }),
     screen === "intro" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cyber-menu" + (menuStep === "video" ? " video-menu" : "") + (menuStep === "opponent" ? " tower-menu" : "") + (menuStep === "story" ? " story-menu" : "") + (menuStep === "profile" ? " profile-menu" : "") + (menuStep === "side" ? " side-menu" : ""), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-panel" + (menuStep === "video" ? " video-panel" : "") + (menuStep === "opponent" ? " tower-panel" : "") + (menuStep === "story" ? " story-panel" : "") + (menuStep === "profile" ? " profile-panel-shell" : "") + (menuStep === "side" ? " side-panel" : ""), children: [
-      menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step menu-step-video", children: [
+      menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step menu-step-video" + (introVideoStarted ? " pan-started" : ""), children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "intro-video-shell ready", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "intro-poster", src: HEADER_IMAGE_SRC, alt: "" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "cyber-start", onClick: beginIntroStory, children: "ANY BUTTON" })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "button",
+          {
+            type: "button",
+            className: "cyber-start",
+            onClick: introVideoStarted ? beginIntroStory : startIntroSequence,
+            children: introVideoStarted ? "ANY BUTTON" : "START"
+          }
+        )
       ] }),
       menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step story-step", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-image-frame", children: [
@@ -59061,23 +59225,58 @@ function App() {
       ] })
     ] }),
     screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-hud enemy-theme-" + selected.theme, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: selected.avatar, alt: "" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
-          playerName,
-          " vs ",
-          selected.name
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: thinking ? `${selected.name} (${agentSideName}) is thinking...` : `${gameState.status} / Lives ${lives}` })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-card fighter-card-player", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "img",
+          {
+            className: "fighter-portrait fighter-portrait-player",
+            src: PLAYER_AVATARS[fightHud.playerMood],
+            alt: "",
+            onError: (event) => {
+              event.currentTarget.src = PLAYER_AVATARS.normal;
+            }
+          }
+        ),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-readout", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-label", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: playerName }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+              playerSideName,
+              " / LIVES ",
+              lives
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "health-shell", "aria-label": `${playerName} health ${fightHud.playerHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { style: { "--health": `${fightHud.playerHealth}%` } }) })
+        ] })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
-        audioRef.current?.play("menu");
-        resetGame();
-      }, children: "Reset" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
-        audioRef.current?.play("menu");
-        openMenu();
-      }, children: "Menu" })
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "versus-core", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "VS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: thinking ? `${selected.name} THINKING` : fightHud.pressure })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-card fighter-card-enemy", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-readout", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-label", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: selected.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+              agentSideName,
+              " / ",
+              selected.difficulty
+            ] })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "health-shell health-shell-enemy", "aria-label": `${selected.name} health ${fightHud.enemyHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { style: { "--health": `${fightHud.enemyHealth}%` } }) })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "img",
+          {
+            className: "fighter-portrait",
+            src: enemyAvatarSrc,
+            alt: "",
+            onError: (event) => {
+              event.currentTarget.src = selected.avatar;
+            }
+          }
+        )
+      ] })
     ] }),
     screen === "result" && resultState && resultPresentation && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-screen result-screen-" + resultState.kind + " enemy-theme-" + resultState.opponent.theme, children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
@@ -59108,9 +59307,9 @@ function App() {
             "LIVES: ",
             resultState.livesAfter
           ] }),
-          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-            "CONTINUE: ",
-            continueSeconds
+          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-countdown", "aria-label": `Continue in ${continueSeconds} seconds`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "hud-label", children: "CONTINUE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "timer-frame", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "cyber-timer", children: String(continueSeconds).padStart(2, "0") }) })
           ] })
         ] }),
         resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
@@ -59170,6 +59369,21 @@ function App() {
             "VOLUME: ",
             audioVolume,
             "%"
+          ] })
+        ] }),
+        screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+              audioRef.current?.play("menu");
+              resetGame();
+              setSettingsOpen(false);
+            }, children: "RESET BOARD" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: () => {
+              audioRef.current?.play("menu");
+              setSettingsOpen(false);
+              openMenu();
+            }, children: "MAIN MENU" })
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [

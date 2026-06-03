@@ -1,0 +1,35 @@
+Cyber Chess Soundtrack
+
+Current in-game playlist:
+
+| # | Title | Length | Provenance |
+|---|---|---:|---|
+| 01 | The Pulse Long Song | 4:00 | 11labs |
+| 02 | pawn2queen | 4:18 | Suno |
+| 03 | fapponocci twist | 7:59 | Suno |
+| 04 | dont twist the bishop | 4:10 | Suno |
+| 05 | rooks and kings | 3:58 | Suno |
+| 06 | Synesthetic Circuit | 7:59 | Suno |
+| 07 | Velvet Queen | 4:10 | Suno |
+| 08 | cyber_chess_music | 3:00 | 11labs |
+| 09 | Chrome Gambit | 6:43 | Suno |
+| 10 | Chrome fresh | 3:35 | Suno |
+| 11 | Chrome Chess Mode | 3:13 | Suno |
+| 12 | Chrome city | 3:22 | Suno |
+| 13 | boogie knights | 3:30 | Suno |
+| 14 | drummin pawns | 3:25 | Suno |
+| 15 | cybercrimes | 0:36 | Suno |
+| 16 | The Pulse of the Board 2 | 2:00 | 11labs |
+| 17 | Pawns of Destiny | 2:00 | 11labs |
+| 18 | checkmeat freakazoid | 1:00 | 11labs |
+| 19 | checkmeat you lose song | 1:00 | 11labs |
+| 20 | victorious 1 | 0:30 | 11labs |
+| 21 | synthetic dreams cyber eyes | 3:30 | 11labs |
+
+Attributions:
+
+Music and audio assets marked Suno were generated with Suno.
+Music and audio assets marked 11labs were generated with 11labs.
+Generated audio rights and distribution terms depend on the applicable service
+plan and terms for the account used to create each asset. Confirm account-level
+commercial-use rights before commercial release.

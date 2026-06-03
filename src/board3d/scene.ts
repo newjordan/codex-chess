@@ -113,6 +113,10 @@ export function setupScene(
     controls,
     tick() {
       const delta = clock.getDelta();
+      const audioReactive = (window as typeof window & {
+        __chess?: { audioReactive?: { level?: number; pulse?: number } };
+      }).__chess?.audioReactive;
+      cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
     },

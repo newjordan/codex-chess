@@ -20,7 +20,6 @@ const fallbackLongTracks = new Set([
   'cybercrimes.mp3',
   'cyber_chess_music.mp3',
   'drummin_pawns.mp3',
-  'game_over.wav',
   'Pawns_of_Destiny.mp3',
   'synthetic_dreams_cyber_eyes.mp3',
   'the_pulse_long_song.mp3',

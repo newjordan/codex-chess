@@ -11,6 +11,7 @@ const THEME_COLORS: Record<Board3DEnemyTheme, [number, number, number]> = {
 
 export type CellWaveEnvironment = {
   mesh: THREE.Mesh;
+  setAudioReactivity(level: number, pulse: number): void;
   tick(delta: number): void;
   dispose(): void;
 };
@@ -28,6 +29,8 @@ export function createCellWaveEnvironment(theme: Board3DEnemyTheme): CellWaveEnv
     uBase: { value: new THREE.Color(colors[0]) },
     uMid: { value: new THREE.Color(colors[1]) },
     uHigh: { value: new THREE.Color(colors[2]) },
+    uAudioLevel: { value: 0 },
+    uAudioPulse: { value: 0 },
   };
 
   const material = new THREE.ShaderMaterial({
@@ -50,6 +53,8 @@ export function createCellWaveEnvironment(theme: Board3DEnemyTheme): CellWaveEnv
       uniform vec3 uBase;
       uniform vec3 uMid;
       uniform vec3 uHigh;
+      uniform float uAudioLevel;
+      uniform float uAudioPulse;
       varying vec3 vWorld;
 
       float hash21(vec2 p) {
@@ -104,32 +109,36 @@ export function createCellWaveEnvironment(theme: Board3DEnemyTheme): CellWaveEnv
 
       void main() {
         vec3 dir = normalize(vWorld);
-        vec3 slowDrift = vec3(uTime * 0.10, -uTime * 0.07, uTime * 0.06);
-        vec3 crossDrift = vec3(-uTime * 0.12, uTime * 0.09, -uTime * 0.05);
+        float audioFlow = clamp(uAudioLevel * 0.34 + uAudioPulse * 0.16, 0.0, 1.0);
+        float audioStrength = clamp(uAudioLevel * 0.28 + uAudioPulse * 0.14, 0.0, 1.0);
+        float timeFlow = uTime * (0.82 + audioFlow * 0.16);
+        vec3 slowDrift = vec3(timeFlow * 0.10, -timeFlow * 0.07, timeFlow * 0.06);
+        vec3 crossDrift = vec3(-timeFlow * 0.12, timeFlow * 0.09, -timeFlow * 0.05);
         float n1 = vnoise3(dir * 7.5 + slowDrift);
         float n2 = vnoise3(dir * 15.0 + crossDrift);
-        float n3 = vnoise3(dir * 28.0 + vec3(uTime * 0.04, uTime * 0.03, -uTime * 0.05));
-        float waveA = sin(dot(dir, normalize(vec3(2.4, 1.1, 1.5))) * 6.4 + n1 * 1.2 + uTime * 0.82) * 0.5 + 0.5;
-        float waveB = sin(dot(dir, normalize(vec3(-1.2, -0.7, 2.8))) * 7.2 + n2 * 1.0 - uTime * 0.68) * 0.5 + 0.5;
-        float speedTone = smoothstep(0.18, 0.94, n1 * 0.38 + n2 * 0.24 + n3 * 0.08 + waveA * 0.2 + waveB * 0.1);
+        float n3 = vnoise3(dir * (28.0 + audioStrength * 1.1) + vec3(timeFlow * 0.04, timeFlow * 0.03, -timeFlow * 0.05));
+        float waveA = sin(dot(dir, normalize(vec3(2.4, 1.1, 1.5))) * (6.4 + audioStrength * 0.28) + n1 * 1.2 + timeFlow * 0.82) * 0.5 + 0.5;
+        float waveB = sin(dot(dir, normalize(vec3(-1.2, -0.7, 2.8))) * (7.2 + audioStrength * 0.22) + n2 * 1.0 - timeFlow * 0.68) * 0.5 + 0.5;
+        float speedTone = smoothstep(0.16, 0.94, n1 * 0.38 + n2 * 0.24 + n3 * 0.08 + waveA * (0.2 + audioStrength * 0.018) + waveB * (0.1 + audioStrength * 0.012));
 
         vec2 pix = floor(gl_FragCoord.xy);
         float ordered = bayer4(pix / 2.0);
-        float flux = vnoise3(dir * 10.0 + vec3(uTime * 0.16, uTime * 0.11, -uTime * 0.09));
-        float blue = hash21(pix + floor(uTime * 24.0));
-        float threshold = mix(ordered, blue, 0.18 + flux * 0.22);
+        float flux = vnoise3(dir * 10.0 + vec3(timeFlow * 0.16, timeFlow * 0.11, -timeFlow * 0.09));
+        float blue = hash21(pix + floor(timeFlow * (16.0 + audioFlow * 2.5)));
+        float threshold = mix(ordered, blue, 0.16 + flux * (0.2 + audioStrength * 0.025));
         float dither = speedTone > threshold ? 1.0 : 0.0;
 
         vec3 gradient = mix(uBase, uMid, speedTone);
         gradient = mix(gradient, uHigh, smoothstep(0.68, 1.0, speedTone));
-        vec3 color = mix(gradient * 0.78, gradient * 1.15, dither);
+        vec3 color = mix(gradient * 0.84, gradient * (1.16 + audioStrength * 0.055), dither);
 
         float grid = max(
           max(band(dir, vec3(0.91, 0.18, 0.36), 11.5, uTime * 0.035), band(dir, vec3(-0.34, 0.82, 0.46), 10.0, -uTime * 0.028)),
           band(dir, vec3(0.22, -0.42, 0.88), 12.5, uTime * 0.024)
         );
         float horizonFade = smoothstep(-0.72, -0.08, dir.y) * (1.0 - smoothstep(0.65, 0.95, dir.y));
-        float alpha = (0.085 + speedTone * 0.145 + grid * 0.026) * (0.38 + horizonFade * 0.56);
+        float alpha = (0.094 + speedTone * (0.154 + audioStrength * 0.014) + grid * (0.028 + audioStrength * 0.006)) * (0.38 + horizonFade * 0.58);
+        color *= 1.09 + audioStrength * 0.045;
         gl_FragColor = vec4(color, alpha);
       }
     `,
@@ -140,6 +149,10 @@ export function createCellWaveEnvironment(theme: Board3DEnemyTheme): CellWaveEnv
 
   return {
     mesh,
+    setAudioReactivity(level, pulse) {
+      uniforms.uAudioLevel.value = THREE.MathUtils.clamp(level, 0, 1);
+      uniforms.uAudioPulse.value = THREE.MathUtils.clamp(pulse, 0, 1);
+    },
     tick(delta) {
       uniforms.uTime.value += delta;
     },

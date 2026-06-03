@@ -23,9 +23,8 @@ Current in-game playlist:
 | 17 | Pawns of Destiny | 2:00 | 11labs |
 | 18 | checkmeat freakazoid | 1:00 | 11labs |
 | 19 | checkmeat you lose song | 1:00 | 11labs |
-| 20 | game over | 1:00 | 11labs |
-| 21 | victorious 1 | 0:30 | 11labs |
-| 22 | synthetic dreams cyber eyes | 3:30 | 11labs |
+| 20 | victorious 1 | 0:30 | 11labs |
+| 21 | synthetic dreams cyber eyes | 3:30 | 11labs |
 
 Attributions:
 

@@ -98,6 +98,32 @@
   .cyber-panel * {
     box-sizing: border-box;
   }
+  .electron-close {
+    position: fixed;
+    z-index: 10000;
+    top: 10px;
+    right: 12px;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    padding: 0;
+    color: #39ff14;
+    background: rgba(0, 0, 0, 0.36);
+    border: 1px solid rgba(57, 255, 20, 0.54);
+    font: 900 18px/1 var(--font-header);
+    letter-spacing: 0;
+    text-shadow: 0 0 7px rgba(57, 255, 20, 0.95), 0 2px 0 #000;
+    box-shadow: 0 0 9px rgba(57, 255, 20, 0.28);
+    cursor: pointer;
+  }
+  .electron-close:hover,
+  .electron-close:focus-visible {
+    color: #b9ffad;
+    border-color: #39ff14;
+    box-shadow: 0 0 15px rgba(57, 255, 20, 0.48);
+    outline: none;
+  }
   .cyber-hero {
     position: relative;
     display: grid;
@@ -217,7 +243,7 @@
       transform: translateY(calc(var(--intro-poster-view-height) - 100%));
     }
     100% {
-      transform: translateY(0);
+      transform: translateY(-5vh);
     }
   }
   .color-picker {
@@ -378,7 +404,7 @@
     place-items: end center;
     width: 100vw;
     height: 100vh;
-    padding: 0 0 clamp(34px, 8vh, 82px);
+    padding: 0 0 clamp(8px, 1.6vh, 18px);
     color: #fff200;
     background: transparent;
     border: 0;
@@ -833,9 +859,9 @@
   .cyber-start-art::before {
     content: "";
     display: block;
-    width: clamp(270px, 56vw, 650px);
+    width: clamp(230px, 28vw, 450px);
     aspect-ratio: 1538 / 610;
-    margin-bottom: clamp(0px, 1vh, 12px);
+    margin-bottom: 0;
     background: url("media/buttons/play_button.png") center / 80% auto no-repeat;
     filter:
       drop-shadow(0 0 10px rgba(255, 47, 216, 0.78))
@@ -1793,6 +1819,7 @@
   .settings-bg {
     object-fit: cover;
     object-position: center center;
+    background: transparent;
   }
   .settings-vignette {
     background:
@@ -1807,17 +1834,17 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
-    gap: clamp(4px, 0.7vh, 8px);
+    gap: clamp(7px, 1vh, 11px);
     width: min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479));
     aspect-ratio: 351 / 479;
     max-height: none;
-    overflow: hidden;
-    padding: clamp(70px, 8.7vh, 88px) clamp(70px, 7vw, 86px) clamp(44px, 5.1vh, 54px);
+    overflow: visible;
+    padding: clamp(54px, 6.4vh, 68px) clamp(70px, 7vw, 86px) clamp(76px, 8.8vh, 92px);
     background: url("media/buttons/settings_bg.png") center / 100% 100% no-repeat;
     border: 0;
-    box-shadow:
-      0 0 34px rgba(0, 255, 204, 0.24),
-      0 0 46px rgba(255, 47, 216, 0.22);
+    filter:
+      drop-shadow(0 0 22px rgba(0, 255, 204, 0.24))
+      drop-shadow(0 0 30px rgba(255, 47, 216, 0.2));
     text-shadow: 0 2px 0 #000;
   }
   .settings-panel::before,
@@ -1827,7 +1854,7 @@
     pointer-events: none;
   }
   .settings-panel::before {
-    inset: 12.2% 11.4% 8.6%;
+    inset: 8.2% 9.4% 5.2%;
     z-index: 0;
     background:
       linear-gradient(rgba(58, 230, 255, 0.09) 1px, transparent 1px),
@@ -1842,7 +1869,7 @@
       0 0 18px rgba(0, 225, 255, 0.16);
   }
   .settings-panel::after {
-    inset: 12.8% 12.2% 9.4%;
+    inset: 8.8% 10.2% 5.8%;
     z-index: 0;
     background: repeating-linear-gradient(
       0deg,
@@ -1854,15 +1881,33 @@
     mix-blend-mode: screen;
     opacity: 0.38;
   }
+  .settings-panel-frame {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    width: 100%;
+    height: 100%;
+    object-fit: fill;
+    pointer-events: none;
+    user-select: none;
+  }
   .settings-panel > * {
     position: relative;
     z-index: 1;
   }
+  .settings-panel > .settings-panel-frame {
+    position: absolute;
+    z-index: 2;
+  }
   .settings-panel-header {
+    z-index: 4;
+    position: relative;
     display: grid;
     place-items: center;
-    min-height: clamp(54px, 8vh, 72px);
-    margin: 0 0 -8px;
+    height: clamp(30px, 4.2vh, 44px);
+    min-height: clamp(30px, 4.2vh, 44px);
+    margin: 0 0 clamp(4px, 0.8vh, 8px);
+    overflow: visible;
   }
   .settings-panel-body {
     min-height: 0;
@@ -1886,10 +1931,11 @@
     margin-bottom: 0;
   }
   .settings-footer {
+    z-index: 1;
     display: grid;
-    gap: clamp(5px, 0.9vh, 8px);
+    gap: clamp(10px, 1.3vh, 14px);
     min-height: 0;
-    padding-top: clamp(5px, 0.9vh, 8px);
+    padding-top: clamp(9px, 1.2vh, 12px);
     border-top: 1px solid rgba(101, 230, 255, 0.34);
     background:
       linear-gradient(180deg, rgba(6, 21, 36, 0.74), rgba(0, 0, 0, 0.26)),
@@ -1907,6 +1953,10 @@
     text-align: center;
   }
   .settings-panel h2 {
+    position: absolute;
+    z-index: 4;
+    top: 0;
+    left: 50%;
     margin: 0 auto;
     width: min(224px, 70%);
     aspect-ratio: 445 / 204;
@@ -1914,7 +1964,7 @@
     background: url("media/buttons/settings.png") center / contain no-repeat;
     font-size: 0;
     line-height: 0;
-    transform: translateY(clamp(-82px, -8.6vh, -64px));
+    transform: translate(-50%, clamp(-82px, -8.6vh, -64px));
   }
   .story-copy h2,
   .enemy-load-copy h1,
@@ -1930,8 +1980,8 @@
   }
   .settings-group {
     display: grid;
-    gap: 8px;
-    margin-bottom: 14px;
+    gap: 10px;
+    margin-bottom: 18px;
   }
   .settings-group > strong {
     justify-self: center;
@@ -1951,7 +2001,7 @@
   .settings-options {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 8px;
+    gap: 10px;
   }
   .settings-options-game {
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2031,14 +2081,14 @@
     margin-bottom: 8px;
   }
   .settings-footer .settings-save-group {
-    gap: 6px;
+    gap: 8px;
     margin-bottom: 0;
   }
   .settings-footer .settings-group > strong {
     font-size: 12px;
   }
   .settings-footer .settings-options-save {
-    gap: 7px;
+    gap: 9px;
   }
   .settings-footer .settings-command {
     min-height: 40px;
@@ -2069,14 +2119,14 @@
     line-height: 1.18;
   }
   .settings-playlist {
-    gap: 8px;
-    margin-bottom: 14px;
+    gap: 10px;
+    margin-bottom: 16px;
   }
   .settings-track-control {
     display: grid;
     grid-template-columns: 62px minmax(0, 1fr) 62px;
     align-items: stretch;
-    gap: 8px;
+    gap: 10px;
   }
   .settings-track-step,
   .settings-track-option {
@@ -2147,8 +2197,8 @@
   .settings-track-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 5px;
-    max-height: clamp(126px, 18vh, 178px);
+    gap: 6px;
+    max-height: clamp(126px, 19vh, 170px);
     overflow-y: auto;
     overscroll-behavior: contain;
     padding-right: 4px;
@@ -2202,8 +2252,8 @@
   }
   .settings-volume {
     display: grid;
-    gap: 9px;
-    margin: 0 0 20px;
+    gap: 10px;
+    margin: 0 0 22px;
     color: #d8fbff;
     font-size: 13px;
     font-weight: 900;
@@ -2279,12 +2329,14 @@
     border: 0;
   }
   .settings-actions {
+    position: relative;
+    z-index: 4;
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
     gap: 8px;
-    margin-top: 0;
+    margin-top: clamp(10px, 1.4vh, 16px);
   }
   .settings-actions .art-button {
     width: clamp(122px, 14vw, 158px);

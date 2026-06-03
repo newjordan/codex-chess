@@ -376,10 +376,8 @@ async function runPlayableSmoke(label, viewport) {
       '/media/audio/Pawns_of_Destiny.mp3 net::ERR_ABORTED',
       '/media/audio/checkmeat_freakazoid.mp3 net::ERR_ABORTED',
       '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',
-      '/media/audio/game_over.wav net::ERR_ABORTED',
       '/media/audio/victorious_1.mp3 net::ERR_ABORTED',
       '/media/audio/victorioius_2.mp3 net::ERR_ABORTED',
-      '/media/audio/game_over.mp3 net::ERR_ABORTED',
     ];
     const relevantFailed = failed.filter((entry) =>
       !intentionallyInterruptedAudio.some((audio) => entry.includes(audio))

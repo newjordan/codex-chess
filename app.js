@@ -48907,7 +48907,9 @@ function createCellWaveEnvironment(theme) {
     uTime: { value: 0 },
     uBase: { value: new Color(colors[0]) },
     uMid: { value: new Color(colors[1]) },
-    uHigh: { value: new Color(colors[2]) }
+    uHigh: { value: new Color(colors[2]) },
+    uAudioLevel: { value: 0 },
+    uAudioPulse: { value: 0 }
   };
   const material = new ShaderMaterial({
     uniforms,
@@ -48929,6 +48931,8 @@ function createCellWaveEnvironment(theme) {
       uniform vec3 uBase;
       uniform vec3 uMid;
       uniform vec3 uHigh;
+      uniform float uAudioLevel;
+      uniform float uAudioPulse;
       varying vec3 vWorld;
 
       float hash21(vec2 p) {
@@ -48983,32 +48987,36 @@ function createCellWaveEnvironment(theme) {
 
       void main() {
         vec3 dir = normalize(vWorld);
-        vec3 slowDrift = vec3(uTime * 0.10, -uTime * 0.07, uTime * 0.06);
-        vec3 crossDrift = vec3(-uTime * 0.12, uTime * 0.09, -uTime * 0.05);
+        float audioFlow = clamp(uAudioLevel * 0.34 + uAudioPulse * 0.16, 0.0, 1.0);
+        float audioStrength = clamp(uAudioLevel * 0.28 + uAudioPulse * 0.14, 0.0, 1.0);
+        float timeFlow = uTime * (0.82 + audioFlow * 0.16);
+        vec3 slowDrift = vec3(timeFlow * 0.10, -timeFlow * 0.07, timeFlow * 0.06);
+        vec3 crossDrift = vec3(-timeFlow * 0.12, timeFlow * 0.09, -timeFlow * 0.05);
         float n1 = vnoise3(dir * 7.5 + slowDrift);
         float n2 = vnoise3(dir * 15.0 + crossDrift);
-        float n3 = vnoise3(dir * 28.0 + vec3(uTime * 0.04, uTime * 0.03, -uTime * 0.05));
-        float waveA = sin(dot(dir, normalize(vec3(2.4, 1.1, 1.5))) * 6.4 + n1 * 1.2 + uTime * 0.82) * 0.5 + 0.5;
-        float waveB = sin(dot(dir, normalize(vec3(-1.2, -0.7, 2.8))) * 7.2 + n2 * 1.0 - uTime * 0.68) * 0.5 + 0.5;
-        float speedTone = smoothstep(0.18, 0.94, n1 * 0.38 + n2 * 0.24 + n3 * 0.08 + waveA * 0.2 + waveB * 0.1);
+        float n3 = vnoise3(dir * (28.0 + audioStrength * 1.1) + vec3(timeFlow * 0.04, timeFlow * 0.03, -timeFlow * 0.05));
+        float waveA = sin(dot(dir, normalize(vec3(2.4, 1.1, 1.5))) * (6.4 + audioStrength * 0.28) + n1 * 1.2 + timeFlow * 0.82) * 0.5 + 0.5;
+        float waveB = sin(dot(dir, normalize(vec3(-1.2, -0.7, 2.8))) * (7.2 + audioStrength * 0.22) + n2 * 1.0 - timeFlow * 0.68) * 0.5 + 0.5;
+        float speedTone = smoothstep(0.16, 0.94, n1 * 0.38 + n2 * 0.24 + n3 * 0.08 + waveA * (0.2 + audioStrength * 0.018) + waveB * (0.1 + audioStrength * 0.012));
 
         vec2 pix = floor(gl_FragCoord.xy);
         float ordered = bayer4(pix / 2.0);
-        float flux = vnoise3(dir * 10.0 + vec3(uTime * 0.16, uTime * 0.11, -uTime * 0.09));
-        float blue = hash21(pix + floor(uTime * 24.0));
-        float threshold = mix(ordered, blue, 0.18 + flux * 0.22);
+        float flux = vnoise3(dir * 10.0 + vec3(timeFlow * 0.16, timeFlow * 0.11, -timeFlow * 0.09));
+        float blue = hash21(pix + floor(timeFlow * (16.0 + audioFlow * 2.5)));
+        float threshold = mix(ordered, blue, 0.16 + flux * (0.2 + audioStrength * 0.025));
         float dither = speedTone > threshold ? 1.0 : 0.0;
 
         vec3 gradient = mix(uBase, uMid, speedTone);
         gradient = mix(gradient, uHigh, smoothstep(0.68, 1.0, speedTone));
-        vec3 color = mix(gradient * 0.78, gradient * 1.15, dither);
+        vec3 color = mix(gradient * 0.84, gradient * (1.16 + audioStrength * 0.055), dither);
 
         float grid = max(
           max(band(dir, vec3(0.91, 0.18, 0.36), 11.5, uTime * 0.035), band(dir, vec3(-0.34, 0.82, 0.46), 10.0, -uTime * 0.028)),
           band(dir, vec3(0.22, -0.42, 0.88), 12.5, uTime * 0.024)
         );
         float horizonFade = smoothstep(-0.72, -0.08, dir.y) * (1.0 - smoothstep(0.65, 0.95, dir.y));
-        float alpha = (0.085 + speedTone * 0.145 + grid * 0.026) * (0.38 + horizonFade * 0.56);
+        float alpha = (0.094 + speedTone * (0.154 + audioStrength * 0.014) + grid * (0.028 + audioStrength * 0.006)) * (0.38 + horizonFade * 0.58);
+        color *= 1.09 + audioStrength * 0.045;
         gl_FragColor = vec4(color, alpha);
       }
     `
@@ -49017,6 +49025,10 @@ function createCellWaveEnvironment(theme) {
   mesh.renderOrder = -20;
   return {
     mesh,
+    setAudioReactivity(level, pulse) {
+      uniforms.uAudioLevel.value = MathUtils.clamp(level, 0, 1);
+      uniforms.uAudioPulse.value = MathUtils.clamp(pulse, 0, 1);
+    },
     tick(delta) {
       uniforms.uTime.value += delta;
     },
@@ -49213,6 +49225,8 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
     controls,
     tick() {
       const delta = clock.getDelta();
+      const audioReactive = window.__chess?.audioReactive;
+      cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
     },
@@ -58478,9 +58492,14 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/pawn2queen.mp3",
   "media/audio/fapponacci_twister.mp3",
   "media/audio/dont twist the bishop.mp3",
+  "media/audio/floppie_discs.mp3",
   "media/audio/rooks and kings.mp3",
   "media/audio/Synesthetic Circuit.mp3",
   "media/audio/Velvet Queen.mp3",
+  "media/audio/Glitch Relaxor.mp3",
+  "media/audio/Glitch Reliable.mp3",
+  "media/audio/Moonbowl_Smoke.mp3",
+  "media/audio/Pixelot.mp3",
   "media/audio/cyber_chess_music.mp3",
   "media/audio/Chrome Gambit.mp3",
   "media/audio/Chrome fresh.mp3",
@@ -58493,7 +58512,6 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/Pawns_of_Destiny.mp3",
   "media/audio/checkmeat_freakazoid.mp3",
   "media/audio/checkmeat_you_lose_song.mp3",
-  "media/audio/game_over.wav",
   "media/audio/victorious_1.mp3",
   "media/audio/synthetic_dreams_cyber_eyes.mp3"
 ];
@@ -58505,7 +58523,6 @@ var VICTORY_MUSIC_SOURCES = [
   "media/audio/victorious_1.mp3",
   "media/audio/victorioius_2.mp3"
 ];
-var GAME_OVER_MUSIC_SRC = "media/audio/game_over.wav";
 var PLAYER_AVATARS = {
   normal: "media/avatars/player_normal.jpg",
   damaged: "media/avatars/player_damage.jpg",
@@ -58550,6 +58567,29 @@ var INTRO_STORY = [
   }
 ];
 window.__chess = { mounted: false };
+function getAudioReactiveState() {
+  window.__chess.audioReactive ??= {
+    level: 0,
+    musicLevel: 0,
+    pulse: 0
+  };
+  return window.__chess.audioReactive;
+}
+function pushAudioReactivePulse(amount) {
+  const state = getAudioReactiveState();
+  const nextPulse = Math.max(state.pulse || 0, Math.max(0, Math.min(1, amount)) * 0.28);
+  state.pulse = nextPulse;
+  state.level = Math.max(state.musicLevel || 0, nextPulse * 0.3);
+}
+function setMusicReactiveLevel(level) {
+  const state = getAudioReactiveState();
+  const nextMusicLevel = Math.max(0, Math.min(1, level));
+  const currentMusicLevel = state.musicLevel || 0;
+  const smoothing = nextMusicLevel > currentMusicLevel ? 0.035 : 0.012;
+  state.musicLevel = currentMusicLevel + (nextMusicLevel - currentMusicLevel) * smoothing;
+  state.pulse = Math.max(0, (state.pulse || 0) * 0.982);
+  state.level = Math.max(state.musicLevel, state.pulse * 0.3);
+}
 var RESULT_LINES = {
   goop: {
     winTitle: "GOOP CONTAINED",
@@ -58853,6 +58893,18 @@ function createAudioEngine(getAudioMode, getAudioVolume) {
         mode: getAudioMode(),
         volume: clampAudioVolume(getAudioVolume())
       };
+      const pulseByName = {
+        menu: 0.28,
+        select: 0.34,
+        move: 0.46,
+        capture: 0.84,
+        check: 0.72,
+        win: 0.8,
+        loss: 0.68,
+        reveal: 0.62,
+        tick: 0.3
+      };
+      pushAudioReactivePulse(pulseByName[name]);
       if (name === "menu") {
         tone(880, now, 0.08, "square", 0.22);
         tone(1320, now + 0.06, 0.08, "square", 0.14);
@@ -58904,6 +58956,7 @@ function App() {
   const introMusicRef = (0, import_react3.useRef)(null);
   const audioRef = (0, import_react3.useRef)(null);
   const loadingMusicRef = (0, import_react3.useRef)(null);
+  const musicAnalyserRef = (0, import_react3.useRef)(null);
   const loadingMusicPassRef = (0, import_react3.useRef)(0);
   const loadingMusicFinishedRef = (0, import_react3.useRef)(false);
   const loadingMusicHandlersRef = (0, import_react3.useRef)(null);
@@ -59040,6 +59093,7 @@ function App() {
     loadingMusicRef.current?.pause();
     loadingMusicRef.current = null;
     loadingMusicHandlersRef.current = null;
+    stopMusicAnalyser();
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     endMusicSrcRef.current = "";
@@ -59050,19 +59104,31 @@ function App() {
   }, []);
   (0, import_react3.useEffect)(() => {
     const onKeyDown2 = (event) => {
-      if (event.key !== "Escape") return;
-      event.preventDefault();
-      if (settingsOpen) {
-        audioRef.current?.play("menu");
-        if (creditsOpen) {
-          setCreditsOpen(false);
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (settingsOpen) {
+          audioRef.current?.play("menu");
+          if (creditsOpen) {
+            setCreditsOpen(false);
+            return;
+          }
+          setSettingsOpen(false);
           return;
         }
-        setSettingsOpen(false);
+        ensureAudioEngine()?.play("menu");
+        setSettingsOpen(true);
         return;
       }
-      ensureAudioEngine()?.play("menu");
-      setSettingsOpen(true);
+      if (audioModeRef.current !== "full" || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        switchSoundtrackSong(loadingMusicIndexRef.current + 1);
+        return;
+      }
+      if (event.key === "-" || event.key === "_") {
+        event.preventDefault();
+        switchSoundtrackSong(loadingMusicIndexRef.current - 1);
+      }
     };
     window.addEventListener("keydown", onKeyDown2);
     return () => window.removeEventListener("keydown", onKeyDown2);
@@ -59146,7 +59212,14 @@ function App() {
   }, [continueSeconds, resultState, screen]);
   (0, import_react3.useEffect)(() => {
     if (screen === "result" && resultState) {
-      const resultMusicSrc = resultState.kind === "win" ? VICTORY_MUSIC_SOURCES[0] : resultState.kind === "clear" ? VICTORY_MUSIC_SOURCES[1] : GAME_OVER_MUSIC_SRC;
+      const resultMusicSrc = resultState.kind === "win" ? VICTORY_MUSIC_SOURCES[0] : resultState.kind === "clear" ? VICTORY_MUSIC_SOURCES[1] : "";
+      if (!resultMusicSrc) {
+        endMusicRef.current?.pause();
+        endMusicRef.current = null;
+        endMusicSrcRef.current = "";
+        window.__chess.endMusic = { active: false, src: "" };
+        return;
+      }
       if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
         endMusicRef.current?.pause();
         endMusicRef.current = playClip(resultMusicSrc, { music: true, loop: true });
@@ -59285,6 +59358,66 @@ function App() {
     if (!audioRef.current) audioRef.current = createAudioEngine(() => audioModeRef.current, () => audioVolumeRef.current);
     return audioRef.current;
   };
+  const stopMusicAnalyser = () => {
+    const current = musicAnalyserRef.current;
+    if (!current) return;
+    window.cancelAnimationFrame(current.raf);
+    current.source.disconnect();
+    current.analyser.disconnect();
+    current.ctx.close().catch(() => void 0);
+    musicAnalyserRef.current = null;
+    setMusicReactiveLevel(0);
+  };
+  const ensureMusicAnalyser = (clip) => {
+    if (musicAnalyserRef.current?.clip === clip) {
+      if (musicAnalyserRef.current.ctx.state === "suspended") musicAnalyserRef.current.ctx.resume().catch(() => void 0);
+      return;
+    }
+    stopMusicAnalyser();
+    const AudioCtor = window.AudioContext || window.webkitAudioContext;
+    if (!AudioCtor) return;
+    try {
+      const ctx = new AudioCtor();
+      const source = ctx.createMediaElementSource(clip);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.94;
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
+      const reactive = {
+        ctx,
+        source,
+        analyser,
+        data: new Uint8Array(analyser.frequencyBinCount),
+        raf: 0,
+        clip
+      };
+      const sample2 = () => {
+        analyser.getByteFrequencyData(reactive.data);
+        let harmonicTotal = 0;
+        let harmonicWeight = 0;
+        const startBin = Math.floor(reactive.data.length * 0.18);
+        const endBin = Math.floor(reactive.data.length * 0.78);
+        for (let i = startBin; i < endBin; i += 1) {
+          const value = reactive.data[i] / 255;
+          const position = (i - startBin) / Math.max(1, endBin - startBin);
+          const weight = 0.65 + Math.sin(position * Math.PI) * 0.7;
+          harmonicTotal += value * weight;
+          harmonicWeight += weight;
+        }
+        const harmonicAverage = harmonicTotal / Math.max(1, harmonicWeight);
+        const level = Math.min(1, Math.pow(Math.max(0, harmonicAverage - 0.045) * 1.65, 1.25));
+        setMusicReactiveLevel(clip.paused ? 0 : level);
+        reactive.raf = window.requestAnimationFrame(sample2);
+      };
+      musicAnalyserRef.current = reactive;
+      reactive.raf = window.requestAnimationFrame(sample2);
+      ctx.resume().catch(() => void 0);
+    } catch (error2) {
+      console.warn("[Audio] Could not attach soundtrack analyser.", error2);
+      setMusicReactiveLevel(0);
+    }
+  };
   const updateAudioMode = (mode) => {
     audioModeRef.current = mode;
     setAudioMode(mode);
@@ -59332,6 +59465,7 @@ function App() {
       ensureAudioEngine()?.play("select");
       return;
     }
+    ensureMusicAnalyser(clip);
     const nextSrc = SOUNDTRACK_SOURCES[nextIndex];
     clip.src = nextSrc;
     clip.load();
@@ -59390,6 +59524,7 @@ function App() {
     clip?.pause();
     loadingMusicRef.current = null;
     loadingMusicHandlersRef.current = null;
+    stopMusicAnalyser();
     window.__chess.loadingMusic = {
       active: false,
       src: SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
@@ -59411,6 +59546,7 @@ function App() {
       clip.loop = false;
       clip.preload = "auto";
       loadingMusicRef.current = clip;
+      ensureMusicAnalyser(clip);
       if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
       const updateVolumeForPass = () => {
         const baseVolume2 = mediaVolume(audioVolumeRef.current) * 0.9;
@@ -59446,6 +59582,7 @@ function App() {
       clip.addEventListener("ended", onEnded);
       clip.addEventListener("timeupdate", onTimeUpdate);
     }
+    ensureMusicAnalyser(clip);
     const baseVolume = mediaVolume(audioVolumeRef.current) * 0.9;
     clip.volume = baseVolume;
     window.__chess.loadingMusic = {
@@ -59801,6 +59938,18 @@ function App() {
       },
       `${selected.id}-${playerColor}-${playerName}`
     ),
+    window.cyberChessDesktop && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      "button",
+      {
+        type: "button",
+        className: "electron-close",
+        "aria-label": "Close Cyber Chess",
+        onClick: () => {
+          window.cyberChessDesktop?.close().catch(() => void 0);
+        },
+        children: "X"
+      }
+    ),
     !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-launcher", "aria-label": "SETTINGS", onClick: () => {
       ensureAudioEngine()?.play("menu");
       setSettingsOpen(true);
@@ -60042,6 +60191,7 @@ function App() {
         ] })
       ] }) }) }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-panel-frame", src: "media/buttons/settings_bg_frame.png", alt: "" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel-body", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [

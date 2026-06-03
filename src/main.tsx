@@ -120,9 +120,14 @@ const SOUNDTRACK_SOURCES = [
   'media/audio/pawn2queen.mp3',
   'media/audio/fapponacci_twister.mp3',
   'media/audio/dont twist the bishop.mp3',
+  'media/audio/floppie_discs.mp3',
   'media/audio/rooks and kings.mp3',
   'media/audio/Synesthetic Circuit.mp3',
   'media/audio/Velvet Queen.mp3',
+  'media/audio/Glitch Relaxor.mp3',
+  'media/audio/Glitch Reliable.mp3',
+  'media/audio/Moonbowl_Smoke.mp3',
+  'media/audio/Pixelot.mp3',
   'media/audio/cyber_chess_music.mp3',
   'media/audio/Chrome Gambit.mp3',
   'media/audio/Chrome fresh.mp3',
@@ -135,7 +140,6 @@ const SOUNDTRACK_SOURCES = [
   'media/audio/Pawns_of_Destiny.mp3',
   'media/audio/checkmeat_freakazoid.mp3',
   'media/audio/checkmeat_you_lose_song.mp3',
-  'media/audio/game_over.wav',
   'media/audio/victorious_1.mp3',
   'media/audio/synthetic_dreams_cyber_eyes.mp3',
 ] as const;
@@ -147,7 +151,6 @@ const VICTORY_MUSIC_SOURCES = [
   'media/audio/victorious_1.mp3',
   'media/audio/victorioius_2.mp3',
 ] as const;
-const GAME_OVER_MUSIC_SRC = 'media/audio/game_over.wav';
 const PLAYER_AVATARS = {
   normal: 'media/avatars/player_normal.jpg',
   damaged: 'media/avatars/player_damage.jpg',
@@ -192,8 +195,45 @@ const INTRO_STORY = [
   },
 ] as const;
 
-declare global { interface Window { __chess: any } }
+declare global {
+  interface Window {
+    __chess: any;
+    cyberChessDesktop?: {
+      close: () => Promise<void>;
+    };
+  }
+}
 window.__chess = { mounted: false };
+
+function getAudioReactiveState() {
+  window.__chess.audioReactive ??= {
+    level: 0,
+    musicLevel: 0,
+    pulse: 0,
+  };
+  return window.__chess.audioReactive as {
+    level: number;
+    musicLevel: number;
+    pulse: number;
+  };
+}
+
+function pushAudioReactivePulse(amount: number) {
+  const state = getAudioReactiveState();
+  const nextPulse = Math.max(state.pulse || 0, Math.max(0, Math.min(1, amount)) * 0.28);
+  state.pulse = nextPulse;
+  state.level = Math.max(state.musicLevel || 0, nextPulse * 0.3);
+}
+
+function setMusicReactiveLevel(level: number) {
+  const state = getAudioReactiveState();
+  const nextMusicLevel = Math.max(0, Math.min(1, level));
+  const currentMusicLevel = state.musicLevel || 0;
+  const smoothing = nextMusicLevel > currentMusicLevel ? 0.035 : 0.012;
+  state.musicLevel = currentMusicLevel + (nextMusicLevel - currentMusicLevel) * smoothing;
+  state.pulse = Math.max(0, (state.pulse || 0) * 0.982);
+  state.level = Math.max(state.musicLevel, state.pulse * 0.3);
+}
 
 type ResultState = {
   kind: 'win' | 'loss' | 'game-over' | 'clear';
@@ -586,6 +626,18 @@ function createAudioEngine(getAudioMode: () => AudioMode, getAudioVolume: () => 
         mode: getAudioMode(),
         volume: clampAudioVolume(getAudioVolume()),
       };
+      const pulseByName: Record<typeof name, number> = {
+        menu: 0.28,
+        select: 0.34,
+        move: 0.46,
+        capture: 0.84,
+        check: 0.72,
+        win: 0.8,
+        loss: 0.68,
+        reveal: 0.62,
+        tick: 0.3,
+      };
+      pushAudioReactivePulse(pulseByName[name]);
       if (name === 'menu') {
         tone(880, now, 0.08, 'square', 0.22);
         tone(1320, now + 0.06, 0.08, 'square', 0.14);
@@ -638,6 +690,14 @@ function App() {
   const introMusicRef = useRef<{ stop: () => void } | null>(null);
   const audioRef = useRef<AudioEngine | null>(null);
   const loadingMusicRef = useRef<HTMLAudioElement | null>(null);
+  const musicAnalyserRef = useRef<{
+    ctx: AudioContext;
+    source: MediaElementAudioSourceNode;
+    analyser: AnalyserNode;
+    data: Uint8Array;
+    raf: number;
+    clip: HTMLAudioElement;
+  } | null>(null);
   const loadingMusicPassRef = useRef(0);
   const loadingMusicFinishedRef = useRef(false);
   const loadingMusicHandlersRef = useRef<{
@@ -792,6 +852,7 @@ function App() {
     loadingMusicRef.current?.pause();
     loadingMusicRef.current = null;
     loadingMusicHandlersRef.current = null;
+    stopMusicAnalyser();
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     endMusicSrcRef.current = '';
@@ -803,19 +864,32 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key !== 'Escape') return;
-      event.preventDefault();
-      if (settingsOpen) {
-        audioRef.current?.play('menu');
-        if (creditsOpen) {
-          setCreditsOpen(false);
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (settingsOpen) {
+          audioRef.current?.play('menu');
+          if (creditsOpen) {
+            setCreditsOpen(false);
+            return;
+          }
+          setSettingsOpen(false);
           return;
         }
-        setSettingsOpen(false);
+        ensureAudioEngine()?.play('menu');
+        setSettingsOpen(true);
         return;
       }
-      ensureAudioEngine()?.play('menu');
-      setSettingsOpen(true);
+
+      if (audioModeRef.current !== 'full' || event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key === '+' || event.key === '=') {
+        event.preventDefault();
+        switchSoundtrackSong(loadingMusicIndexRef.current + 1);
+        return;
+      }
+      if (event.key === '-' || event.key === '_') {
+        event.preventDefault();
+        switchSoundtrackSong(loadingMusicIndexRef.current - 1);
+      }
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
@@ -914,7 +988,14 @@ function App() {
       const resultMusicSrc =
         resultState.kind === 'win' ? VICTORY_MUSIC_SOURCES[0] :
         resultState.kind === 'clear' ? VICTORY_MUSIC_SOURCES[1] :
-        GAME_OVER_MUSIC_SRC;
+        '';
+      if (!resultMusicSrc) {
+        endMusicRef.current?.pause();
+        endMusicRef.current = null;
+        endMusicSrcRef.current = '';
+        window.__chess.endMusic = { active: false, src: '' };
+        return;
+      }
       if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
         endMusicRef.current?.pause();
         endMusicRef.current = playClip(resultMusicSrc, { music: true, loop: true });
@@ -1068,6 +1149,74 @@ function App() {
     return audioRef.current;
   };
 
+  const stopMusicAnalyser = () => {
+    const current = musicAnalyserRef.current;
+    if (!current) return;
+    window.cancelAnimationFrame(current.raf);
+    current.source.disconnect();
+    current.analyser.disconnect();
+    current.ctx.close().catch(() => undefined);
+    musicAnalyserRef.current = null;
+    setMusicReactiveLevel(0);
+  };
+
+  const ensureMusicAnalyser = (clip: HTMLAudioElement) => {
+    if (musicAnalyserRef.current?.clip === clip) {
+      if (musicAnalyserRef.current.ctx.state === 'suspended') musicAnalyserRef.current.ctx.resume().catch(() => undefined);
+      return;
+    }
+
+    stopMusicAnalyser();
+
+    const AudioCtor = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioCtor) return;
+
+    try {
+      const ctx = new AudioCtor();
+      const source = ctx.createMediaElementSource(clip);
+      const analyser = ctx.createAnalyser();
+      analyser.fftSize = 256;
+      analyser.smoothingTimeConstant = 0.94;
+      source.connect(analyser);
+      analyser.connect(ctx.destination);
+
+      const reactive = {
+        ctx,
+        source,
+        analyser,
+        data: new Uint8Array(analyser.frequencyBinCount),
+        raf: 0,
+        clip,
+      };
+
+      const sample = () => {
+        analyser.getByteFrequencyData(reactive.data);
+        let harmonicTotal = 0;
+        let harmonicWeight = 0;
+        const startBin = Math.floor(reactive.data.length * 0.18);
+        const endBin = Math.floor(reactive.data.length * 0.78);
+        for (let i = startBin; i < endBin; i += 1) {
+          const value = reactive.data[i] / 255;
+          const position = (i - startBin) / Math.max(1, endBin - startBin);
+          const weight = 0.65 + Math.sin(position * Math.PI) * 0.7;
+          harmonicTotal += value * weight;
+          harmonicWeight += weight;
+        }
+        const harmonicAverage = harmonicTotal / Math.max(1, harmonicWeight);
+        const level = Math.min(1, Math.pow(Math.max(0, harmonicAverage - 0.045) * 1.65, 1.25));
+        setMusicReactiveLevel(clip.paused ? 0 : level);
+        reactive.raf = window.requestAnimationFrame(sample);
+      };
+
+      musicAnalyserRef.current = reactive;
+      reactive.raf = window.requestAnimationFrame(sample);
+      ctx.resume().catch(() => undefined);
+    } catch (error) {
+      console.warn('[Audio] Could not attach soundtrack analyser.', error);
+      setMusicReactiveLevel(0);
+    }
+  };
+
   const updateAudioMode = (mode: AudioMode) => {
     audioModeRef.current = mode;
     setAudioMode(mode);
@@ -1116,6 +1265,7 @@ function App() {
       ensureAudioEngine()?.play('select');
       return;
     }
+    ensureMusicAnalyser(clip);
     const nextSrc = SOUNDTRACK_SOURCES[nextIndex];
     clip.src = nextSrc;
     clip.load();
@@ -1178,6 +1328,7 @@ function App() {
     clip?.pause();
     loadingMusicRef.current = null;
     loadingMusicHandlersRef.current = null;
+    stopMusicAnalyser();
     window.__chess.loadingMusic = {
       active: false,
       src: SOUNDTRACK_SOURCES[loadingMusicIndexRef.current % SOUNDTRACK_SOURCES.length],
@@ -1200,6 +1351,7 @@ function App() {
       clip.loop = false;
       clip.preload = 'auto';
       loadingMusicRef.current = clip;
+      ensureMusicAnalyser(clip);
       if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
       const updateVolumeForPass = () => {
         const baseVolume = mediaVolume(audioVolumeRef.current) * 0.9;
@@ -1235,6 +1387,7 @@ function App() {
       clip.addEventListener('ended', onEnded);
       clip.addEventListener('timeupdate', onTimeUpdate);
     }
+    ensureMusicAnalyser(clip);
     const baseVolume = mediaVolume(audioVolumeRef.current) * 0.9;
     clip.volume = baseVolume;
     window.__chess.loadingMusic = {
@@ -1631,6 +1784,19 @@ function App() {
         }}
       />
 
+      {window.cyberChessDesktop && (
+        <button
+          type="button"
+          className="electron-close"
+          aria-label="Close Cyber Chess"
+          onClick={() => {
+            window.cyberChessDesktop?.close().catch(() => undefined);
+          }}
+        >
+          X
+        </button>
+      )}
+
       {!settingsOpen && screen === 'intro' && menuStep === 'video' && (
         <button type="button" className="settings-launcher" aria-label="SETTINGS" onClick={() => {
           ensureAudioEngine()?.play('menu');
@@ -1952,6 +2118,7 @@ function App() {
             </div>
           )}
           <div className="settings-panel">
+            <img className="settings-panel-frame" src="media/buttons/settings_bg_frame.png" alt="" />
             <div className="settings-panel-header">
               <h2 id="settings-title"><span>SETTINGS</span></h2>
             </div>

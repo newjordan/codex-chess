@@ -6,13 +6,6 @@
 <title>Cyber Chess</title>
 <style>
   @font-face {
-    font-family: "Commando";
-    src: url("media/fonts/commando.ttf") format("truetype");
-    font-weight: 400 900;
-    font-style: normal;
-    font-display: swap;
-  }
-  @font-face {
     font-family: "Upheaval";
     src: url("media/fonts/upheavtt.ttf") format("truetype");
     font-weight: 400 900;
@@ -20,7 +13,7 @@
     font-display: swap;
   }
   :root {
-    --font-header: "Commando", "Orbitron", "Arial Black", monospace;
+    --font-header: "Upheaval", "Orbitron", "Arial Black", monospace;
     --font-type: "Upheaval", "Orbitron", "Arial Black", monospace;
     --font-story: "Upheaval", "Arial Black", monospace;
     --font-arcade: var(--font-header);
@@ -1215,7 +1208,7 @@
     color: #dff;
     background: transparent;
     border: 0;
-    box-shadow: 0 0 22px rgba(0, 255, 204, 0.08), 0 0 28px rgba(255, 0, 190, 0.08);
+    box-shadow: none;
     font: 700 12px var(--font-type);
     pointer-events: none;
     overflow: visible;
@@ -1231,7 +1224,7 @@
     background: url("media/hud/main-vs-bar.png") center / 100% 100% no-repeat;
   }
   .cyber-hud::before {
-    content: "";
+    content: none;
     position: absolute;
     inset: 0;
     z-index: 7;
@@ -1312,7 +1305,7 @@
     height: 88%;
     object-fit: cover;
     border: 0;
-    background: #03050b;
+    background: transparent;
     box-shadow: none;
     z-index: 1;
   }
@@ -1327,7 +1320,7 @@
     transform: translateY(8%) scale(1.24);
   }
   .fighter-portrait-player {
-    background: #03050b;
+    background: transparent;
     object-position: 50% 10%;
     transform: translateY(8%) scale(1.42);
   }
@@ -1865,8 +1858,8 @@
     text-align: center;
   }
   .settings-panel h2 {
-    margin: 0 auto 16px;
-    width: min(246px, 72%);
+    margin: clamp(10px, 1.6vh, 16px) auto 14px;
+    width: min(232px, 68%);
     aspect-ratio: 445 / 204;
     color: transparent;
     background: url("media/buttons/settings.png") center / contain no-repeat;
@@ -1917,6 +1910,8 @@
     grid-template-columns: repeat(3, minmax(0, 1fr));
   }
   .settings-toggle {
+    position: relative;
+    isolation: isolate;
     display: grid;
     place-items: center;
     min-width: 0;
@@ -1924,26 +1919,40 @@
     padding: 7px 6px;
     color: #d8fbff;
     background:
-      linear-gradient(180deg, rgba(18, 54, 70, 0.94), rgba(3, 12, 24, 0.98)),
+      linear-gradient(180deg, rgba(124, 238, 255, 0.15), rgba(18, 54, 70, 0.74) 34%, rgba(3, 12, 24, 0.96)),
       #030b17;
-    border: 2px solid rgba(83, 223, 255, 0.66);
+    border: 1px solid rgba(101, 230, 255, 0.64);
     box-shadow:
-      inset 0 0 0 1px rgba(0, 0, 0, 0.9),
-      inset 0 0 18px rgba(0, 255, 204, 0.08),
-      0 0 12px rgba(0, 255, 204, 0.12);
+      inset 0 1px 0 rgba(223, 252, 255, 0.2),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.86),
+      inset 0 0 14px rgba(0, 255, 204, 0.07),
+      0 0 10px rgba(0, 225, 255, 0.1);
     font: 900 13px var(--font-label);
     cursor: pointer;
     text-align: center;
     text-shadow: 0 2px 0 #000, 0 0 9px rgba(54, 229, 255, 0.72);
   }
+  .settings-toggle::before,
+  .settings-track-step::before,
+  .settings-track-option::before,
+  .settings-track-now::before {
+    content: "";
+    position: absolute;
+    inset: 1px;
+    z-index: -1;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom-color: rgba(0, 0, 0, 0.38);
+    pointer-events: none;
+  }
   .settings-toggle.selected {
     color: #00131c;
     background:
-      linear-gradient(180deg, #b9fbff, #45e4ff 62%, #167dff);
-    border-color: #96f7ff;
+      linear-gradient(180deg, #d9fdff, #65eaff 54%, #1888ff);
+    border-color: rgba(180, 255, 255, 0.92);
     box-shadow:
-      inset 0 0 0 1px rgba(255, 255, 255, 0.55),
-      0 0 18px rgba(54, 229, 255, 0.38);
+      inset 0 1px 0 rgba(255, 255, 255, 0.68),
+      inset 0 -1px 0 rgba(0, 65, 112, 0.5),
+      0 0 14px rgba(54, 229, 255, 0.3);
     text-shadow: none;
   }
   .settings-toggle-switch {
@@ -1995,7 +2004,7 @@
     line-height: 1.18;
   }
   .settings-playlist {
-    margin-bottom: 18px;
+    margin-bottom: 12px;
   }
   .settings-track-control {
     display: grid;
@@ -2005,13 +2014,18 @@
   }
   .settings-track-step,
   .settings-track-option {
+    position: relative;
+    isolation: isolate;
     min-width: 0;
     color: #d8fbff;
     background:
-      linear-gradient(180deg, rgba(0, 255, 204, 0.16), rgba(5, 8, 22, 0.98)),
+      linear-gradient(180deg, rgba(124, 238, 255, 0.14), rgba(0, 255, 204, 0.08) 34%, rgba(5, 8, 22, 0.98)),
       #030b17;
-    border: 1px solid rgba(83, 223, 255, 0.6);
-    box-shadow: inset 0 0 12px rgba(0, 0, 0, 0.68), 0 0 10px rgba(0, 225, 255, 0.1);
+    border: 1px solid rgba(101, 230, 255, 0.58);
+    box-shadow:
+      inset 0 1px 0 rgba(223, 252, 255, 0.18),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.78),
+      0 0 10px rgba(0, 225, 255, 0.1);
     font: 900 12px var(--font-label);
     text-shadow: 0 2px 0 #000, 0 0 6px rgba(54, 229, 255, 0.66);
     cursor: pointer;
@@ -2034,14 +2048,19 @@
     box-shadow: inset 0 0 14px rgba(54, 229, 255, 0.12), 0 0 14px rgba(54, 229, 255, 0.18);
   }
   .settings-track-now {
+    position: relative;
+    isolation: isolate;
     display: grid;
     align-content: center;
     min-width: 0;
     min-height: 46px;
     padding: 7px 10px;
     background: rgba(0, 0, 0, 0.74);
-    border: 2px solid rgba(83, 223, 255, 0.72);
-    box-shadow: inset 0 0 18px rgba(54, 229, 255, 0.14);
+    border: 1px solid rgba(101, 230, 255, 0.66);
+    box-shadow:
+      inset 0 1px 0 rgba(223, 252, 255, 0.14),
+      inset 0 -1px 0 rgba(0, 0, 0, 0.82),
+      inset 0 0 16px rgba(54, 229, 255, 0.1);
     text-align: center;
   }
   .settings-track-now span {
@@ -2061,18 +2080,30 @@
   .settings-track-list {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 6px;
-    max-height: none;
-    overflow: visible;
-    padding-right: 0;
+    gap: 5px;
+    max-height: clamp(126px, 18vh, 178px);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding-right: 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(101, 230, 255, 0.72) rgba(0, 0, 0, 0.36);
+  }
+  .settings-track-list::-webkit-scrollbar {
+    width: 5px;
+  }
+  .settings-track-list::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.36);
+  }
+  .settings-track-list::-webkit-scrollbar-thumb {
+    background: rgba(101, 230, 255, 0.72);
   }
   .settings-track-option {
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr);
     align-items: center;
     gap: 5px;
-    min-height: 38px;
-    padding: 5px 7px;
+    min-height: 32px;
+    padding: 4px 7px;
     text-align: left;
   }
   .settings-track-option span {
@@ -2193,51 +2224,129 @@
   }
   .credits-modal {
     position: absolute;
-    inset: 0;
-    z-index: 4;
+    z-index: 2;
+    left: clamp(14px, 4vw, 58px);
+    top: clamp(76px, 13vh, 128px);
+    bottom: clamp(76px, 13vh, 112px);
+    width: min(520px, calc(100vw - min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479)) - clamp(70px, 8vw, 112px)));
     display: grid;
-    place-items: center;
-    padding: 18px;
-    background:
-      repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.3) 0 2px, rgba(0, 255, 204, 0.04) 2px 4px),
-      rgba(0, 3, 10, 0.76);
+    align-items: stretch;
+    pointer-events: none;
   }
   .credits-panel {
+    position: relative;
     display: grid;
-    justify-items: center;
-    gap: 10px;
-    width: min(480px, 92vw);
-    padding: 22px;
-    color: #dff;
-    background:
-      linear-gradient(180deg, rgba(5, 28, 44, 0.96), rgba(2, 7, 18, 0.98));
-    border: 2px solid rgba(83, 223, 255, 0.82);
-    box-shadow:
-      inset 0 0 24px rgba(0, 0, 0, 0.72),
-      0 0 24px rgba(54, 229, 255, 0.28);
-    text-align: center;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    align-content: start;
+    justify-items: start;
+    gap: clamp(8px, 1.4vh, 12px);
+    min-height: 0;
+    padding: clamp(13px, 2vw, 22px);
+    color: #9dff76;
+    background: transparent;
+    border: 0;
+    box-shadow: none;
+    font-family: var(--font-story);
+    text-align: left;
+    text-shadow:
+      0 4px 0 #000,
+      2px 2px 0 #000,
+      -2px 2px 0 #000,
+      0 0 8px rgba(112, 255, 74, 0.9),
+      0 0 18px rgba(0, 0, 0, 0.98),
+      0 0 28px rgba(0, 0, 0, 0.9);
+    pointer-events: auto;
+  }
+  .credits-panel::before {
+    content: ">";
+    position: absolute;
+    left: 8px;
+    top: 7px;
+    color: #baff5b;
+    font: 400 14px var(--font-story);
+    text-shadow: 0 0 8px rgba(157, 255, 118, 0.92);
   }
   .credits-kicker {
-    color: #7dffcc;
-    font: 900 11px var(--font-label);
-    letter-spacing: 0.12em;
+    min-width: 0;
+    padding-left: 12px;
+    color: #7dff6d;
+    font: 400 clamp(13px, 1.25vw, 18px) var(--font-story);
+    letter-spacing: 0.04em;
+    overflow-wrap: anywhere;
   }
   .credits-panel h3 {
     margin: 0;
-    color: #fff200;
-    font: 900 28px var(--font-label);
+    color: #baff5b;
+    font: 400 clamp(30px, 4.6vw, 62px) / 1 var(--font-story);
     letter-spacing: 0;
-    text-shadow: 0 2px 0 #000, 0 0 12px rgba(255, 242, 0, 0.48);
+    overflow-wrap: anywhere;
+  }
+  .credits-roll-shell {
+    position: relative;
+    width: min(100%, 44ch);
+    min-height: 0;
+    overflow: hidden;
+    mask-image: linear-gradient(180deg, transparent 0%, #000 13%, #000 84%, transparent 100%);
+  }
+  .credits-roll {
+    display: grid;
+    gap: clamp(9px, 1.6vh, 14px);
+    animation: credits-roll-up 12s linear infinite;
   }
   .credits-panel p {
     margin: 0;
-    max-width: 36ch;
-    color: #d8fbff;
-    font-size: 14px;
-    line-height: 1.25;
+    color: #a6ff78;
+    font-family: var(--font-story);
+    font-size: clamp(17px, 2vw, 27px);
+    font-weight: 400;
+    line-height: 1.12;
+    overflow-wrap: anywhere;
   }
   .credits-panel .art-button {
+    justify-self: start;
     width: clamp(110px, 20vw, 154px);
+    margin-top: clamp(6px, 1.4vh, 14px);
+  }
+  @keyframes credits-roll-up {
+    0% {
+      transform: translate3d(0, 52%, 0);
+      filter: saturate(1.7) brightness(1.12);
+    }
+    10% {
+      filter: none;
+    }
+    100% {
+      transform: translate3d(0, -112%, 0);
+      filter: none;
+    }
+  }
+  @media (max-width: 920px) {
+    .credits-modal {
+      left: 14px;
+      right: 14px;
+      top: 14px;
+      bottom: auto;
+      width: auto;
+      max-height: min(32vh, 220px);
+    }
+    .credits-panel {
+      gap: 5px;
+      padding: 12px 14px;
+    }
+    .credits-panel h3 {
+      font-size: clamp(24px, 7vw, 42px);
+    }
+    .credits-roll-shell {
+      width: min(100%, 48ch);
+      max-height: 92px;
+    }
+    .credits-panel p {
+      font-size: clamp(14px, 4.2vw, 18px);
+    }
+    .credits-panel .art-button {
+      width: 116px;
+      margin-top: 2px;
+    }
   }
   .story-copy span,
   .matchup-line,
@@ -2428,29 +2537,48 @@
     }
     .settings-panel {
       width: min(calc(100vw - 28px), calc((100vh - 28px) * 351 / 479));
-      padding: 56px 44px 44px;
+      height: calc(100dvh - 28px);
+      aspect-ratio: auto;
+      padding: 58px 40px 42px;
       overflow-y: auto;
       overscroll-behavior: contain;
     }
     .settings-panel h2 {
-      width: min(260px, 86%);
+      margin-top: 4px;
+      margin-bottom: 8px;
+      width: min(198px, 72%);
       font-size: 0;
     }
     .settings-options {
-      grid-template-columns: 1fr;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 5px;
+    }
+    .settings-toggle {
+      min-height: 38px;
+      padding: 5px 4px;
+      font-size: 10px;
     }
     .settings-track-control {
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 48px minmax(0, 1fr) 48px;
+      gap: 5px;
     }
     .settings-track-now {
-      grid-column: 1 / -1;
-      order: -1;
+      grid-column: auto;
+      order: 0;
+      min-height: 38px;
+      padding: 5px 6px;
     }
     .settings-track-list {
-      max-height: 96px;
+      max-height: 178px;
     }
     .settings-track-step {
-      min-height: 40px;
+      min-height: 38px;
+      padding: 5px 4px;
+      font-size: 10px;
+    }
+    .settings-track-option {
+      min-height: 30px;
+      padding: 4px 6px;
     }
     .cyber-hud {
       left: 50%;
@@ -2580,7 +2708,7 @@
 <body>
 <div id="root"></div>
 <div id="loading">booting cyber chess...</div>
-<!-- esbuild bundle of src/main.tsx (Jordan's board3d module + three + chess.js) -->
+<!-- esbuild bundle of src/main.tsx -->
 <script type="module" src="./app.js?v=20260601-bootfix"></script>
 </body>
 </html>

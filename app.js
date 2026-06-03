@@ -57849,6 +57849,8 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
         return;
       }
       const targetFen = logicalChess.fen();
+      const actualFlags = logicalMove.flags || flags;
+      const actualIsCapture = Boolean(logicalMove.captured) || actualFlags.includes("c") || actualFlags.includes("e") || isCapture;
       const shouldResyncAfterMove = Boolean(logicalMove.promotion);
       const actor = pieceMap.get(from);
       if (!actor) {
@@ -57870,8 +57872,8 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
         actorWireMat.color.copy(actorOriginalColor);
         actorWireMat.opacity = actorOriginalOpacity;
       };
-      if (flags.includes("k") || flags.includes("q")) {
-        const isKingside = flags.includes("k");
+      if (actualFlags.includes("k") || actualFlags.includes("q")) {
+        const isKingside = actualFlags.includes("k");
         const rank2 = from[1];
         const rookFrom = (isKingside ? "h" : "a") + rank2;
         const rookTo = (isKingside ? "f" : "d") + rank2;
@@ -57912,8 +57914,8 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
             restoreActorHighlight();
             resolve();
           };
-          if (isCapture) {
-            const capturedSquare = flags.includes("e") ? to[0] + from[1] : to;
+          if (actualIsCapture) {
+            const capturedSquare = actualFlags.includes("e") ? to[0] + from[1] : to;
             const victim = pieceMap.get(capturedSquare);
             if (victim && capturedSquare !== to) pieceMap.delete(capturedSquare);
             if (victim) {
@@ -57923,15 +57925,20 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
                   resolve();
                   return;
                 }
-                moveStartCallbackRef.current?.(isCapture);
+                moveStartCallbackRef.current?.(true);
                 animateJump(actor, to, effectsGroup, finishActorMove);
               });
             } else {
-              moveStartCallbackRef.current?.(isCapture);
-              animateJump(actor, to, effectsGroup, finishActorMove);
+              console.warn(`[Board3D] Capture victim missing at ${capturedSquare}; resyncing visual board after ${from}${to}.`);
+              moveStartCallbackRef.current?.(true);
+              animateJump(actor, to, effectsGroup, () => {
+                syncBoardToFen(targetFen);
+                restoreActorHighlight();
+                resolve();
+              });
             }
           } else {
-            moveStartCallbackRef.current?.(isCapture);
+            moveStartCallbackRef.current?.(false);
             animateJump(actor, to, effectsGroup, finishActorMove);
           }
         });
@@ -58386,7 +58393,6 @@ var AUDIO_MODE_KEY = "cyberChessAudioMode";
 var AUDIO_VOLUME_KEY = "cyberChessAudioVolume";
 var SAVE_GAME_KEY = "cyberChessSaveGameV1";
 var MAX_LEADERBOARD = 8;
-var GORDO_NAME_CHEATS = /* @__PURE__ */ new Set(["gordo", "chris p butthole"]);
 var OPPONENTS = [
   {
     id: "goop",
@@ -58446,9 +58452,9 @@ var OPPONENTS = [
     id: "gordo",
     name: "GORDO",
     difficulty: "FINAL",
-    avatar: "avatars/gordo.jpg",
+    avatar: "media/avatars/gordo-standard.jpg",
     avatarStates: {
-      damaged: "media/avatars/gordo-damaged.png",
+      damaged: "media/avatars/gordo-damaged.jpg",
       dominating: "media/avatars/gordo-dominating.jpg"
     },
     hero: "media/enemies/gordo-entrance.jpg",
@@ -58468,9 +58474,22 @@ var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
 var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
 var SOUNDTRACK_SOURCES = [
   "media/audio/the_pulse_long_song.mp3",
-  "media/audio/The_Pulse_of_the_Board_2.mp3",
+  "media/audio/synthetic_dreams_cyber_eyes.mp3",
   "media/audio/cyber_chess_music.mp3",
-  "media/audio/synthetic_dreams_cyber_eyes.mp3"
+  "media/audio/Chrome Gambit.mp3",
+  "media/audio/Chrome fresh.mp3",
+  "media/audio/Chrome_Chess_Mode.mp3",
+  "media/audio/Chrome_city.mp3",
+  "media/audio/boogie_knights.mp3",
+  "media/audio/drummin_pawns.mp3",
+  "media/audio/cybercrimes.mp3",
+  "media/audio/The_Pulse_of_the_Board_2.mp3",
+  "media/audio/Pawns_of_Destiny.mp3",
+  "media/audio/The_Decimal_Ledge.mp3",
+  "media/audio/checkmeat_freakazoid.mp3",
+  "media/audio/checkmeat_you_lose_song.mp3",
+  "media/audio/game_over.wav",
+  "media/audio/victorious_1.mp3"
 ];
 var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
@@ -58480,7 +58499,7 @@ var VICTORY_MUSIC_SOURCES = [
   "media/audio/victorious_1.mp3",
   "media/audio/victorioius_2.mp3"
 ];
-var GAME_OVER_MUSIC_SRC = "media/audio/game_over.mp3";
+var GAME_OVER_MUSIC_SRC = "media/audio/game_over.wav";
 var PLAYER_AVATARS = {
   normal: "media/avatars/player_normal.jpg",
   damaged: "media/avatars/player_damage.jpg",
@@ -59038,22 +59057,6 @@ function App() {
     return () => window.removeEventListener("keydown", onKeyDown2);
   }, [creditsOpen, settingsOpen]);
   (0, import_react3.useEffect)(() => {
-    let buffer = "";
-    const onKeyDown2 = (event) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key.length !== 1) return;
-      const target = event.target;
-      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
-      buffer = (buffer + event.key.toLowerCase()).slice(-5);
-      if (buffer === "gordo") {
-        buffer = "";
-        jumpToGordo();
-      }
-    };
-    window.addEventListener("keydown", onKeyDown2);
-    return () => window.removeEventListener("keydown", onKeyDown2);
-  }, [selected]);
-  (0, import_react3.useEffect)(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
       try {
@@ -59199,8 +59202,6 @@ function App() {
       audioRef.current?.play(forcedResult.kind === "game-over" ? "loss" : "tick");
       setScreen("result");
     };
-    window.__chess.gotoGordo = jumpToGordo;
-    window.__chess.debugGordo = jumpToGordo;
   }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
   const resetGame = () => {
     aiBusyRef.current = false;
@@ -59585,12 +59586,9 @@ function App() {
     return nextName;
   };
   const savePlayerProfile = () => {
-    const nextName = commitPlayerName();
-    audioRef.current?.play("menu");
-    if (GORDO_NAME_CHEATS.has(nextName.trim().toLowerCase())) {
-      jumpToGordo();
-      return;
-    }
+    commitPlayerName();
+    ensureAudioEngine();
+    playClip(CHECKMATE_SFX_SRC);
     setStoryIndex(0);
     setMenuStep("story");
   };
@@ -59600,21 +59598,6 @@ function App() {
     recordedResultKeyRef.current = "";
     previousFenRef.current = START;
     startOpponentLoading();
-  };
-  const jumpToGordo = () => {
-    const gordo = OPPONENTS.find((opponent) => opponent.id === "gordo");
-    if (!gordo) return;
-    aiRequestRef.current += 1;
-    setSelectedId(gordo.id);
-    setLives(MAX_LIVES);
-    runStartedAtRef.current = Date.now();
-    recordedResultKeyRef.current = "";
-    previousFenRef.current = START;
-    resultHandledFenRef.current = "";
-    lastAnnouncedRef.current = "";
-    setContinueSeconds(CONTINUE_SECONDS);
-    setResultState(null);
-    startOpponentLoading(gordo);
   };
   const continueAfterLoss = () => {
     if (!resultState || resultState.kind !== "loss") return;
@@ -59951,7 +59934,7 @@ function App() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-copy", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "result-kicker", children: resultPresentation.status }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: resultPresentation.title }),
-        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: resultPresentation.body }),
+        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: resultPresentation.body }),
         (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-stats", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
             "PLAYER: ",
@@ -59971,7 +59954,7 @@ function App() {
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "timer-frame", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "cyber-timer", children: String(continueSeconds).padStart(2, "0") }) })
           ] })
         ] }),
-        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
+        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: resultState.opponent.avatar, alt: "" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: resultState.kind === "win" ? "DEFEATED ENEMY" : "ACTIVE THREAT" }),
@@ -59995,6 +59978,20 @@ function App() {
     settingsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
+      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-labelledby": "credits-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "credits-kicker", children: "CYBER CHESS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { id: "credits-title", children: "CREDITS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and local chess agents." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Static audio assets generated with ElevenLabs." })
+        ] }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
+          audioRef.current?.play("menu");
+          setCreditsOpen(false);
+        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) })
+      ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [
@@ -60114,17 +60111,7 @@ function App() {
           audioRef.current?.play("menu");
           setSettingsOpen(false);
         }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
-      ] }),
-      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "credits-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "credits-kicker", children: "CYBER CHESS" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { id: "credits-title", children: "CREDITS" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and a pile of neon arcade energy." }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
-          audioRef.current?.play("menu");
-          setCreditsOpen(false);
-        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) })
-      ] }) })
+      ] })
     ] })
   ] });
 }

@@ -1,7 +1,7 @@
-Place the Chessagent intro video at:
+# Media Notes
 
-```text
-games/chess/media/chessagent-intro.mp4
-```
+This folder contains the static art, audio, UI, font, and engine assets used by the browser build.
 
-The intro screen will automatically replace the placeholder slot when that MP4 can be loaded by the browser.
+Runtime paths are relative to the repository root. The game expects `index.html`, `app.js`, `media/`, `avatars/`, and `pieces_fbx/` to be served from the same base URL.
+
+Asset notices live in `../ATTRIBUTIONS.md`.

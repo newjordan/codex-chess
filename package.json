@@ -7,6 +7,10 @@
   "scripts": {
     "build": "esbuild src/main.tsx --bundle --format=esm --outfile=app.js --jsx=automatic --define:process.env.NODE_ENV='\"production\"'",
     "build:pages": "npm run build && rm -rf dist && mkdir -p dist && cp -R index.html app.js avatars media pieces_fbx dist/",
+    "package:music-zip": "node scripts/package-long-music.mjs",
+    "setup": "npm ci && npm run build",
+    "play": "npm run setup && npm start",
+    "preflight": "npm run build && npm run smoke",
     "start": "node scripts/static-server.mjs",
     "smoke": "node scripts/smoke.mjs"
   },

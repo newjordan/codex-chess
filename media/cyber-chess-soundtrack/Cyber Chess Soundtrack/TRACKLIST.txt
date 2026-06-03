@@ -1,0 +1,21 @@
+Cyber Chess Soundtrack
+
+Track list:
+
+| # | File | Generator | Duration |
+|---|---|---|---|
+| 01 | the_pulse_long_song.mp3 | ElevenLabs | 4:00 |
+| 02 | synthetic_dreams_cyber_eyes.mp3 | ElevenLabs | 3:30 |
+| 03 | cyber_chess_music.mp3 | ElevenLabs | 3:00 |
+| 04 | Chrome Gambit.mp3 | Suno | 6:43 |
+| 05 | Chrome fresh.mp3 | Suno | 3:35 |
+| 06 | Chrome_Chess_Mode.mp3 | Suno | 3:13 |
+| 07 | Chrome_city.mp3 | Suno | 3:22 |
+| 08 | boogie_knights.mp3 | Suno | 3:30 |
+| 09 | drummin_pawns.mp3 | Suno | 3:25 |
+| 10 | cybercrimes.mp3 | Suno | 0:36 |
+| 11 | The_Pulse_of_the_Board_2.mp3 | ElevenLabs | 2:00 |
+| 12 | Pawns_of_Destiny.mp3 | ElevenLabs | 1:60 |
+| 13 | checkmeat_freakazoid.mp3 | ElevenLabs | 1:00 |
+| 14 | checkmeat_you_lose_song.mp3 | ElevenLabs | 1:00 |
+| 15 | victorious_1.mp3 | ElevenLabs | 0:30 |

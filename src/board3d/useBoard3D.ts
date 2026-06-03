@@ -321,6 +321,12 @@ export function useBoard3D(
         }
 
         const targetFen = logicalChess.fen();
+        const actualFlags = logicalMove.flags || flags;
+        const actualIsCapture =
+          Boolean(logicalMove.captured) ||
+          actualFlags.includes('c') ||
+          actualFlags.includes('e') ||
+          isCapture;
         const shouldResyncAfterMove = Boolean(logicalMove.promotion);
         const actor = pieceMap.get(from);
         if (!actor) {
@@ -346,8 +352,8 @@ export function useBoard3D(
         };
 
         // Handle castling: teleport rook before king animation
-        if (flags.includes('k') || flags.includes('q')) {
-          const isKingside = flags.includes('k');
+        if (actualFlags.includes('k') || actualFlags.includes('q')) {
+          const isKingside = actualFlags.includes('k');
           const rank = from[1]; // '1' for white, '8' for black
           const rookFrom = (isKingside ? 'h' : 'a') + rank;
           const rookTo = (isKingside ? 'f' : 'd') + rank;
@@ -392,9 +398,9 @@ export function useBoard3D(
               resolve();
             };
 
-            if (isCapture) {
+            if (actualIsCapture) {
               // For en passant, the captured pawn is on the same file as `to` but same rank as `from`
-              const capturedSquare = flags.includes('e') ? to[0] + from[1] : to;
+              const capturedSquare = actualFlags.includes('e') ? to[0] + from[1] : to;
               const victim = pieceMap.get(capturedSquare);
               if (victim && capturedSquare !== to) pieceMap.delete(capturedSquare);
               if (victim) {
@@ -404,15 +410,20 @@ export function useBoard3D(
                     resolve();
                     return;
                   }
-                  moveStartCallbackRef.current?.(isCapture);
+                  moveStartCallbackRef.current?.(true);
                   animateJump(actor, to, effectsGroup, finishActorMove);
                 });
               } else {
-                moveStartCallbackRef.current?.(isCapture);
-                animateJump(actor, to, effectsGroup, finishActorMove);
+                console.warn(`[Board3D] Capture victim missing at ${capturedSquare}; resyncing visual board after ${from}${to}.`);
+                moveStartCallbackRef.current?.(true);
+                animateJump(actor, to, effectsGroup, () => {
+                  syncBoardToFen(targetFen);
+                  restoreActorHighlight();
+                  resolve();
+                });
               }
             } else {
-              moveStartCallbackRef.current?.(isCapture);
+              moveStartCallbackRef.current?.(false);
               animateJump(actor, to, effectsGroup, finishActorMove);
             }
           });

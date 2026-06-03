@@ -316,8 +316,8 @@ async function runPlayableSmoke(label, viewport) {
 
     await page.evaluate(() => window.__chess.forceWin());
     await expectEnemyResult('GOOP CONTAINED', 'goop-win.jpg', 'Goop');
-    await page.getByText('NEXT CHALLENGER').waitFor();
-    await page.getByText('Frostd4d', { exact: true }).waitFor();
+    await page.getByText('DEFEATED ENEMY').waitFor();
+    await page.getByText(/Frostd4d/).waitFor();
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'frostd4d');
     await waitForEmbeddedTower();
@@ -332,7 +332,7 @@ async function runPlayableSmoke(label, viewport) {
 
     await page.evaluate(() => window.__chess.forceWin());
     await expectEnemyResult('RAZORBLADE DISARMED', 'razorblade-win.jpg', 'Razorblade');
-    await page.getByText('GORDO', { exact: true }).waitFor();
+    await page.getByText(/GORDO/).waitFor();
     await page.getByRole('button', { name: 'NEXT OPPONENT' }).click();
     await page.waitForFunction(() => window.__chess?.campaign?.screen === 'intro' && window.__chess?.campaign?.selectedId === 'gordo');
     await waitForEmbeddedTower();
@@ -362,9 +362,21 @@ async function runPlayableSmoke(label, viewport) {
     });
     const intentionallyInterruptedAudio = [
       '/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED',
-      '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
-      '/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED',
       '/media/audio/synthetic_dreams_cyber_eyes.mp3 net::ERR_ABORTED',
+      '/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED',
+      '/media/audio/Chrome%20Gambit.mp3 net::ERR_ABORTED',
+      '/media/audio/Chrome%20fresh.mp3 net::ERR_ABORTED',
+      '/media/audio/Chrome_Chess_Mode.mp3 net::ERR_ABORTED',
+      '/media/audio/Chrome_city.mp3 net::ERR_ABORTED',
+      '/media/audio/boogie_knights.mp3 net::ERR_ABORTED',
+      '/media/audio/drummin_pawns.mp3 net::ERR_ABORTED',
+      '/media/audio/cybercrimes.mp3 net::ERR_ABORTED',
+      '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
+      '/media/audio/Pawns_of_Destiny.mp3 net::ERR_ABORTED',
+      '/media/audio/The_Decimal_Ledge.mp3 net::ERR_ABORTED',
+      '/media/audio/checkmeat_freakazoid.mp3 net::ERR_ABORTED',
+      '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',
+      '/media/audio/game_over.wav net::ERR_ABORTED',
       '/media/audio/victorious_1.mp3 net::ERR_ABORTED',
       '/media/audio/victorioius_2.mp3 net::ERR_ABORTED',
       '/media/audio/game_over.mp3 net::ERR_ABORTED',

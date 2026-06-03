@@ -1,7 +1,4 @@
-// Standalone entry for the portfolio: mounts Jordan's real Board3DScene
-// (the board3d module - procedural neon board, FBX pieces, bloom post-fx,
-// lightning/capture/jump animations) with no backend. Bundled by esbuild
-// into ../app.js.
+// Standalone Cyber Chess entry point. Bundled by esbuild into ../app.js.
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Chess } from 'chess.js';
@@ -18,7 +15,6 @@ const AUDIO_MODE_KEY = 'cyberChessAudioMode';
 const AUDIO_VOLUME_KEY = 'cyberChessAudioVolume';
 const SAVE_GAME_KEY = 'cyberChessSaveGameV1';
 const MAX_LEADERBOARD = 8;
-const GORDO_NAME_CHEATS = new Set(['gordo', 'chris p butthole']);
 
 const OPPONENTS: Array<{
   id: AiProfileId;
@@ -96,9 +92,9 @@ const OPPONENTS: Array<{
     id: 'gordo',
     name: 'GORDO',
     difficulty: 'FINAL',
-    avatar: 'avatars/gordo.jpg',
+    avatar: 'media/avatars/gordo-standard.jpg',
     avatarStates: {
-      damaged: 'media/avatars/gordo-damaged.png',
+      damaged: 'media/avatars/gordo-damaged.jpg',
       dominating: 'media/avatars/gordo-dominating.jpg',
     },
     hero: 'media/enemies/gordo-entrance.jpg',
@@ -121,9 +117,22 @@ const SETTINGS_BG_SRC = 'media/settings-moniker-bg.jpg';
 const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
 const SOUNDTRACK_SOURCES = [
   'media/audio/the_pulse_long_song.mp3',
-  'media/audio/The_Pulse_of_the_Board_2.mp3',
-  'media/audio/cyber_chess_music.mp3',
   'media/audio/synthetic_dreams_cyber_eyes.mp3',
+  'media/audio/cyber_chess_music.mp3',
+  'media/audio/Chrome Gambit.mp3',
+  'media/audio/Chrome fresh.mp3',
+  'media/audio/Chrome_Chess_Mode.mp3',
+  'media/audio/Chrome_city.mp3',
+  'media/audio/boogie_knights.mp3',
+  'media/audio/drummin_pawns.mp3',
+  'media/audio/cybercrimes.mp3',
+  'media/audio/The_Pulse_of_the_Board_2.mp3',
+  'media/audio/Pawns_of_Destiny.mp3',
+  'media/audio/The_Decimal_Ledge.mp3',
+  'media/audio/checkmeat_freakazoid.mp3',
+  'media/audio/checkmeat_you_lose_song.mp3',
+  'media/audio/game_over.wav',
+  'media/audio/victorious_1.mp3',
 ] as const;
 const LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
@@ -133,7 +142,7 @@ const VICTORY_MUSIC_SOURCES = [
   'media/audio/victorious_1.mp3',
   'media/audio/victorioius_2.mp3',
 ] as const;
-const GAME_OVER_MUSIC_SRC = 'media/audio/game_over.mp3';
+const GAME_OVER_MUSIC_SRC = 'media/audio/game_over.wav';
 const PLAYER_AVATARS = {
   normal: 'media/avatars/player_normal.jpg',
   damaged: 'media/avatars/player_damage.jpg',
@@ -802,23 +811,6 @@ function App() {
   }, [creditsOpen, settingsOpen]);
 
   useEffect(() => {
-    let buffer = '';
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.ctrlKey || event.metaKey || event.altKey) return;
-      if (event.key.length !== 1) return;
-      const target = event.target as HTMLElement | null;
-      if (target?.tagName === 'INPUT' || target?.tagName === 'TEXTAREA') return;
-      buffer = (buffer + event.key.toLowerCase()).slice(-5);
-      if (buffer === 'gordo') {
-        buffer = '';
-        jumpToGordo();
-      }
-    };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [selected]);
-
-  useEffect(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
       try {
@@ -981,8 +973,6 @@ function App() {
       audioRef.current?.play(forcedResult.kind === 'game-over' ? 'loss' : 'tick');
       setScreen('result');
     };
-    window.__chess.gotoGordo = jumpToGordo;
-    window.__chess.debugGordo = jumpToGordo;
   }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
 
   const resetGame = () => {
@@ -1401,12 +1391,9 @@ function App() {
   };
 
   const savePlayerProfile = () => {
-    const nextName = commitPlayerName();
-    audioRef.current?.play('menu');
-    if (GORDO_NAME_CHEATS.has(nextName.trim().toLowerCase())) {
-      jumpToGordo();
-      return;
-    }
+    commitPlayerName();
+    ensureAudioEngine();
+    playClip(CHECKMATE_SFX_SRC);
     setStoryIndex(0);
     setMenuStep('story');
   };
@@ -1417,22 +1404,6 @@ function App() {
     recordedResultKeyRef.current = '';
     previousFenRef.current = START;
     startOpponentLoading();
-  };
-
-  const jumpToGordo = () => {
-    const gordo = OPPONENTS.find((opponent) => opponent.id === 'gordo');
-    if (!gordo) return;
-    aiRequestRef.current += 1;
-    setSelectedId(gordo.id);
-    setLives(MAX_LIVES);
-    runStartedAtRef.current = Date.now();
-    recordedResultKeyRef.current = '';
-    previousFenRef.current = START;
-    resultHandledFenRef.current = '';
-    lastAnnouncedRef.current = '';
-    setContinueSeconds(CONTINUE_SECONDS);
-    setResultState(null);
-    startOpponentLoading(gordo);
   };
 
   const continueAfterLoss = () => {
@@ -1842,7 +1813,7 @@ function App() {
           <div className="result-copy">
             <span className="result-kicker">{resultPresentation.status}</span>
             <h1>{resultPresentation.title}</h1>
-            {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
+            {resultState.kind !== 'clear' && (
               <p>{resultPresentation.body}</p>
             )}
             {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
@@ -1861,7 +1832,7 @@ function App() {
                 )}
               </div>
             )}
-            {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
+            {resultState.kind !== 'clear' && (
               <div className="result-enemy-card">
                 <img src={resultState.opponent.avatar} alt="" />
                 <div>
@@ -1904,6 +1875,28 @@ function App() {
         <div className="settings-screen" role="dialog" aria-modal="true" aria-labelledby="settings-title">
           <img className="settings-bg" src={SETTINGS_BG_SRC} alt="" />
           <div className="settings-vignette" />
+          {creditsOpen && (
+            <div className="credits-modal" role="dialog" aria-labelledby="credits-title">
+              <div className="credits-panel">
+                <span className="credits-kicker">CYBER CHESS</span>
+                <h3 id="credits-title">CREDITS</h3>
+                <div className="credits-roll-shell" aria-live="polite">
+                  <div className="credits-roll">
+                    <p>Game created by Frosty40 and Codex.</p>
+                    <p>Built with React, Three.js, chess.js, and local chess agents.</p>
+                    <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
+                    <p>Static audio assets generated with ElevenLabs.</p>
+                  </div>
+                </div>
+                <button type="button" className="art-button art-button-close" onClick={() => {
+                  audioRef.current?.play('menu');
+                  setCreditsOpen(false);
+                }}>
+                  <span>BACK</span>
+                </button>
+              </div>
+            </div>
+          )}
           <div className="settings-panel">
             <h2 id="settings-title"><span>SETTINGS</span></h2>
             <div className="settings-group settings-audio-group">
@@ -2033,22 +2026,6 @@ function App() {
               </button>
             </div>
           </div>
-          {creditsOpen && (
-            <div className="credits-modal" role="dialog" aria-modal="true" aria-labelledby="credits-title">
-              <div className="credits-panel">
-                <span className="credits-kicker">CYBER CHESS</span>
-                <h3 id="credits-title">CREDITS</h3>
-                <p>Game created by Frosty40 and Codex.</p>
-                <p>Built with React, Three.js, chess.js, and a pile of neon arcade energy.</p>
-                <button type="button" className="art-button art-button-close" onClick={() => {
-                  audioRef.current?.play('menu');
-                  setCreditsOpen(false);
-                }}>
-                  <span>BACK</span>
-                </button>
-              </div>
-            </div>
-          )}
         </div>
       )}
     </>

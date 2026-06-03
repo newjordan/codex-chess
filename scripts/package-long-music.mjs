@@ -23,7 +23,6 @@ const fallbackLongTracks = new Set([
   'game_over.wav',
   'Pawns_of_Destiny.mp3',
   'synthetic_dreams_cyber_eyes.mp3',
-  'The_Decimal_Ledge.mp3',
   'the_pulse_long_song.mp3',
   'The_Pulse_of_the_Board_2.mp3',
   'victorious_1.mp3',

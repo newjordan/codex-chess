@@ -128,7 +128,6 @@ const SOUNDTRACK_SOURCES = [
   'media/audio/cybercrimes.mp3',
   'media/audio/The_Pulse_of_the_Board_2.mp3',
   'media/audio/Pawns_of_Destiny.mp3',
-  'media/audio/The_Decimal_Ledge.mp3',
   'media/audio/checkmeat_freakazoid.mp3',
   'media/audio/checkmeat_you_lose_song.mp3',
   'media/audio/game_over.wav',
@@ -1885,12 +1884,6 @@ function App() {
                     <p>Audio assets generated with ElevenLabs and Suno.</p>
                   </div>
                 </div>
-                <button type="button" className="art-button art-button-close" onClick={() => {
-                  audioRef.current?.play('menu');
-                  setCreditsOpen(false);
-                }}>
-                  <span>BACK</span>
-                </button>
               </div>
             </div>
           )}
@@ -2008,9 +2001,9 @@ function App() {
                   <button type="button" className="settings-toggle settings-command" onClick={loadGame}>
                     <span>LOAD GAME</span>
                   </button>
-                  <button type="button" className="settings-toggle settings-command" onClick={() => {
+                  <button type="button" className={'settings-toggle settings-command' + (creditsOpen ? ' selected' : '')} onClick={() => {
                     audioRef.current?.play('menu');
-                    setCreditsOpen(true);
+                    setCreditsOpen((open) => !open);
                   }}>
                     <span>CREDITS</span>
                   </button>

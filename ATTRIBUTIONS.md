@@ -77,7 +77,6 @@ local scan and still need provenance/license confirmation:
 - `media/audio/drummin_pawns.mp3`
 - `media/audio/cybercrimes.mp3`
 - `media/audio/Pawns_of_Destiny.mp3`
-- `media/audio/The_Decimal_Ledge.mp3`
 - `media/audio/checkmeat_freakazoid.mp3`
 - `media/audio/piece_move.wav`
 - `media/audio/piece_slide.wav`

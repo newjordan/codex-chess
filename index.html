@@ -1800,7 +1800,7 @@
     display: grid;
     grid-template-rows: auto minmax(0, 1fr) auto;
     align-content: stretch;
-    gap: clamp(8px, 1.2vh, 12px);
+    gap: clamp(4px, 0.7vh, 8px);
     width: min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479));
     aspect-ratio: 351 / 479;
     max-height: none;
@@ -1854,8 +1854,8 @@
   .settings-panel-header {
     display: grid;
     place-items: center;
-    min-height: clamp(94px, 13.5vh, 112px);
-    margin: 0 0 -2px;
+    min-height: clamp(54px, 8vh, 72px);
+    margin: 0 0 -8px;
   }
   .settings-panel-body {
     min-height: 0;
@@ -1907,7 +1907,7 @@
     background: url("media/buttons/settings.png") center / contain no-repeat;
     font-size: 0;
     line-height: 0;
-    transform: translateY(clamp(-54px, -5.8vh, -42px));
+    transform: translateY(clamp(-82px, -8.6vh, -64px));
   }
   .story-copy h2,
   .enemy-load-copy h1,
@@ -1923,8 +1923,8 @@
   }
   .settings-group {
     display: grid;
-    gap: 8px;
-    margin-bottom: 16px;
+    gap: 6px;
+    margin-bottom: 10px;
   }
   .settings-group > strong {
     justify-self: center;
@@ -2021,7 +2021,7 @@
     padding: 7px 5px;
   }
   .settings-save-group {
-    margin-bottom: 12px;
+    margin-bottom: 8px;
   }
   .settings-footer .settings-save-group {
     gap: 6px;
@@ -2289,40 +2289,38 @@
   .credits-modal {
     position: absolute;
     z-index: 2;
-    left: clamp(14px, 4vw, 58px);
-    top: clamp(330px, 48vh, 430px);
-    bottom: clamp(34px, 7vh, 68px);
+    left: clamp(18px, 4vw, 72px);
+    right: calc(min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479)) + clamp(48px, 7vw, 92px));
+    top: auto;
+    bottom: clamp(38px, 7vh, 72px);
     width: min(520px, calc(100vw - min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479)) - clamp(70px, 8vw, 112px)));
+    width: auto;
     display: grid;
     align-items: stretch;
+    overflow: hidden;
     pointer-events: none;
   }
   .credits-panel {
     position: relative;
-    display: grid;
-    grid-template-rows: minmax(0, 1fr) auto;
-    align-content: start;
-    justify-items: start;
-    gap: clamp(8px, 1.4vh, 12px);
+    display: block;
+    width: 100%;
+    min-width: 0;
+    max-width: 100%;
     min-height: 0;
-    padding: clamp(13px, 2vw, 22px);
+    padding: 0;
     color: #24ff00;
     background: transparent;
     border: 0;
     box-shadow: none;
-    font-family: var(--font-story);
+    font-family: "Alpha Prota", "AlphaProta", "Orbitron", "Arial Narrow", sans-serif;
     text-align: left;
     text-shadow:
-      0 4px 0 #000,
-      2px 2px 0 #000,
-      -2px 2px 0 #000,
-      0 0 8px rgba(36, 255, 0, 0.9),
-      0 0 18px rgba(0, 0, 0, 0.98),
-      0 0 28px rgba(0, 0, 0, 0.9);
-    pointer-events: auto;
+      0 0 5px rgba(36, 255, 0, 0.72),
+      0 0 14px rgba(0, 150, 0, 0.34);
+    pointer-events: none;
   }
   .credits-panel::before {
-    content: ">";
+    content: none;
     position: absolute;
     left: 8px;
     top: 7px;
@@ -2347,24 +2345,44 @@
   }
   .credits-roll-shell {
     position: relative;
-    width: min(100%, 44ch);
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
+    max-width: 100%;
     min-height: 0;
-    overflow: hidden;
+    overflow-x: auto;
+    overflow-y: hidden;
     mask-image: none;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(24, 230, 0, 0.9) rgba(0, 0, 0, 0.22);
+  }
+  .credits-roll-shell::-webkit-scrollbar {
+    height: 7px;
+  }
+  .credits-roll-shell::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.22);
+  }
+  .credits-roll-shell::-webkit-scrollbar-thumb {
+    background: rgba(24, 230, 0, 0.86);
   }
   .credits-roll {
-    display: grid;
-    gap: clamp(9px, 1.6vh, 14px);
-    animation: credits-roll-in 1.8s steps(4, end) forwards;
+    display: flex;
+    align-items: center;
+    gap: clamp(18px, 3vw, 34px);
+    width: max-content;
+    min-width: 100%;
+    padding: 0 0 8px;
+    animation: none;
   }
   .credits-panel p {
     margin: 0;
-    color: #24ff00;
-    font-family: var(--font-story);
-    font-size: clamp(17px, 2vw, 27px);
-    font-weight: 400;
-    line-height: 1.12;
-    overflow-wrap: anywhere;
+    color: #18e600;
+    font-family: "Alpha Prota", "AlphaProta", "Orbitron", "Arial Narrow", sans-serif;
+    font-size: clamp(16px, 1.85vw, 24px);
+    font-weight: 300;
+    line-height: 1;
+    letter-spacing: 0.02em;
+    white-space: nowrap;
   }
   .credits-panel .art-button {
     justify-self: start;
@@ -2387,24 +2405,24 @@
     .credits-modal {
       left: 14px;
       right: 14px;
-      top: max(382px, 56vh);
-      bottom: 18px;
+      top: auto;
+      bottom: 96px;
       width: auto;
       max-height: none;
     }
     .credits-panel {
       gap: 5px;
-      padding: 12px 14px;
+      padding: 0;
     }
     .credits-panel h3 {
       font-size: clamp(24px, 7vw, 42px);
     }
     .credits-roll-shell {
-      width: min(100%, 48ch);
+      width: 100%;
       max-height: 92px;
     }
     .credits-panel p {
-      font-size: clamp(14px, 4.2vw, 18px);
+      font-size: clamp(13px, 3.9vw, 17px);
     }
     .credits-panel .art-button {
       width: 116px;
@@ -2602,19 +2620,19 @@
       width: min(calc(100vw - 28px), calc((100vh - 28px) * 351 / 479));
       height: calc(100dvh - 28px);
       aspect-ratio: auto;
-      gap: 6px;
+      gap: 4px;
       padding: 42px 40px 36px;
       overflow: hidden;
       overscroll-behavior: contain;
     }
     .settings-panel-header {
-      min-height: 108px;
-      margin-bottom: -4px;
+      min-height: 72px;
+      margin-bottom: -10px;
     }
     .settings-panel h2 {
       width: min(198px, 72%);
       font-size: 0;
-      transform: translateY(-34px);
+      transform: translateY(-54px);
     }
     .settings-panel-body {
       padding: 1px 2px 3px;

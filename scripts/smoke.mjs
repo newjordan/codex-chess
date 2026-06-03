@@ -373,7 +373,6 @@ async function runPlayableSmoke(label, viewport) {
       '/media/audio/cybercrimes.mp3 net::ERR_ABORTED',
       '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
       '/media/audio/Pawns_of_Destiny.mp3 net::ERR_ABORTED',
-      '/media/audio/The_Decimal_Ledge.mp3 net::ERR_ABORTED',
       '/media/audio/checkmeat_freakazoid.mp3 net::ERR_ABORTED',
       '/media/audio/checkmeat_you_lose_song.mp3 net::ERR_ABORTED',
       '/media/audio/game_over.wav net::ERR_ABORTED',

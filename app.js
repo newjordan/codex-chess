@@ -58485,7 +58485,6 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/cybercrimes.mp3",
   "media/audio/The_Pulse_of_the_Board_2.mp3",
   "media/audio/Pawns_of_Destiny.mp3",
-  "media/audio/The_Decimal_Ledge.mp3",
   "media/audio/checkmeat_freakazoid.mp3",
   "media/audio/checkmeat_you_lose_song.mp3",
   "media/audio/game_over.wav",
@@ -59978,17 +59977,11 @@ function App() {
     settingsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
-      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
-        ] }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
-          audioRef.current?.play("menu");
-          setCreditsOpen(false);
-        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) })
-      ] }) }),
+      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-panel", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+      ] }) }) }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel-body", children: [
@@ -60100,9 +60093,9 @@ function App() {
             /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
               /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SAVE GAME" }) }),
               /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOAD GAME" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: () => {
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command" + (creditsOpen ? " selected" : ""), onClick: () => {
                 audioRef.current?.play("menu");
-                setCreditsOpen(true);
+                setCreditsOpen((open) => !open);
               }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CREDITS" }) })
             ] }),
             settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })

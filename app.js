@@ -59138,7 +59138,7 @@ function App() {
       const resultMusicSrc = resultState.kind === "win" ? VICTORY_MUSIC_SOURCES[0] : resultState.kind === "clear" ? VICTORY_MUSIC_SOURCES[1] : GAME_OVER_MUSIC_SRC;
       if (!endMusicRef.current || endMusicSrcRef.current !== resultMusicSrc) {
         endMusicRef.current?.pause();
-        endMusicRef.current = playClip(resultMusicSrc, { music: true });
+        endMusicRef.current = playClip(resultMusicSrc, { music: true, loop: true });
         endMusicSrcRef.current = resultMusicSrc;
         window.__chess.endMusic = { active: Boolean(endMusicRef.current), src: resultMusicSrc };
       }

@@ -1898,132 +1898,138 @@ function App() {
             </div>
           )}
           <div className="settings-panel">
-            <h2 id="settings-title"><span>SETTINGS</span></h2>
-            <div className="settings-group settings-audio-group">
-              <strong>AUDIO MODE</strong>
-              <div className="settings-options" role="group" aria-label="Audio mode">
-                <button type="button" className={'settings-toggle' + (audioMode === 'full' ? ' selected' : '')} onClick={() => updateAudioMode('full')}>
-                  <span className="settings-toggle-label">FULL AUDIO</span>
-                </button>
-                <button type="button" className={'settings-toggle' + (audioMode === 'sfx' ? ' selected' : '')} onClick={() => updateAudioMode('sfx')}>
-                  <span className="settings-toggle-label">SFX ONLY</span>
-                </button>
-                <button type="button" className={'settings-toggle' + (audioMode === 'muted' ? ' selected' : '')} onClick={() => updateAudioMode('muted')}>
-                  <span className="settings-toggle-label">MUTED</span>
-                </button>
-              </div>
+            <div className="settings-panel-header">
+              <h2 id="settings-title"><span>SETTINGS</span></h2>
             </div>
-            <label className="settings-volume" htmlFor="audio-volume">
-              <span>OUTPUT LEVEL <strong>{audioVolume}%</strong></span>
-              <span
-                className="settings-slider-shell"
-                style={{ '--settings-volume-progress': `${Math.min(100, Math.max(0, audioVolume / 2))}%` } as CSSProperties}
-              >
-                <input
-                  id="audio-volume"
-                  type="range"
-                  min="0"
-                  max="200"
-                  step="5"
-                  value={audioVolume}
-                  onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
-                />
-              </span>
-            </label>
-            <div className="settings-group settings-playlist">
-              <strong>SOUNDTRACK</strong>
-              <div className="settings-track-control">
-                <button
-                  type="button"
-                  className="settings-track-step"
-                  aria-label="Previous song"
-                  disabled={musicControlsDisabled}
-                  onClick={() => switchSoundtrackSong(soundtrackIndex - 1)}
-                >
-                  <span aria-hidden="true">PREV</span>
-                </button>
-                <div className="settings-track-now" aria-live="polite">
-                  <span>NOW PLAYING</span>
-                  <strong>{soundtrackTitle}</strong>
+            <div className="settings-panel-body">
+              <div className="settings-group settings-audio-group">
+                <strong>AUDIO MODE</strong>
+                <div className="settings-options" role="group" aria-label="Audio mode">
+                  <button type="button" className={'settings-toggle' + (audioMode === 'full' ? ' selected' : '')} onClick={() => updateAudioMode('full')}>
+                    <span className="settings-toggle-label">FULL AUDIO</span>
+                  </button>
+                  <button type="button" className={'settings-toggle' + (audioMode === 'sfx' ? ' selected' : '')} onClick={() => updateAudioMode('sfx')}>
+                    <span className="settings-toggle-label">SFX ONLY</span>
+                  </button>
+                  <button type="button" className={'settings-toggle' + (audioMode === 'muted' ? ' selected' : '')} onClick={() => updateAudioMode('muted')}>
+                    <span className="settings-toggle-label">MUTED</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  className="settings-track-step"
-                  aria-label="Next song"
-                  disabled={musicControlsDisabled}
-                  onClick={() => switchSoundtrackSong(soundtrackIndex + 1)}
-                >
-                  <span aria-hidden="true">NEXT</span>
-                </button>
               </div>
-              <div className="settings-track-list" role="listbox" aria-label="Soundtrack playlist" aria-disabled={musicControlsDisabled}>
-                {SOUNDTRACK_SOURCES.map((src, index) => {
-                  const title = getSoundtrackTitle(src);
-                  return (
-                    <button
-                      type="button"
-                      key={src}
-                      className={'settings-track-option' + (index === soundtrackIndex ? ' selected' : '')}
-                      role="option"
-                      aria-selected={index === soundtrackIndex}
-                      disabled={musicControlsDisabled}
-                      onClick={() => switchSoundtrackSong(index)}
-                    >
-                      <span>{String(index + 1).padStart(2, '0')}</span>
-                      <strong>{title}</strong>
+              <label className="settings-volume" htmlFor="audio-volume">
+                <span>OUTPUT LEVEL <strong>{audioVolume}%</strong></span>
+                <span
+                  className="settings-slider-shell"
+                  style={{ '--settings-volume-progress': `${Math.min(100, Math.max(0, audioVolume / 2))}%` } as CSSProperties}
+                >
+                  <input
+                    id="audio-volume"
+                    type="range"
+                    min="0"
+                    max="200"
+                    step="5"
+                    value={audioVolume}
+                    onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
+                  />
+                </span>
+              </label>
+              {screen === 'playing' && (
+                <div className="settings-group">
+                  <strong>GAME</strong>
+                  <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
+                    <button type="button" className="art-button art-button-reset" onClick={() => {
+                      audioRef.current?.play('menu');
+                      resetGame();
+                      setSettingsOpen(false);
+                    }}>
+                      <span>RESET BOARD</span>
                     </button>
-                  );
-                })}
-              </div>
-            </div>
-            <div className="settings-group settings-save-group">
-              <strong>GAME DATA</strong>
-              <div className="settings-options settings-options-save" role="group" aria-label="Save and credits controls">
-                <button type="button" className="settings-toggle settings-command" onClick={saveGame}>
-                  <span>SAVE GAME</span>
-                </button>
-                <button type="button" className="settings-toggle settings-command" onClick={loadGame}>
-                  <span>LOAD GAME</span>
-                </button>
-                <button type="button" className="settings-toggle settings-command" onClick={() => {
-                  audioRef.current?.play('menu');
-                  setCreditsOpen(true);
-                }}>
-                  <span>CREDITS</span>
-                </button>
-              </div>
-              {settingsNotice && (
-                <div className="settings-save-status" role="status" aria-live="polite">{settingsNotice}</div>
+                    <button type="button" className="art-button art-button-back" onClick={() => {
+                      audioRef.current?.play('menu');
+                      setSettingsOpen(false);
+                      openMenu();
+                    }}>
+                      <span>MAIN MENU</span>
+                    </button>
+                  </div>
+                </div>
               )}
-            </div>
-            {screen === 'playing' && (
-              <div className="settings-group">
-                <strong>GAME</strong>
-                <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
-                  <button type="button" className="art-button art-button-reset" onClick={() => {
-                    audioRef.current?.play('menu');
-                    resetGame();
-                    setSettingsOpen(false);
-                  }}>
-                    <span>RESET BOARD</span>
+              <div className="settings-group settings-playlist">
+                <strong>SOUNDTRACK</strong>
+                <div className="settings-track-control">
+                  <button
+                    type="button"
+                    className="settings-track-step"
+                    aria-label="Previous song"
+                    disabled={musicControlsDisabled}
+                    onClick={() => switchSoundtrackSong(soundtrackIndex - 1)}
+                  >
+                    <span aria-hidden="true">PREV</span>
                   </button>
-                  <button type="button" className="art-button art-button-back" onClick={() => {
-                    audioRef.current?.play('menu');
-                    setSettingsOpen(false);
-                    openMenu();
-                  }}>
-                    <span>MAIN MENU</span>
+                  <div className="settings-track-now" aria-live="polite">
+                    <span>NOW PLAYING</span>
+                    <strong>{soundtrackTitle}</strong>
+                  </div>
+                  <button
+                    type="button"
+                    className="settings-track-step"
+                    aria-label="Next song"
+                    disabled={musicControlsDisabled}
+                    onClick={() => switchSoundtrackSong(soundtrackIndex + 1)}
+                  >
+                    <span aria-hidden="true">NEXT</span>
                   </button>
                 </div>
+                <div className="settings-track-list" role="listbox" aria-label="Soundtrack playlist" aria-disabled={musicControlsDisabled}>
+                  {SOUNDTRACK_SOURCES.map((src, index) => {
+                    const title = getSoundtrackTitle(src);
+                    return (
+                      <button
+                        type="button"
+                        key={src}
+                        className={'settings-track-option' + (index === soundtrackIndex ? ' selected' : '')}
+                        role="option"
+                        aria-selected={index === soundtrackIndex}
+                        disabled={musicControlsDisabled}
+                        onClick={() => switchSoundtrackSong(index)}
+                      >
+                        <span>{String(index + 1).padStart(2, '0')}</span>
+                        <strong>{title}</strong>
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
-            )}
-            <div className="settings-actions">
-              <button type="button" className="art-button art-button-close" onClick={() => {
-                audioRef.current?.play('menu');
-                setSettingsOpen(false);
-              }}>
-                <span>CLOSE</span>
-              </button>
+            </div>
+            <div className="settings-footer">
+              <div className="settings-group settings-save-group">
+                <strong>GAME DATA</strong>
+                <div className="settings-options settings-options-save" role="group" aria-label="Save and credits controls">
+                  <button type="button" className="settings-toggle settings-command" onClick={saveGame}>
+                    <span>SAVE GAME</span>
+                  </button>
+                  <button type="button" className="settings-toggle settings-command" onClick={loadGame}>
+                    <span>LOAD GAME</span>
+                  </button>
+                  <button type="button" className="settings-toggle settings-command" onClick={() => {
+                    audioRef.current?.play('menu');
+                    setCreditsOpen(true);
+                  }}>
+                    <span>CREDITS</span>
+                  </button>
+                </div>
+                {settingsNotice && (
+                  <div className="settings-save-status" role="status" aria-live="polite">{settingsNotice}</div>
+                )}
+              </div>
+              <div className="settings-actions">
+                <button type="button" className="art-button art-button-close" onClick={() => {
+                  audioRef.current?.play('menu');
+                  setSettingsOpen(false);
+                }}>
+                  <span>CLOSE</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

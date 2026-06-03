@@ -1797,13 +1797,15 @@
     box-sizing: border-box;
     position: relative;
     z-index: 1;
+    display: grid;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    align-content: stretch;
+    gap: clamp(8px, 1.2vh, 12px);
     width: min(620px, calc(100vw - 44px), calc((100vh - 56px) * 351 / 479));
     aspect-ratio: 351 / 479;
     max-height: none;
-    overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    padding: clamp(84px, 10vh, 104px) clamp(70px, 7vw, 86px) clamp(46px, 5.2vh, 58px);
+    overflow: hidden;
+    padding: clamp(70px, 8.7vh, 88px) clamp(70px, 7vw, 86px) clamp(44px, 5.1vh, 54px);
     background: url("media/buttons/settings_bg.png") center / 100% 100% no-repeat;
     border: 0;
     box-shadow:
@@ -1849,6 +1851,46 @@
     position: relative;
     z-index: 1;
   }
+  .settings-panel-header {
+    display: grid;
+    place-items: center;
+    min-height: clamp(94px, 13.5vh, 112px);
+    margin: 0 0 -2px;
+  }
+  .settings-panel-body {
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 1px 4px 4px;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(101, 230, 255, 0.72) rgba(0, 0, 0, 0.36);
+  }
+  .settings-panel-body::-webkit-scrollbar {
+    width: 5px;
+  }
+  .settings-panel-body::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.36);
+  }
+  .settings-panel-body::-webkit-scrollbar-thumb {
+    background: rgba(101, 230, 255, 0.72);
+  }
+  .settings-panel-body > :last-child {
+    margin-bottom: 0;
+  }
+  .settings-footer {
+    display: grid;
+    gap: clamp(5px, 0.9vh, 8px);
+    min-height: 0;
+    padding-top: clamp(5px, 0.9vh, 8px);
+    border-top: 1px solid rgba(101, 230, 255, 0.34);
+    background:
+      linear-gradient(180deg, rgba(6, 21, 36, 0.74), rgba(0, 0, 0, 0.26)),
+      linear-gradient(90deg, transparent, rgba(0, 255, 204, 0.08), transparent);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.05),
+      0 -10px 18px rgba(0, 0, 0, 0.18);
+  }
   .settings-kicker {
     display: block;
     margin: 0 0 2px;
@@ -1858,8 +1900,8 @@
     text-align: center;
   }
   .settings-panel h2 {
-    margin: clamp(10px, 1.6vh, 16px) auto 14px;
-    width: min(232px, 68%);
+    margin: 0 auto;
+    width: min(224px, 70%);
     aspect-ratio: 445 / 204;
     color: transparent;
     background: url("media/buttons/settings.png") center / contain no-repeat;
@@ -1905,6 +1947,7 @@
   }
   .settings-options-game {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: center;
   }
   .settings-options-save {
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1978,6 +2021,20 @@
   }
   .settings-save-group {
     margin-bottom: 12px;
+  }
+  .settings-footer .settings-save-group {
+    gap: 6px;
+    margin-bottom: 0;
+  }
+  .settings-footer .settings-group > strong {
+    font-size: 12px;
+  }
+  .settings-footer .settings-options-save {
+    gap: 7px;
+  }
+  .settings-footer .settings-command {
+    min-height: 40px;
+    font-size: 12px;
   }
   .settings-save-status {
     min-height: 24px;
@@ -2213,14 +2270,20 @@
     flex-wrap: wrap;
     align-items: center;
     justify-content: center;
-    gap: 10px;
-    margin-top: 18px;
+    gap: 8px;
+    margin-top: 0;
   }
   .settings-actions .art-button {
-    width: clamp(132px, 18vw, 176px);
+    width: clamp(122px, 14vw, 158px);
   }
   .settings-options-game .art-button {
     justify-self: center;
+  }
+  .settings-options-game .art-button-reset {
+    width: clamp(106px, 12vw, 138px);
+  }
+  .settings-options-game .art-button-back {
+    width: clamp(84px, 10vw, 112px);
   }
   .credits-modal {
     position: absolute;
@@ -2538,15 +2601,25 @@
       width: min(calc(100vw - 28px), calc((100vh - 28px) * 351 / 479));
       height: calc(100dvh - 28px);
       aspect-ratio: auto;
-      padding: 58px 40px 42px;
-      overflow-y: auto;
+      gap: 6px;
+      padding: 42px 40px 36px;
+      overflow: hidden;
       overscroll-behavior: contain;
     }
+    .settings-panel-header {
+      min-height: 108px;
+      margin-bottom: -4px;
+    }
     .settings-panel h2 {
-      margin-top: 4px;
-      margin-bottom: 8px;
       width: min(198px, 72%);
       font-size: 0;
+    }
+    .settings-panel-body {
+      padding: 1px 2px 3px;
+    }
+    .settings-footer {
+      gap: 5px;
+      padding-top: 5px;
     }
     .settings-options {
       grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -2568,7 +2641,7 @@
       padding: 5px 6px;
     }
     .settings-track-list {
-      max-height: 178px;
+      max-height: 166px;
     }
     .settings-track-step {
       min-height: 38px;
@@ -2578,6 +2651,16 @@
     .settings-track-option {
       min-height: 30px;
       padding: 4px 6px;
+    }
+    .settings-footer .settings-command {
+      min-height: 36px;
+      font-size: 10px;
+    }
+    .settings-footer .settings-group > strong {
+      font-size: 11px;
+    }
+    .settings-actions .art-button {
+      width: clamp(118px, 34vw, 138px);
     }
     .cyber-hud {
       left: 50%;

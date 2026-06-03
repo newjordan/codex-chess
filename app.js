@@ -59993,124 +59993,128 @@ function App() {
         }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) })
       ] }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "AUDIO MODE" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }) })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-            "OUTPUT LEVEL ",
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
-              audioVolume,
-              "%"
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel-body", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "AUDIO MODE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }) })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-            "span",
-            {
-              className: "settings-slider-shell",
-              style: { "--settings-volume-progress": `${Math.min(100, Math.max(0, audioVolume / 2))}%` },
-              children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-                "input",
-                {
-                  id: "audio-volume",
-                  type: "range",
-                  min: "0",
-                  max: "200",
-                  step: "5",
-                  value: audioVolume,
-                  onChange: (event) => updateAudioVolume(Number(event.currentTarget.value))
-                }
-              )
-            }
-          )
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-playlist", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "SOUNDTRACK" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-control", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-              "button",
-              {
-                type: "button",
-                className: "settings-track-step",
-                "aria-label": "Previous song",
-                disabled: musicControlsDisabled,
-                onClick: () => switchSoundtrackSong(soundtrackIndex - 1),
-                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "PREV" })
-              }
-            ),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-now", "aria-live": "polite", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NOW PLAYING" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: soundtrackTitle })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+              "OUTPUT LEVEL ",
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
+                audioVolume,
+                "%"
+              ] })
             ] }),
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-              "button",
+              "span",
               {
-                type: "button",
-                className: "settings-track-step",
-                "aria-label": "Next song",
-                disabled: musicControlsDisabled,
-                onClick: () => switchSoundtrackSong(soundtrackIndex + 1),
-                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "NEXT" })
+                className: "settings-slider-shell",
+                style: { "--settings-volume-progress": `${Math.min(100, Math.max(0, audioVolume / 2))}%` },
+                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                  "input",
+                  {
+                    id: "audio-volume",
+                    type: "range",
+                    min: "0",
+                    max: "200",
+                    step: "5",
+                    value: audioVolume,
+                    onChange: (event) => updateAudioVolume(Number(event.currentTarget.value))
+                  }
+                )
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-track-list", role: "listbox", "aria-label": "Soundtrack playlist", "aria-disabled": musicControlsDisabled, children: SOUNDTRACK_SOURCES.map((src, index) => {
-            const title = getSoundtrackTitle(src);
-            return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
-              "button",
-              {
-                type: "button",
-                className: "settings-track-option" + (index === soundtrackIndex ? " selected" : ""),
-                role: "option",
-                "aria-selected": index === soundtrackIndex,
-                disabled: musicControlsDisabled,
-                onClick: () => switchSoundtrackSong(index),
-                children: [
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
-                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: title })
-                ]
-              },
-              src
-            );
-          }) })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-save-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME DATA" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SAVE GAME" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOAD GAME" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: () => {
-              audioRef.current?.play("menu");
-              setCreditsOpen(true);
-            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CREDITS" }) })
+          screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
+                audioRef.current?.play("menu");
+                resetGame();
+                setSettingsOpen(false);
+              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
+                audioRef.current?.play("menu");
+                setSettingsOpen(false);
+                openMenu();
+              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
+            ] })
           ] }),
-          settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
-        ] }),
-        screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
-              audioRef.current?.play("menu");
-              resetGame();
-              setSettingsOpen(false);
-            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
-              audioRef.current?.play("menu");
-              setSettingsOpen(false);
-              openMenu();
-            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-playlist", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "SOUNDTRACK" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-control", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                "button",
+                {
+                  type: "button",
+                  className: "settings-track-step",
+                  "aria-label": "Previous song",
+                  disabled: musicControlsDisabled,
+                  onClick: () => switchSoundtrackSong(soundtrackIndex - 1),
+                  children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "PREV" })
+                }
+              ),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-now", "aria-live": "polite", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NOW PLAYING" }),
+                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: soundtrackTitle })
+              ] }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                "button",
+                {
+                  type: "button",
+                  className: "settings-track-step",
+                  "aria-label": "Next song",
+                  disabled: musicControlsDisabled,
+                  onClick: () => switchSoundtrackSong(soundtrackIndex + 1),
+                  children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "NEXT" })
+                }
+              )
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-track-list", role: "listbox", "aria-label": "Soundtrack playlist", "aria-disabled": musicControlsDisabled, children: SOUNDTRACK_SOURCES.map((src, index) => {
+              const title = getSoundtrackTitle(src);
+              return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+                "button",
+                {
+                  type: "button",
+                  className: "settings-track-option" + (index === soundtrackIndex ? " selected" : ""),
+                  role: "option",
+                  "aria-selected": index === soundtrackIndex,
+                  disabled: musicControlsDisabled,
+                  onClick: () => switchSoundtrackSong(index),
+                  children: [
+                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
+                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: title })
+                  ]
+                },
+                src
+              );
+            }) })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
-          audioRef.current?.play("menu");
-          setSettingsOpen(false);
-        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-footer", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-save-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME DATA" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SAVE GAME" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOAD GAME" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: () => {
+                audioRef.current?.play("menu");
+                setCreditsOpen(true);
+              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CREDITS" }) })
+            ] }),
+            settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
+            audioRef.current?.play("menu");
+            setSettingsOpen(false);
+          }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
+        ] })
       ] })
     ] })
   ] });

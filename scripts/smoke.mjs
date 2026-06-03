@@ -231,6 +231,8 @@ async function runPlayableSmoke(label, viewport) {
     await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
     await page.getByRole('button', { name: 'BACK' }).click();
     await page.getByLabel('Name your hero').waitFor();
+    await page.waitForFunction(() => document.querySelector('#player-name')?.value === '');
+    await page.getByLabel('Name your hero').fill('CODXACE');
     await page.getByRole('button', { name: 'LOCK IN' }).click();
     await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
     await page.getByRole('button', { name: 'NEXT' }).click();

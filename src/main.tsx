@@ -451,6 +451,11 @@ function sanitizePlayerName(value: string) {
   return safe || 'PLAYER 1';
 }
 
+function isGordoDebugName(value: string) {
+  const normalized = value.replace(/\s+/g, ' ').trim().toLowerCase();
+  return normalized === 'gordo' || normalized === 'chris p butthole';
+}
+
 function readStoredName() {
   try {
     return sanitizePlayerName(window.localStorage.getItem(PLAYER_NAME_KEY) || 'PLAYER 1');
@@ -648,7 +653,7 @@ function App() {
   const [selectedId, setSelectedId] = useState<AiProfileId>('goop');
   const [playerColor, setPlayerColor] = useState<PlayerColor>('w');
   const [playerName, setPlayerName] = useState(readStoredName);
-  const [playerNameInput, setPlayerNameInput] = useState(readStoredName);
+  const [playerNameInput, setPlayerNameInput] = useState('');
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>(readLeaderboard);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioMode, setAudioMode] = useState<AudioMode>(audioModeRef.current);
@@ -973,6 +978,10 @@ function App() {
       setScreen('result');
     };
   }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
+
+  useEffect(() => {
+    if (screen === 'intro' && menuStep === 'profile') setPlayerNameInput('');
+  }, [menuStep, screen]);
 
   const resetGame = () => {
     aiBusyRef.current = false;
@@ -1382,17 +1391,38 @@ function App() {
   const commitPlayerName = () => {
     const nextName = sanitizePlayerName(playerNameInput);
     setPlayerName(nextName);
-    setPlayerNameInput(nextName);
     try {
       window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
     } catch (_) {}
     return nextName;
   };
 
+  const startGordoDebugMatch = () => {
+    const gordo = getOpponentById('gordo');
+    setSelectedId(gordo.id);
+    setLives(MAX_LIVES);
+    setContinueSeconds(CONTINUE_SECONDS);
+    runStartedAtRef.current = Date.now();
+    recordedResultKeyRef.current = '';
+    previousFenRef.current = START;
+    resultHandledFenRef.current = '';
+    lastAiFenRef.current = '';
+    aiBusyRef.current = false;
+    aiRequestRef.current += 1;
+    setThinking(false);
+    lastAnnouncedRef.current = '';
+    window.setTimeout(() => startOpponentLoading(gordo), 0);
+  };
+
   const savePlayerProfile = () => {
+    const rawName = playerNameInput;
     commitPlayerName();
     ensureAudioEngine();
     playClip(CHECKMATE_SFX_SRC);
+    if (isGordoDebugName(rawName)) {
+      startGordoDebugMatch();
+      return;
+    }
     setStoryIndex(0);
     setMenuStep('story');
   };

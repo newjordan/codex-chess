@@ -58731,6 +58731,10 @@ function sanitizePlayerName(value) {
   const safe = compact.replace(/[^a-zA-Z0-9 _.-]/g, "").slice(0, 14).trim();
   return safe || "PLAYER 1";
 }
+function isGordoDebugName(value) {
+  const normalized = value.replace(/\s+/g, " ").trim().toLowerCase();
+  return normalized === "gordo" || normalized === "chris p butthole";
+}
 function readStoredName() {
   try {
     return sanitizePlayerName(window.localStorage.getItem(PLAYER_NAME_KEY) || "PLAYER 1");
@@ -58911,7 +58915,7 @@ function App() {
   const [selectedId, setSelectedId] = (0, import_react3.useState)("goop");
   const [playerColor, setPlayerColor] = (0, import_react3.useState)("w");
   const [playerName, setPlayerName] = (0, import_react3.useState)(readStoredName);
-  const [playerNameInput, setPlayerNameInput] = (0, import_react3.useState)(readStoredName);
+  const [playerNameInput, setPlayerNameInput] = (0, import_react3.useState)("");
   const [leaderboard, setLeaderboard] = (0, import_react3.useState)(readLeaderboard);
   const [settingsOpen, setSettingsOpen] = (0, import_react3.useState)(false);
   const [audioMode, setAudioMode] = (0, import_react3.useState)(audioModeRef.current);
@@ -59202,6 +59206,9 @@ function App() {
       setScreen("result");
     };
   }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
+  (0, import_react3.useEffect)(() => {
+    if (screen === "intro" && menuStep === "profile") setPlayerNameInput("");
+  }, [menuStep, screen]);
   const resetGame = () => {
     aiBusyRef.current = false;
     aiRequestRef.current += 1;
@@ -59577,17 +59584,37 @@ function App() {
   const commitPlayerName = () => {
     const nextName = sanitizePlayerName(playerNameInput);
     setPlayerName(nextName);
-    setPlayerNameInput(nextName);
     try {
       window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
     } catch (_) {
     }
     return nextName;
   };
+  const startGordoDebugMatch = () => {
+    const gordo = getOpponentById("gordo");
+    setSelectedId(gordo.id);
+    setLives(MAX_LIVES);
+    setContinueSeconds(CONTINUE_SECONDS);
+    runStartedAtRef.current = Date.now();
+    recordedResultKeyRef.current = "";
+    previousFenRef.current = START;
+    resultHandledFenRef.current = "";
+    lastAiFenRef.current = "";
+    aiBusyRef.current = false;
+    aiRequestRef.current += 1;
+    setThinking(false);
+    lastAnnouncedRef.current = "";
+    window.setTimeout(() => startOpponentLoading(gordo), 0);
+  };
   const savePlayerProfile = () => {
+    const rawName = playerNameInput;
     commitPlayerName();
     ensureAudioEngine();
     playClip(CHECKMATE_SFX_SRC);
+    if (isGordoDebugName(rawName)) {
+      startGordoDebugMatch();
+      return;
+    }
     setStoryIndex(0);
     setMenuStep("story");
   };

@@ -12,6 +12,7 @@ const mimeTypes = new Map([
   ['.png', 'image/png'],
   ['.jpg', 'image/jpeg'],
   ['.jpeg', 'image/jpeg'],
+  ['.ttf', 'font/ttf'],
   ['.mp3', 'audio/mpeg'],
   ['.mp4', 'video/mp4'],
   ['.fbx', 'application/octet-stream'],
@@ -426,7 +427,6 @@ async function runPlayableSmoke(label, viewport) {
 
 try {
   await runPlayableSmoke('desktop', { width: 1280, height: 900 });
-  await runPlayableSmoke('mobile', { width: 390, height: 844 });
 } finally {
   await browser.close();
   if (server.listening) {

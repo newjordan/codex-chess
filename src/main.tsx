@@ -117,7 +117,6 @@ const SETTINGS_BG_SRC = 'media/settings-moniker-bg.jpg';
 const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
 const SOUNDTRACK_SOURCES = [
   'media/audio/the_pulse_long_song.mp3',
-  'media/audio/synthetic_dreams_cyber_eyes.mp3',
   'media/audio/cyber_chess_music.mp3',
   'media/audio/Chrome Gambit.mp3',
   'media/audio/Chrome fresh.mp3',
@@ -132,6 +131,7 @@ const SOUNDTRACK_SOURCES = [
   'media/audio/checkmeat_you_lose_song.mp3',
   'media/audio/game_over.wav',
   'media/audio/victorious_1.mp3',
+  'media/audio/synthetic_dreams_cyber_eyes.mp3',
 ] as const;
 const LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
@@ -1930,27 +1930,6 @@ function App() {
                   />
                 </span>
               </label>
-              {screen === 'playing' && (
-                <div className="settings-group">
-                  <strong>GAME</strong>
-                  <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
-                    <button type="button" className="art-button art-button-reset" onClick={() => {
-                      audioRef.current?.play('menu');
-                      resetGame();
-                      setSettingsOpen(false);
-                    }}>
-                      <span>RESET BOARD</span>
-                    </button>
-                    <button type="button" className="art-button art-button-back" onClick={() => {
-                      audioRef.current?.play('menu');
-                      setSettingsOpen(false);
-                      openMenu();
-                    }}>
-                      <span>MAIN MENU</span>
-                    </button>
-                  </div>
-                </div>
-              )}
               <div className="settings-group settings-playlist">
                 <strong>SOUNDTRACK</strong>
                 <div className="settings-track-control">

@@ -266,8 +266,6 @@ async function runPlayableSmoke(label, viewport) {
       throw new Error('menu button should not render in the gameplay HUD');
     }
     await page.keyboard.press('Escape');
-    await page.getByRole('button', { name: 'RESET BOARD' }).waitFor();
-    await page.getByRole('button', { name: 'MAIN MENU' }).waitFor();
     await page.getByRole('button', { name: 'CLOSE' }).click();
     await page.waitForFunction(() =>
       window.__chess?.campaign?.playerName === 'CODXACE' &&

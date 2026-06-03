@@ -58474,7 +58474,6 @@ var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
 var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
 var SOUNDTRACK_SOURCES = [
   "media/audio/the_pulse_long_song.mp3",
-  "media/audio/synthetic_dreams_cyber_eyes.mp3",
   "media/audio/cyber_chess_music.mp3",
   "media/audio/Chrome Gambit.mp3",
   "media/audio/Chrome fresh.mp3",
@@ -58488,7 +58487,8 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/checkmeat_freakazoid.mp3",
   "media/audio/checkmeat_you_lose_song.mp3",
   "media/audio/game_over.wav",
-  "media/audio/victorious_1.mp3"
+  "media/audio/victorious_1.mp3",
+  "media/audio/synthetic_dreams_cyber_eyes.mp3"
 ];
 var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
@@ -60027,21 +60027,6 @@ function App() {
                 )
               }
             )
-          ] }),
-          screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
-                audioRef.current?.play("menu");
-                resetGame();
-                setSettingsOpen(false);
-              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
-                audioRef.current?.play("menu");
-                setSettingsOpen(false);
-                openMenu();
-              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
-            ] })
           ] }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-playlist", children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "SOUNDTRACK" }),

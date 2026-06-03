@@ -59981,7 +59981,6 @@ function App() {
       creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and local chess agents." }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Static audio assets generated with ElevenLabs and Suno." })
         ] }) }),

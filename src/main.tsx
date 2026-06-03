@@ -1881,7 +1881,6 @@ function App() {
                 <div className="credits-roll-shell" aria-live="polite">
                   <div className="credits-roll">
                     <p>Game created by Frosty40 and Codex.</p>
-                    <p>Built with React, Three.js, chess.js, and local chess agents.</p>
                     <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
                     <p>Static audio assets generated with ElevenLabs and Suno.</p>
                   </div>

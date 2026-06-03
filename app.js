@@ -59978,9 +59978,16 @@ function App() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
       creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-panel", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll-set", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll-set", "aria-hidden": "true", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+        ] })
       ] }) }) }) }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }) }),

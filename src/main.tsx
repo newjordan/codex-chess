@@ -1879,9 +1879,16 @@ function App() {
               <div className="credits-panel">
                 <div className="credits-roll-shell" aria-live="polite">
                   <div className="credits-roll">
-                    <p>Game created by Frosty40 and Codex.</p>
-                    <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
-                    <p>Audio assets generated with ElevenLabs and Suno.</p>
+                    <div className="credits-roll-set">
+                      <p>Game created by Frosty40 and Codex.</p>
+                      <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
+                      <p>Audio assets generated with ElevenLabs and Suno.</p>
+                    </div>
+                    <div className="credits-roll-set" aria-hidden="true">
+                      <p>Game created by Frosty40 and Codex.</p>
+                      <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
+                      <p>Audio assets generated with ElevenLabs and Suno.</p>
+                    </div>
                   </div>
                 </div>
               </div>

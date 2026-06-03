@@ -58384,7 +58384,9 @@ var PLAYER_NAME_KEY = "cyberChessPlayerName";
 var LEADERBOARD_KEY = "cyberChessLeaderboardV1";
 var AUDIO_MODE_KEY = "cyberChessAudioMode";
 var AUDIO_VOLUME_KEY = "cyberChessAudioVolume";
+var SAVE_GAME_KEY = "cyberChessSaveGameV1";
 var MAX_LEADERBOARD = 8;
+var GORDO_NAME_CHEATS = /* @__PURE__ */ new Set(["gordo", "chris p butthole"]);
 var OPPONENTS = [
   {
     id: "goop",
@@ -58746,6 +58748,9 @@ function readLeaderboard() {
     return [];
   }
 }
+function getOpponentById(id) {
+  return OPPONENTS.find((opponent) => opponent.id === id) ?? OPPONENTS[0];
+}
 function mediaVolume(volume) {
   return Math.max(0, Math.min(1, clampAudioVolume(volume) / 100));
 }
@@ -58900,13 +58905,15 @@ function App() {
   const [lives, setLives] = (0, import_react3.useState)(MAX_LIVES);
   const [continueSeconds, setContinueSeconds] = (0, import_react3.useState)(CONTINUE_SECONDS);
   const [resultState, setResultState] = (0, import_react3.useState)(null);
+  const [settingsNotice, setSettingsNotice] = (0, import_react3.useState)("");
+  const [creditsOpen, setCreditsOpen] = (0, import_react3.useState)(false);
   const [gameState, setGameState] = (0, import_react3.useState)({
     status: "Loading pieces",
     fen: START,
     selectedSquare: null
   });
   const selectedIndex = OPPONENTS.findIndex((opponent) => opponent.id === selectedId);
-  const selected = OPPONENTS.find((opponent) => opponent.id === selectedId) ?? OPPONENTS[0];
+  const selected = getOpponentById(selectedId);
   const nextOpponent = OPPONENTS[selectedIndex + 1];
   const turn = turnFromFen(gameState.fen);
   const aiColor = playerColor === "w" ? "b" : "w";
@@ -59017,6 +59024,10 @@ function App() {
       event.preventDefault();
       if (settingsOpen) {
         audioRef.current?.play("menu");
+        if (creditsOpen) {
+          setCreditsOpen(false);
+          return;
+        }
         setSettingsOpen(false);
         return;
       }
@@ -59025,7 +59036,23 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown2);
     return () => window.removeEventListener("keydown", onKeyDown2);
-  }, [settingsOpen]);
+  }, [creditsOpen, settingsOpen]);
+  (0, import_react3.useEffect)(() => {
+    let buffer = "";
+    const onKeyDown2 = (event) => {
+      if (event.ctrlKey || event.metaKey || event.altKey) return;
+      if (event.key.length !== 1) return;
+      const target = event.target;
+      if (target?.tagName === "INPUT" || target?.tagName === "TEXTAREA") return;
+      buffer = (buffer + event.key.toLowerCase()).slice(-5);
+      if (buffer === "gordo") {
+        buffer = "";
+        jumpToGordo();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown2);
+    return () => window.removeEventListener("keydown", onKeyDown2);
+  }, [selected]);
   (0, import_react3.useEffect)(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
@@ -59172,6 +59199,8 @@ function App() {
       audioRef.current?.play(forcedResult.kind === "game-over" ? "loss" : "tick");
       setScreen("result");
     };
+    window.__chess.gotoGordo = jumpToGordo;
+    window.__chess.debugGordo = jumpToGordo;
   }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
   const resetGame = () => {
     aiBusyRef.current = false;
@@ -59189,7 +59218,7 @@ function App() {
     setResultState(null);
     resetGame();
   };
-  const startOpponentLoading = () => {
+  const startOpponentLoading = (opponent = selected) => {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     endMusicSrcRef.current = "";
@@ -59197,16 +59226,16 @@ function App() {
     announcerRef.current?.pause();
     setScreen("loading");
     setResultState(null);
-    const clip = playAnnouncer(selected.introAudio);
+    const clip = playAnnouncer(opponent.introAudio);
     const fallback = window.setTimeout(() => {
-      if (window.__chess.campaign?.screen === "loading" && window.__chess.campaign?.selectedId === selected.id) {
+      if (window.__chess.campaign?.screen === "loading" && window.__chess.campaign?.selectedId === opponent.id) {
         startGame();
       }
     }, 4200);
     if (clip) {
       clip.onended = () => {
         window.clearTimeout(fallback);
-        if (window.__chess.campaign?.screen === "loading" && window.__chess.campaign?.selectedId === selected.id) {
+        if (window.__chess.campaign?.screen === "loading" && window.__chess.campaign?.selectedId === opponent.id) {
           startGame();
         }
       };
@@ -59556,8 +59585,12 @@ function App() {
     return nextName;
   };
   const savePlayerProfile = () => {
-    commitPlayerName();
+    const nextName = commitPlayerName();
     audioRef.current?.play("menu");
+    if (GORDO_NAME_CHEATS.has(nextName.trim().toLowerCase())) {
+      jumpToGordo();
+      return;
+    }
     setStoryIndex(0);
     setMenuStep("story");
   };
@@ -59567,6 +59600,21 @@ function App() {
     recordedResultKeyRef.current = "";
     previousFenRef.current = START;
     startOpponentLoading();
+  };
+  const jumpToGordo = () => {
+    const gordo = OPPONENTS.find((opponent) => opponent.id === "gordo");
+    if (!gordo) return;
+    aiRequestRef.current += 1;
+    setSelectedId(gordo.id);
+    setLives(MAX_LIVES);
+    runStartedAtRef.current = Date.now();
+    recordedResultKeyRef.current = "";
+    previousFenRef.current = START;
+    resultHandledFenRef.current = "";
+    lastAnnouncedRef.current = "";
+    setContinueSeconds(CONTINUE_SECONDS);
+    setResultState(null);
+    startOpponentLoading(gordo);
   };
   const continueAfterLoss = () => {
     if (!resultState || resultState.kind !== "loss") return;
@@ -59607,6 +59655,98 @@ function App() {
     setLeaderboard([]);
     persistLeaderboard([]);
     audioRef.current?.play("menu");
+  };
+  const makeSaveGame = () => ({
+    version: 1,
+    savedAt: (/* @__PURE__ */ new Date()).toISOString(),
+    screen,
+    menuStep,
+    storyIndex,
+    selectedId,
+    playerColor,
+    playerName,
+    lives,
+    continueSeconds,
+    fen: gameState.fen,
+    resultState: resultState ? {
+      kind: resultState.kind,
+      opponentId: resultState.opponent.id,
+      nextOpponentId: resultState.nextOpponent?.id,
+      livesAfter: resultState.livesAfter
+    } : null,
+    runStartedAt: runStartedAtRef.current
+  });
+  const restoreResultState = (saved) => {
+    if (!saved.resultState) return null;
+    return {
+      kind: saved.resultState.kind,
+      opponent: getOpponentById(saved.resultState.opponentId),
+      nextOpponent: saved.resultState.nextOpponentId ? getOpponentById(saved.resultState.nextOpponentId) : void 0,
+      livesAfter: saved.resultState.livesAfter
+    };
+  };
+  const saveGame = () => {
+    try {
+      const save = makeSaveGame();
+      window.localStorage.setItem(SAVE_GAME_KEY, JSON.stringify(save));
+      setSettingsNotice(`SAVED ${getOpponentById(save.selectedId).name.toUpperCase()} / ${save.screen.toUpperCase()}`);
+      audioRef.current?.play("select");
+    } catch (_) {
+      setSettingsNotice("SAVE FAILED");
+      audioRef.current?.play("loss");
+    }
+  };
+  const loadGame = () => {
+    try {
+      const parsed = JSON.parse(window.localStorage.getItem(SAVE_GAME_KEY) || "null");
+      if (!parsed || parsed.version !== 1 || typeof parsed.fen !== "string") {
+        setSettingsNotice("NO SAVE FOUND");
+        audioRef.current?.play("loss");
+        return;
+      }
+      new Chess(parsed.fen);
+      const opponent = getOpponentById(parsed.selectedId);
+      const nextScreen = parsed.screen === "intro" || parsed.screen === "loading" || parsed.screen === "playing" || parsed.screen === "result" ? parsed.screen : "playing";
+      const effectiveScreen = nextScreen === "result" && !parsed.resultState ? "playing" : nextScreen;
+      const nextMenuStep = parsed.menuStep === "story" || parsed.menuStep === "profile" || parsed.menuStep === "side" || parsed.menuStep === "opponent" || parsed.menuStep === "video" ? parsed.menuStep : "opponent";
+      const nextPlayerColor = parsed.playerColor === "b" ? "b" : "w";
+      const nextLives = Math.max(0, Math.min(MAX_LIVES, Number(parsed.lives ?? MAX_LIVES)));
+      aiBusyRef.current = false;
+      aiRequestRef.current += 1;
+      lastAiFenRef.current = "";
+      resultHandledFenRef.current = "";
+      recordedResultKeyRef.current = "";
+      setThinking(false);
+      setSelectedId(opponent.id);
+      setPlayerColor(nextPlayerColor);
+      setPlayerName(sanitizePlayerName(String(parsed.playerName || playerName)));
+      setPlayerNameInput(sanitizePlayerName(String(parsed.playerName || playerName)));
+      setLives(nextLives);
+      setContinueSeconds(Math.max(0, Math.min(CONTINUE_SECONDS, Number(parsed.continueSeconds ?? CONTINUE_SECONDS))));
+      setStoryIndex(Math.max(0, Math.min(INTRO_STORY.length - 1, Number(parsed.storyIndex ?? 0))));
+      setMenuStep(nextMenuStep);
+      setResultState(restoreResultState(parsed));
+      runStartedAtRef.current = Number(parsed.runStartedAt) || Date.now();
+      previousFenRef.current = parsed.fen;
+      setGameState({ status: "Save loaded", fen: parsed.fen, selectedSquare: null });
+      if (effectiveScreen === "loading") {
+        setSettingsOpen(false);
+        setCreditsOpen(false);
+        startOpponentLoading(opponent);
+      } else {
+        setScreen(effectiveScreen);
+        setSettingsOpen(false);
+        setCreditsOpen(false);
+        window.setTimeout(() => {
+          ref.current?.resetToPosition(parsed.fen);
+        }, 0);
+      }
+      setSettingsNotice(`LOADED ${opponent.name.toUpperCase()} / ${effectiveScreen.toUpperCase()}`);
+      audioRef.current?.play("reveal");
+    } catch (_) {
+      setSettingsNotice("LOAD FAILED");
+      audioRef.current?.play("loss");
+    }
   };
   const resultPresentation = resultState ? getResultPresentation(resultState, playerName) : null;
   const resultBackdrop = resultState ? getResultBackdrop(resultState) : "";
@@ -59943,6 +60083,18 @@ function App() {
             );
           }) })
         ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-save-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME DATA" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SAVE GAME" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOAD GAME" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: () => {
+              audioRef.current?.play("menu");
+              setCreditsOpen(true);
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CREDITS" }) })
+          ] }),
+          settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
+        ] }),
         screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
@@ -59962,7 +60114,17 @@ function App() {
           audioRef.current?.play("menu");
           setSettingsOpen(false);
         }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
-      ] })
+      ] }),
+      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-modal": "true", "aria-labelledby": "credits-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "credits-kicker", children: "CYBER CHESS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { id: "credits-title", children: "CREDITS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and a pile of neon arcade energy." }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
+          audioRef.current?.play("menu");
+          setCreditsOpen(false);
+        }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) })
+      ] }) })
     ] })
   ] });
 }

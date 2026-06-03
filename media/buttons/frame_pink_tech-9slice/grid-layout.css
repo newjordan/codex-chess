@@ -1,0 +1,41 @@
+/* CSS Grid approach — uses 9 separate slice images */
+/* Wrap your content in an element with class "frame_pink_tech-grid" */
+
+.frame_pink_tech-grid {
+  display: grid;
+  grid-template-columns: 44px 1fr 44px;
+  grid-template-rows: 47px 1fr 47px;
+  min-width: 88px;
+  min-height: 94px;
+}
+
+.frame_pink_tech-grid > * {
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+
+.frame_pink_tech-tl { grid-area: 1 / 1 / 2 / 2; background-image: url('frame_pink_tech-top-left.png'); }
+.frame_pink_tech-tc { grid-area: 1 / 2 / 2 / 3; background-image: url('frame_pink_tech-top-center.png'); }
+.frame_pink_tech-tr { grid-area: 1 / 3 / 2 / 4; background-image: url('frame_pink_tech-top-right.png'); }
+.frame_pink_tech-ml { grid-area: 2 / 1 / 3 / 2; background-image: url('frame_pink_tech-middle-left.png'); }
+.frame_pink_tech-c  { grid-area: 2 / 2 / 3 / 3; background-image: url('frame_pink_tech-center.png'); }
+.frame_pink_tech-mr { grid-area: 2 / 3 / 3 / 4; background-image: url('frame_pink_tech-middle-right.png'); }
+.frame_pink_tech-bl { grid-area: 3 / 1 / 4 / 2; background-image: url('frame_pink_tech-bottom-left.png'); }
+.frame_pink_tech-bc { grid-area: 3 / 2 / 4 / 3; background-image: url('frame_pink_tech-bottom-center.png'); }
+.frame_pink_tech-br { grid-area: 3 / 3 / 4 / 4; background-image: url('frame_pink_tech-bottom-right.png'); }
+
+/* Usage:
+<div class="frame_pink_tech-grid">
+  <div class="frame_pink_tech-tl"></div>
+  <div class="frame_pink_tech-tc"></div>
+  <div class="frame_pink_tech-tr"></div>
+  <div class="frame_pink_tech-ml"></div>
+  <div class="frame_pink_tech-c">Your content here</div>
+  <div class="frame_pink_tech-mr"></div>
+  <div class="frame_pink_tech-bl"></div>
+  <div class="frame_pink_tech-bc"></div>
+  <div class="frame_pink_tech-br"></div>
+</div>
+
+Center region: 263 x 118px
+*/

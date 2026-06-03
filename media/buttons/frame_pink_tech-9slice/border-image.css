@@ -1,0 +1,11 @@
+/* border-image approach — uses the original source image */
+/* Apply this class to any element to give it the 9-slice frame */
+
+.frame_pink_tech-frame {
+  border-style: solid;
+  border-width: 47px 44px 47px 44px;
+  border-image-source: url('frame_pink_tech-source.png');
+  border-image-slice: 47 44 47 44 fill;
+  border-image-repeat: stretch;
+  box-sizing: border-box;
+}

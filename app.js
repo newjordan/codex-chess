@@ -58459,8 +58459,7 @@ var OPPONENTS = [
     introAudio: "media/audio/gordo_intro.mp3"
   }
 ];
-var INTRO_MP4_SRC = "media/chessagent-intro.mp4";
-var HEADER_IMAGE_SRC = "media/game_cover_art.jpg";
+var HEADER_IMAGE_SRC = "media/hero_image_zo.png";
 var SIDE_SELECTION_BG_SRC = "media/cyber-chess-header-frostd4d-v2.jpg";
 var PROFILE_BG_SRC = "media/big_wallpaper.jpg";
 var FLOPPY_TOWER_SRC = "media/floppy-tower-ladder-embedded.jpg";
@@ -58468,14 +58467,13 @@ var SETTINGS_BG_SRC = "media/settings-moniker-bg.jpg";
 var SOUNDTRACK_SOURCES = [
   "media/audio/the_pulse_long_song.mp3",
   "media/audio/The_Pulse_of_the_Board_2.mp3",
-  "media/audio/cyber_soaring_song.mp3",
-  "media/audio/data_crasher.mp3",
-  "media/audio/bishops_touch.mp3",
   "media/audio/cyber_chess_music.mp3",
   "media/audio/synthetic_dreams_cyber_eyes.mp3"
 ];
 var LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 var PIECE_SLIDE_SFX_SRC = "media/audio/piece_slide.wav";
+var CHECK_SFX_SRC = "media/audio/check.mp3";
+var CHECKMATE_SFX_SRC = "media/audio/checkmeat.mp3";
 var VICTORY_MUSIC_SOURCES = [
   "media/audio/victorious_1.mp3",
   "media/audio/victorioius_2.mp3"
@@ -58494,28 +58492,28 @@ var INTRO_STORY = [
     body: "Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime."
   },
   {
-    image: "media/intro/flower_delve.jpg",
+    image: "media/intro/flower_delve_wide.png",
     kicker: "THE DELVE",
     title: "TOO DEEP",
-    body: "He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived."
+    body: "The ultimate maneuver was right at the keyboard when warnings lights began to blare. Delving too deep, the primes stirred, aware of the inevitability.\n\nClaxons climaxed into shreaking alarms as the screens flashed incoming... The Shannon knights are breaching through the flux plasma calculators."
   },
   {
     image: "media/intro/02-shannon-knights-kidnap.jpg",
     kicker: "THE SHANNON KNIGHTS",
     title: "THE BREACH",
-    body: "Goop, Frostd4d, and Razorblade struck as one, tearing open the lab and dragging his family into the grid."
+    body: "Oh crimes! The lab breached, his family kidnapped, {playerName} must find a way to become more than meat, he must become the ultimeat challenger to the Shannon knights. There was only one way..."
   },
   {
     image: "media/intro/02-consciousness-floppies.jpg",
     kicker: "42 DISKS",
     title: "THE TRANSFER",
-    body: "When the Shannon Knights breached his home and stole his family, he copied his consciousness onto forty-two floppy disks."
+    body: "He knew the only device that can hold the soft flesh of the human brain, was the floppy disc. He began the preparation, to start the initiation of the first transfer boot up sequence."
   },
   {
     image: "media/intro/03-floppy-tower.jpg",
     kicker: "FLOPPY TOWER ONLINE",
     title: "THE ASCENT",
-    body: "One by one, all forty-two disks loaded into the tower. The drives screamed. The room became a square of light."
+    body: 'SUCCESS! all 42 discs held the matrix of his conscious as defined by historical books, and psychology manuals from the 90s, he was able to discern what a "conscious" was and then put it on the floppy discs. He had found it. and the Ascent had begun. His conscious radically transferred to the digital realm.'
   },
   {
     image: "media/intro/04-shannon-knights-tower-chase.jpg",
@@ -58634,6 +58632,13 @@ Game Created by Frosty40 and Codex`,
     badge: lines.hazard,
     status: "ROUND LOST"
   };
+}
+function normalizeSoundtrackIndex(index) {
+  return (index % SOUNDTRACK_SOURCES.length + SOUNDTRACK_SOURCES.length) % SOUNDTRACK_SOURCES.length;
+}
+function getSoundtrackTitle(src) {
+  const fileName = src.split("/").pop()?.replace(/\.[^.]+$/, "") ?? src;
+  return fileName.split(/[_-]+/).filter(Boolean).map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase()).join(" ");
 }
 function turnFromFen(fen) {
   try {
@@ -58888,6 +58893,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = (0, import_react3.useState)(false);
   const [audioMode, setAudioMode] = (0, import_react3.useState)(audioModeRef.current);
   const [audioVolume, setAudioVolume] = (0, import_react3.useState)(audioVolumeRef.current);
+  const [soundtrackIndex, setSoundtrackIndex] = (0, import_react3.useState)(loadingMusicIndexRef.current);
   const [introVideoReady, setIntroVideoReady] = (0, import_react3.useState)(false);
   const [introVideoStarted, setIntroVideoStarted] = (0, import_react3.useState)(false);
   const [thinking, setThinking] = (0, import_react3.useState)(false);
@@ -58908,7 +58914,12 @@ function App() {
   const whiteName = playerColor === "w" ? playerName : selected.name;
   const blackName = playerColor === "b" ? playerName : selected.name;
   const fightHud = getFightHudState(gameState.fen, playerColor, aiColor);
+  const currentStory = INTRO_STORY[storyIndex];
+  const currentStoryBody = currentStory.body.replaceAll("{playerName}", playerName);
+  const storyTextDuration = Math.max(3.4, Math.min(7.2, currentStoryBody.length * 0.052));
   const enemyAvatarSrc = fightHud.enemyMood === "damaged" ? selected.avatarStates.damaged : fightHud.enemyMood === "dominating" ? selected.avatarStates.dominating : selected.avatar;
+  const soundtrackTitle = getSoundtrackTitle(SOUNDTRACK_SOURCES[soundtrackIndex]);
+  const musicControlsDisabled = audioMode !== "full";
   const updateGameState = (state) => {
     window.__chess.state = state;
     if (turnFromFen(state.fen) !== aiColor) {
@@ -59020,7 +59031,7 @@ function App() {
     if (previousFen !== gameState.fen) {
       try {
         const current = new Chess(gameState.fen);
-        if (current.isCheck()) audioRef.current?.play("check");
+        if (!current.isCheckmate() && current.isCheck()) playClip(CHECK_SFX_SRC);
       } catch (_) {
       }
       previousFenRef.current = gameState.fen;
@@ -59074,7 +59085,12 @@ function App() {
     setContinueSeconds(CONTINUE_SECONDS);
     if (result.kind === "loss" || result.kind === "game-over") setLives(result.livesAfter);
     recordRun(result);
-    audioRef.current?.play(result.kind === "win" || result.kind === "clear" ? "win" : "loss");
+    const isCheckmate = new Chess(gameState.fen).isCheckmate();
+    if (isCheckmate) {
+      playClip(CHECKMATE_SFX_SRC);
+    } else {
+      audioRef.current?.play(result.kind === "win" || result.kind === "clear" ? "win" : "loss");
+    }
     setScreen("result");
   }, [gameState.fen, lives, nextOpponent, playerColor, screen, selected]);
   (0, import_react3.useEffect)(() => {
@@ -59126,7 +59142,9 @@ function App() {
       audioMode,
       audioVolume,
       settingsOpen,
-      audioReady: Boolean(audioRef.current)
+      audioReady: Boolean(audioRef.current),
+      soundtrackIndex,
+      soundtrackSrc: SOUNDTRACK_SOURCES[soundtrackIndex]
     };
     window.__chess.forceWin = () => {
       const forcedResult = {
@@ -59154,7 +59172,7 @@ function App() {
       audioRef.current?.play(forcedResult.kind === "game-over" ? "loss" : "tick");
       setScreen("result");
     };
-  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, whiteName]);
+  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
   const resetGame = () => {
     aiBusyRef.current = false;
     aiRequestRef.current += 1;
@@ -59215,8 +59233,15 @@ function App() {
     } catch (_) {
     }
     if (mode !== "full") stopIntroMusic();
-    if (mode === "muted") stopLoadingMusic();
-    else startLoadingMusic();
+    if (mode !== "full") {
+      stopLoadingMusic();
+      endMusicRef.current?.pause();
+      endMusicRef.current = null;
+      endMusicSrcRef.current = "";
+      window.__chess.endMusic = { active: false, src: "" };
+    } else {
+      startLoadingMusic();
+    }
     if (mode !== "muted") ensureAudioEngine()?.play("select");
   };
   const updateAudioVolume = (volume) => {
@@ -59235,6 +59260,56 @@ function App() {
     }
     if (announcerRef.current) announcerRef.current.volume = mediaVolume(nextVolume);
     if (audioModeRef.current !== "muted") audioRef.current?.play("tick");
+  };
+  const switchSoundtrackSong = (index) => {
+    if (audioModeRef.current !== "full") return;
+    const nextIndex = normalizeSoundtrackIndex(index);
+    loadingMusicIndexRef.current = nextIndex;
+    setSoundtrackIndex(nextIndex);
+    let clip = loadingMusicRef.current;
+    if (!clip) {
+      startLoadingMusic();
+      ensureAudioEngine()?.play("select");
+      return;
+    }
+    const nextSrc = SOUNDTRACK_SOURCES[nextIndex];
+    clip.src = nextSrc;
+    clip.load();
+    clip.currentTime = 0;
+    clip.volume = mediaVolume(audioVolumeRef.current) * 0.9;
+    loadingMusicFinishedRef.current = false;
+    if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
+    window.__chess.loadingMusic = {
+      ...window.__chess.loadingMusic || {},
+      active: false,
+      attempted: true,
+      blocked: false,
+      src: nextSrc,
+      pass: loadingMusicPassRef.current,
+      maxPasses: "playlist",
+      loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: nextIndex,
+      fading: false,
+      finished: false
+    };
+    clip.play().then(() => {
+      window.__chess.loadingMusic = {
+        ...window.__chess.loadingMusic || {},
+        active: true,
+        src: nextSrc,
+        index: nextIndex
+      };
+    }).catch(() => {
+      window.__chess.loadingMusic = {
+        ...window.__chess.loadingMusic || {},
+        active: false,
+        blocked: true,
+        src: nextSrc,
+        index: nextIndex
+      };
+    });
+    ensureAudioEngine()?.play("select");
   };
   const playClip = (src, options = {}) => {
     if (audioModeRef.current === "muted") return null;
@@ -59268,7 +59343,7 @@ function App() {
     };
   };
   const startLoadingMusic = () => {
-    if (audioModeRef.current === "muted") return;
+    if (audioModeRef.current !== "full") return;
     loadingMusicFinishedRef.current = false;
     let clip = loadingMusicRef.current;
     if (!clip) {
@@ -59300,6 +59375,7 @@ function App() {
       const onEnded = () => {
         loadingMusicPassRef.current += 1;
         loadingMusicIndexRef.current = (loadingMusicIndexRef.current + 1) % SOUNDTRACK_SOURCES.length;
+        setSoundtrackIndex(loadingMusicIndexRef.current);
         clip.src = SOUNDTRACK_SOURCES[loadingMusicIndexRef.current];
         clip.currentTime = 0;
         updateVolumeForPass();
@@ -59436,7 +59512,7 @@ function App() {
     ensureAudioEngine();
     lastAnnouncedRef.current = "";
     startLoadingMusic();
-    setMenuStep("story");
+    setMenuStep("profile");
   };
   const startIntroSequence = () => {
     ensureAudioEngine()?.play("menu");
@@ -59451,7 +59527,7 @@ function App() {
   const finishIntroStory = () => {
     stopIntroMusic();
     audioRef.current?.play("menu");
-    setMenuStep("profile");
+    setMenuStep("side");
   };
   const advanceIntroStory = () => {
     audioRef.current?.play("menu");
@@ -59463,9 +59539,13 @@ function App() {
   };
   const retreatIntroStory = () => {
     audioRef.current?.play("menu");
+    if (storyIndex === 0) {
+      setMenuStep("profile");
+      return;
+    }
     setStoryIndex((current) => Math.max(0, current - 1));
   };
-  const savePlayerProfile = () => {
+  const commitPlayerName = () => {
     const nextName = sanitizePlayerName(playerNameInput);
     setPlayerName(nextName);
     setPlayerNameInput(nextName);
@@ -59473,8 +59553,13 @@ function App() {
       window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
     } catch (_) {
     }
+    return nextName;
+  };
+  const savePlayerProfile = () => {
+    commitPlayerName();
     audioRef.current?.play("menu");
-    setMenuStep("side");
+    setStoryIndex(0);
+    setMenuStep("story");
   };
   const startCampaign = () => {
     setLives(MAX_LIVES);
@@ -59561,36 +59646,46 @@ function App() {
         )
       ] }),
       menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "menu-step story-step", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-image-frame", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "story-art", src: INTRO_STORY[storyIndex].image, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          "img",
+          {
+            className: "story-art" + (currentStory.title === "TOO DEEP" ? " story-art-too-deep" : ""),
+            src: currentStory.image,
+            alt: "",
+            style: { "--story-image-duration": `${storyTextDuration}s` }
+          },
+          currentStory.image
+        ),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-scanline" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-copy", "aria-live": "polite", "aria-labelledby": `story-title-${storyIndex}`, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "story-kicker", children: INTRO_STORY[storyIndex].kicker }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: `story-title-${storyIndex}`, className: "story-title", children: INTRO_STORY[storyIndex].title }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "story-kicker", children: currentStory.kicker }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: `story-title-${storyIndex}`, className: "story-title", children: currentStory.title }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "p",
             {
               className: "story-terminal-text",
               style: {
-                "--story-text-duration": `${Math.max(3.4, Math.min(7.2, INTRO_STORY[storyIndex].body.length * 0.052))}s`
+                "--story-text-duration": `${storyTextDuration}s`
               },
-              children: INTRO_STORY[storyIndex].body
+              children: currentStoryBody
             },
-            `${storyIndex}-${INTRO_STORY[storyIndex].body}`
+            `${storyIndex}-${currentStoryBody}`
           ),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-progress", "aria-hidden": "true", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, disabled: storyIndex === 0, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SKIP" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SKIP" }) })
         ] })
       ] }) }),
       menuStep === "profile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step profile-step", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "profile-bg", src: PROFILE_BG_SRC, alt: "" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "profile-vignette" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "profile-title-art", src: "media/cyber_chess_title_hero.png", alt: "Cyber Chess" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-panel", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "profile-kicker", children: "PLAYER REGISTRATION" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { htmlFor: "player-name", children: "Enter your fighter name" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "profile-kicker", children: "BATTLE READY" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { htmlFor: "player-name", children: "Name your hero" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-row", children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
               "input",
@@ -59615,7 +59710,8 @@ function App() {
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "side-footer", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
             audioRef.current?.play("menu");
-            setMenuStep("profile");
+            setStoryIndex(1);
+            setMenuStep("story");
           }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "color-picker", role: "group", "aria-label": "Choose your color", children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
@@ -59715,9 +59811,8 @@ function App() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-copy", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "result-kicker", children: resultPresentation.status }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: resultPresentation.title }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: resultPresentation.body }),
-        resultState.kind === "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-video-shell", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("video", { controls: true, preload: "metadata", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("source", { src: INTRO_MP4_SRC, type: "video/mp4" }) }) }),
-        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-stats", children: [
+        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: resultPresentation.body }),
+        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-stats", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
             "PLAYER: ",
             playerName
@@ -59736,7 +59831,7 @@ function App() {
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "timer-frame", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "cyber-timer", children: String(continueSeconds).padStart(2, "0") }) })
           ] })
         ] }),
-        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
+        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: resultState.opponent.avatar, alt: "" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
             /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: resultState.kind === "win" ? "DEFEATED ENEMY" : "ACTIVE THREAT" }),
@@ -59745,18 +59840,6 @@ function App() {
               resultState.opponent.difficulty,
               " / ",
               resultState.opponent.tagline
-            ] })
-          ] })
-        ] }),
-        resultState.kind === "win" && resultState.nextOpponent && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "next-opponent-panel", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: resultState.nextOpponent.avatar, alt: "" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NEXT CHALLENGER" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: resultState.nextOpponent.name }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("em", { children: [
-              resultState.nextOpponent.difficulty,
-              " / ",
-              resultState.nextOpponent.tagline
             ] })
           ] })
         ] }),
@@ -59773,54 +59856,23 @@ function App() {
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-kicker", children: "SYSTEM OPTIONS" }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "settings-section-art", children: "AUDIO" }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "AUDIO MODE" }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
-            ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" })
-            ] })
-          ] })
-        ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-readout", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MONIKER: ONLINE" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-            "AUDIO: ",
-            audioMode === "full" ? "FULL AUDIO" : audioMode === "sfx" ? "SFX ONLY" : "MUTED"
-          ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-            "VOLUME: ",
-            audioVolume,
-            "%"
-          ] })
-        ] }),
-        screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
-              audioRef.current?.play("menu");
-              resetGame();
-              setSettingsOpen(false);
-            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
-              audioRef.current?.play("menu");
-              setSettingsOpen(false);
-              openMenu();
-            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }) })
           ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "OUTPUT LEVEL" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+            "OUTPUT LEVEL ",
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
+              audioVolume,
+              "%"
+            ] })
+          ] }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
             "span",
             {
@@ -59840,6 +59892,71 @@ function App() {
               )
             }
           )
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-playlist", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "SOUNDTRACK" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-control", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "settings-track-step",
+                "aria-label": "Previous song",
+                disabled: musicControlsDisabled,
+                onClick: () => switchSoundtrackSong(soundtrackIndex - 1),
+                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "PREV" })
+              }
+            ),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-now", "aria-live": "polite", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NOW PLAYING" }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: soundtrackTitle })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+              "button",
+              {
+                type: "button",
+                className: "settings-track-step",
+                "aria-label": "Next song",
+                disabled: musicControlsDisabled,
+                onClick: () => switchSoundtrackSong(soundtrackIndex + 1),
+                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "NEXT" })
+              }
+            )
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-track-list", role: "listbox", "aria-label": "Soundtrack playlist", "aria-disabled": musicControlsDisabled, children: SOUNDTRACK_SOURCES.map((src, index) => {
+            const title = getSoundtrackTitle(src);
+            return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              "button",
+              {
+                type: "button",
+                className: "settings-track-option" + (index === soundtrackIndex ? " selected" : ""),
+                role: "option",
+                "aria-selected": index === soundtrackIndex,
+                disabled: musicControlsDisabled,
+                onClick: () => switchSoundtrackSong(index),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
+                  /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: title })
+                ]
+              },
+              src
+            );
+          }) })
+        ] }),
+        screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-game", role: "group", "aria-label": "Game controls", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-reset", onClick: () => {
+              audioRef.current?.play("menu");
+              resetGame();
+              setSettingsOpen(false);
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RESET BOARD" }) }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
+              audioRef.current?.play("menu");
+              setSettingsOpen(false);
+              openMenu();
+            }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MAIN MENU" }) })
+          ] })
         ] }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
           audioRef.current?.play("menu");

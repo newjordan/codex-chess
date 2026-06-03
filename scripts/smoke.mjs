@@ -224,6 +224,13 @@ async function runPlayableSmoke(label, viewport) {
     await page.waitForFunction(() => window.__chess?.audio?.ready === true);
     await page.waitForFunction(() => window.__chess?.loadingMusic?.active === true);
     await page.getByRole('button', { name: 'PLAY' }).click();
+    await page.getByLabel('Name your hero').fill('CODXACE');
+    await page.getByRole('button', { name: 'LOCK IN' }).click();
+    await page.waitForFunction(() => window.__chess?.campaign?.playerName === 'CODXACE');
+    await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
+    await page.getByRole('button', { name: 'BACK' }).click();
+    await page.getByLabel('Name your hero').waitFor();
+    await page.getByRole('button', { name: 'LOCK IN' }).click();
     await page.getByRole('heading', { name: 'THE PLAYER' }).waitFor();
     await page.getByRole('button', { name: 'NEXT' }).click();
     await page.getByRole('heading', { name: 'TOO DEEP' }).waitFor();
@@ -240,8 +247,6 @@ async function runPlayableSmoke(label, viewport) {
     await page.getByRole('button', { name: 'NEXT' }).click();
     await page.getByRole('heading', { name: 'THE CHASE' }).waitFor();
     await page.getByRole('button', { name: 'LOAD GAME' }).click();
-    await page.getByLabel('Enter your fighter name').fill('CODXACE');
-    await page.getByRole('button', { name: 'LOCK IN' }).click();
     await page.getByRole('button', { name: 'Play White' }).waitFor();
     await page.getByRole('button', { name: 'CONTINUE' }).click();
     await waitForEmbeddedTower();
@@ -358,9 +363,6 @@ async function runPlayableSmoke(label, viewport) {
     const intentionallyInterruptedAudio = [
       '/media/audio/the_pulse_long_song.mp3 net::ERR_ABORTED',
       '/media/audio/The_Pulse_of_the_Board_2.mp3 net::ERR_ABORTED',
-      '/media/audio/cyber_soaring_song.mp3 net::ERR_ABORTED',
-      '/media/audio/data_crasher.mp3 net::ERR_ABORTED',
-      '/media/audio/bishops_touch.mp3 net::ERR_ABORTED',
       '/media/audio/cyber_chess_music.mp3 net::ERR_ABORTED',
       '/media/audio/synthetic_dreams_cyber_eyes.mp3 net::ERR_ABORTED',
       '/media/audio/victorious_1.mp3 net::ERR_ABORTED',

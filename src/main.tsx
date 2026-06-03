@@ -111,7 +111,7 @@ const OPPONENTS: Array<{
 ];
 
 const INTRO_MP4_SRC = 'media/chessagent-intro.mp4';
-const HEADER_IMAGE_SRC = 'media/game_cover_art.jpg';
+const HEADER_IMAGE_SRC = 'media/hero_image_zo.png';
 const SIDE_SELECTION_BG_SRC = 'media/cyber-chess-header-frostd4d-v2.jpg';
 const PROFILE_BG_SRC = 'media/big_wallpaper.jpg';
 const FLOPPY_TOWER_SRC = 'media/floppy-tower-ladder-embedded.jpg';
@@ -120,14 +120,13 @@ const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
 const SOUNDTRACK_SOURCES = [
   'media/audio/the_pulse_long_song.mp3',
   'media/audio/The_Pulse_of_the_Board_2.mp3',
-  'media/audio/cyber_soaring_song.mp3',
-  'media/audio/data_crasher.mp3',
-  'media/audio/bishops_touch.mp3',
   'media/audio/cyber_chess_music.mp3',
   'media/audio/synthetic_dreams_cyber_eyes.mp3',
 ] as const;
 const LOADING_MUSIC_SRC = SOUNDTRACK_SOURCES[0];
 const PIECE_SLIDE_SFX_SRC = 'media/audio/piece_slide.wav';
+const CHECK_SFX_SRC = 'media/audio/check.mp3';
+const CHECKMATE_SFX_SRC = 'media/audio/checkmeat.mp3';
 const VICTORY_MUSIC_SOURCES = [
   'media/audio/victorious_1.mp3',
   'media/audio/victorioius_2.mp3',
@@ -146,28 +145,28 @@ const INTRO_STORY = [
     body: 'Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime.',
   },
   {
-    image: 'media/intro/flower_delve.jpg',
+    image: 'media/intro/flower_delve_wide.png',
     kicker: 'THE DELVE',
     title: 'TOO DEEP',
-    body: 'He pushed the calculation past its warning lights. The signal cut through the grid and told the Shannon Knights a new opponent had arrived.',
+    body: 'The ultimate maneuver was right at the keyboard when warnings lights began to blare. Delving too deep, the primes stirred, aware of the inevitability.\n\nClaxons climaxed into shreaking alarms as the screens flashed incoming... The Shannon knights are breaching through the flux plasma calculators.',
   },
   {
     image: 'media/intro/02-shannon-knights-kidnap.jpg',
     kicker: 'THE SHANNON KNIGHTS',
     title: 'THE BREACH',
-    body: 'Goop, Frostd4d, and Razorblade struck as one, tearing open the lab and dragging his family into the grid.',
+    body: 'Oh crimes! The lab breached, his family kidnapped, {playerName} must find a way to become more than meat, he must become the ultimeat challenger to the Shannon knights. There was only one way...',
   },
   {
     image: 'media/intro/02-consciousness-floppies.jpg',
     kicker: '42 DISKS',
     title: 'THE TRANSFER',
-    body: 'When the Shannon Knights breached his home and stole his family, he copied his consciousness onto forty-two floppy disks.',
+    body: 'He knew the only device that can hold the soft flesh of the human brain, was the floppy disc. He began the preparation, to start the initiation of the first transfer boot up sequence.',
   },
   {
     image: 'media/intro/03-floppy-tower.jpg',
     kicker: 'FLOPPY TOWER ONLINE',
     title: 'THE ASCENT',
-    body: 'One by one, all forty-two disks loaded into the tower. The drives screamed. The room became a square of light.',
+    body: 'SUCCESS! all 42 discs held the matrix of his conscious as defined by historical books, and psychology manuals from the 90s, he was able to discern what a "conscious" was and then put it on the floppy discs. He had found it. and the Ascent had begun. His conscious radically transferred to the digital realm.',
   },
   {
     image: 'media/intro/04-shannon-knights-tower-chase.jpg',
@@ -329,6 +328,19 @@ type AudioEngine = {
   stop: () => void;
 };
 type AudioMode = 'full' | 'sfx' | 'muted';
+
+function normalizeSoundtrackIndex(index: number) {
+  return ((index % SOUNDTRACK_SOURCES.length) + SOUNDTRACK_SOURCES.length) % SOUNDTRACK_SOURCES.length;
+}
+
+function getSoundtrackTitle(src: string) {
+  const fileName = src.split('/').pop()?.replace(/\.[^.]+$/, '') ?? src;
+  return fileName
+    .split(/[_-]+/)
+    .filter(Boolean)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
+    .join(' ');
+}
 
 function turnFromFen(fen: string) {
   try {
@@ -605,6 +617,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioMode, setAudioMode] = useState<AudioMode>(audioModeRef.current);
   const [audioVolume, setAudioVolume] = useState(audioVolumeRef.current);
+  const [soundtrackIndex, setSoundtrackIndex] = useState(loadingMusicIndexRef.current);
   const [introVideoReady, setIntroVideoReady] = useState(false);
   const [introVideoStarted, setIntroVideoStarted] = useState(false);
   const [thinking, setThinking] = useState(false);
@@ -626,12 +639,17 @@ function App() {
   const whiteName = playerColor === 'w' ? playerName : selected.name;
   const blackName = playerColor === 'b' ? playerName : selected.name;
   const fightHud = getFightHudState(gameState.fen, playerColor, aiColor);
+  const currentStory = INTRO_STORY[storyIndex];
+  const currentStoryBody = currentStory.body.replaceAll('{playerName}', playerName);
+  const storyTextDuration = Math.max(3.4, Math.min(7.2, currentStoryBody.length * 0.052));
   const enemyAvatarSrc =
     fightHud.enemyMood === 'damaged'
       ? selected.avatarStates.damaged
       : fightHud.enemyMood === 'dominating'
         ? selected.avatarStates.dominating
         : selected.avatar;
+  const soundtrackTitle = getSoundtrackTitle(SOUNDTRACK_SOURCES[soundtrackIndex]);
+  const musicControlsDisabled = audioMode !== 'full';
 
   const updateGameState = (state: Board3DGameState) => {
     window.__chess.state = state;
@@ -754,7 +772,7 @@ function App() {
     if (previousFen !== gameState.fen) {
       try {
         const current = new Chess(gameState.fen);
-        if (current.isCheck()) audioRef.current?.play('check');
+        if (!current.isCheckmate() && current.isCheck()) playClip(CHECK_SFX_SRC);
       } catch (_) {}
       previousFenRef.current = gameState.fen;
     }
@@ -816,7 +834,12 @@ function App() {
     setContinueSeconds(CONTINUE_SECONDS);
     if (result.kind === 'loss' || result.kind === 'game-over') setLives(result.livesAfter);
     recordRun(result);
-    audioRef.current?.play(result.kind === 'win' || result.kind === 'clear' ? 'win' : 'loss');
+    const isCheckmate = new Chess(gameState.fen).isCheckmate();
+    if (isCheckmate) {
+      playClip(CHECKMATE_SFX_SRC);
+    } else {
+      audioRef.current?.play(result.kind === 'win' || result.kind === 'clear' ? 'win' : 'loss');
+    }
     setScreen('result');
   }, [gameState.fen, lives, nextOpponent, playerColor, screen, selected]);
 
@@ -878,6 +901,8 @@ function App() {
       audioVolume,
       settingsOpen,
       audioReady: Boolean(audioRef.current),
+      soundtrackIndex,
+      soundtrackSrc: SOUNDTRACK_SOURCES[soundtrackIndex],
     };
     window.__chess.forceWin = () => {
       const forcedResult = {
@@ -905,7 +930,7 @@ function App() {
       audioRef.current?.play(forcedResult.kind === 'game-over' ? 'loss' : 'tick');
       setScreen('result');
     };
-  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, whiteName]);
+  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
 
   const resetGame = () => {
     aiBusyRef.current = false;
@@ -973,8 +998,15 @@ function App() {
       window.localStorage.setItem(AUDIO_MODE_KEY, mode);
     } catch (_) {}
     if (mode !== 'full') stopIntroMusic();
-    if (mode === 'muted') stopLoadingMusic();
-    else startLoadingMusic();
+    if (mode !== 'full') {
+      stopLoadingMusic();
+      endMusicRef.current?.pause();
+      endMusicRef.current = null;
+      endMusicSrcRef.current = '';
+      window.__chess.endMusic = { active: false, src: '' };
+    } else {
+      startLoadingMusic();
+    }
     if (mode !== 'muted') ensureAudioEngine()?.play('select');
   };
 
@@ -993,6 +1025,60 @@ function App() {
     }
     if (announcerRef.current) announcerRef.current.volume = mediaVolume(nextVolume);
     if (audioModeRef.current !== 'muted') audioRef.current?.play('tick');
+  };
+
+  const switchSoundtrackSong = (index: number) => {
+    if (audioModeRef.current !== 'full') return;
+    const nextIndex = normalizeSoundtrackIndex(index);
+    loadingMusicIndexRef.current = nextIndex;
+    setSoundtrackIndex(nextIndex);
+
+    let clip = loadingMusicRef.current;
+    if (!clip) {
+      startLoadingMusic();
+      ensureAudioEngine()?.play('select');
+      return;
+    }
+    const nextSrc = SOUNDTRACK_SOURCES[nextIndex];
+    clip.src = nextSrc;
+    clip.load();
+    clip.currentTime = 0;
+    clip.volume = mediaVolume(audioVolumeRef.current) * 0.9;
+    loadingMusicFinishedRef.current = false;
+    if (loadingMusicPassRef.current <= 0) loadingMusicPassRef.current = 1;
+    window.__chess.loadingMusic = {
+      ...(window.__chess.loadingMusic || {}),
+      active: false,
+      attempted: true,
+      blocked: false,
+      src: nextSrc,
+      pass: loadingMusicPassRef.current,
+      maxPasses: 'playlist',
+      loop: true,
+      playlist: [...SOUNDTRACK_SOURCES],
+      index: nextIndex,
+      fading: false,
+      finished: false,
+    };
+    clip.play()
+      .then(() => {
+        window.__chess.loadingMusic = {
+          ...(window.__chess.loadingMusic || {}),
+          active: true,
+          src: nextSrc,
+          index: nextIndex,
+        };
+      })
+      .catch(() => {
+        window.__chess.loadingMusic = {
+          ...(window.__chess.loadingMusic || {}),
+          active: false,
+          blocked: true,
+          src: nextSrc,
+          index: nextIndex,
+        };
+      });
+    ensureAudioEngine()?.play('select');
   };
 
   const playClip = (src: string, options: { loop?: boolean; music?: boolean } = {}) => {
@@ -1029,7 +1115,7 @@ function App() {
   };
 
   const startLoadingMusic = () => {
-    if (audioModeRef.current === 'muted') return;
+    if (audioModeRef.current !== 'full') return;
     loadingMusicFinishedRef.current = false;
     let clip = loadingMusicRef.current;
     if (!clip) {
@@ -1061,6 +1147,7 @@ function App() {
       const onEnded = () => {
         loadingMusicPassRef.current += 1;
         loadingMusicIndexRef.current = (loadingMusicIndexRef.current + 1) % SOUNDTRACK_SOURCES.length;
+        setSoundtrackIndex(loadingMusicIndexRef.current);
         clip.src = SOUNDTRACK_SOURCES[loadingMusicIndexRef.current];
         clip.currentTime = 0;
         updateVolumeForPass();
@@ -1212,7 +1299,7 @@ function App() {
     ensureAudioEngine();
     lastAnnouncedRef.current = '';
     startLoadingMusic();
-    setMenuStep('story');
+    setMenuStep('profile');
   };
 
   const startIntroSequence = () => {
@@ -1229,7 +1316,7 @@ function App() {
   const finishIntroStory = () => {
     stopIntroMusic();
     audioRef.current?.play('menu');
-    setMenuStep('profile');
+    setMenuStep('side');
   };
 
   const advanceIntroStory = () => {
@@ -1243,18 +1330,28 @@ function App() {
 
   const retreatIntroStory = () => {
     audioRef.current?.play('menu');
+    if (storyIndex === 0) {
+      setMenuStep('profile');
+      return;
+    }
     setStoryIndex((current) => Math.max(0, current - 1));
   };
 
-  const savePlayerProfile = () => {
+  const commitPlayerName = () => {
     const nextName = sanitizePlayerName(playerNameInput);
     setPlayerName(nextName);
     setPlayerNameInput(nextName);
     try {
       window.localStorage.setItem(PLAYER_NAME_KEY, nextName);
     } catch (_) {}
+    return nextName;
+  };
+
+  const savePlayerProfile = () => {
+    commitPlayerName();
     audioRef.current?.play('menu');
-    setMenuStep('side');
+    setStoryIndex(0);
+    setMenuStep('story');
   };
 
   const startCampaign = () => {
@@ -1374,19 +1471,25 @@ function App() {
             {menuStep === 'story' && (
               <div className="menu-step story-step">
                 <div className="story-image-frame">
-                  <img className="story-art" src={INTRO_STORY[storyIndex].image} alt="" />
+                  <img
+                    key={currentStory.image}
+                    className={'story-art' + (currentStory.title === 'TOO DEEP' ? ' story-art-too-deep' : '')}
+                    src={currentStory.image}
+                    alt=""
+                    style={{ '--story-image-duration': `${storyTextDuration}s` } as CSSProperties}
+                  />
                   <div className="story-scanline" />
                   <div className="story-copy" aria-live="polite" aria-labelledby={`story-title-${storyIndex}`}>
-                    <span className="story-kicker">{INTRO_STORY[storyIndex].kicker}</span>
-                    <h2 id={`story-title-${storyIndex}`} className="story-title">{INTRO_STORY[storyIndex].title}</h2>
+                    <span className="story-kicker">{currentStory.kicker}</span>
+                    <h2 id={`story-title-${storyIndex}`} className="story-title">{currentStory.title}</h2>
                     <p
-                      key={`${storyIndex}-${INTRO_STORY[storyIndex].body}`}
+                      key={`${storyIndex}-${currentStoryBody}`}
                       className="story-terminal-text"
                       style={{
-                        '--story-text-duration': `${Math.max(3.4, Math.min(7.2, INTRO_STORY[storyIndex].body.length * 0.052))}s`,
+                        '--story-text-duration': `${storyTextDuration}s`,
                       } as CSSProperties}
                     >
-                      {INTRO_STORY[storyIndex].body}
+                      {currentStoryBody}
                     </p>
                     <div className="story-progress" aria-hidden="true">
                       {INTRO_STORY.map((_, index) => (
@@ -1395,14 +1498,14 @@ function App() {
                     </div>
                   </div>
                   <div className="story-actions">
-                    <button type="button" className="art-button art-button-back" onClick={retreatIntroStory} disabled={storyIndex === 0}>
+                    <button type="button" className="art-button art-button-back" onClick={retreatIntroStory}>
                       <span>BACK</span>
-                    </button>
-                    <button type="button" className="art-button art-button-skip" onClick={finishIntroStory}>
-                      <span>SKIP</span>
                     </button>
                     <button type="button" className="art-button art-button-continue selected" onClick={advanceIntroStory}>
                       <span>{storyIndex >= INTRO_STORY.length - 1 ? 'LOAD GAME' : 'NEXT'}</span>
+                    </button>
+                    <button type="button" className="art-button art-button-skip" onClick={finishIntroStory}>
+                      <span>SKIP</span>
                     </button>
                   </div>
                 </div>
@@ -1413,9 +1516,10 @@ function App() {
               <div className="menu-step profile-step">
                 <img className="profile-bg" src={PROFILE_BG_SRC} alt="" />
                 <div className="profile-vignette" />
+                <img className="profile-title-art" src="media/cyber_chess_title_hero.png" alt="Cyber Chess" />
                 <div className="profile-panel">
-                  <span className="profile-kicker">PLAYER REGISTRATION</span>
-                  <label htmlFor="player-name">Enter your fighter name</label>
+                  <span className="profile-kicker">BATTLE READY</span>
+                  <label htmlFor="player-name">Name your hero</label>
                   <div className="profile-row">
                     <input
                       id="player-name"
@@ -1442,7 +1546,8 @@ function App() {
                 <div className="side-footer">
                   <button type="button" className="art-button art-button-back" onClick={() => {
                     audioRef.current?.play('menu');
-                    setMenuStep('profile');
+                    setStoryIndex(1);
+                    setMenuStep('story');
                   }}>
                     <span>BACK</span>
                   </button>
@@ -1559,15 +1664,10 @@ function App() {
           <div className="result-copy">
             <span className="result-kicker">{resultPresentation.status}</span>
             <h1>{resultPresentation.title}</h1>
-            <p>{resultPresentation.body}</p>
-            {resultState.kind === 'clear' && (
-              <div className="credits-video-shell">
-                <video controls preload="metadata">
-                  <source src={INTRO_MP4_SRC} type="video/mp4" />
-                </video>
-              </div>
+            {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
+              <p>{resultPresentation.body}</p>
             )}
-            {resultState.kind !== 'clear' && (
+            {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
               <div className="result-stats">
                 <span>PLAYER: {playerName}</span>
                 <span>OPPONENT: {resultState.opponent.name}</span>
@@ -1583,23 +1683,13 @@ function App() {
                 )}
               </div>
             )}
-            {resultState.kind !== 'clear' && (
+            {(resultState.kind === 'loss' || resultState.kind === 'game-over') && (
               <div className="result-enemy-card">
                 <img src={resultState.opponent.avatar} alt="" />
                 <div>
                   <span>{resultState.kind === 'win' ? 'DEFEATED ENEMY' : 'ACTIVE THREAT'}</span>
                   <strong>{resultState.opponent.name}</strong>
                   <em>{resultState.opponent.difficulty} / {resultState.opponent.tagline}</em>
-                </div>
-              </div>
-            )}
-            {resultState.kind === 'win' && resultState.nextOpponent && (
-              <div className="next-opponent-panel">
-                <img src={resultState.nextOpponent.avatar} alt="" />
-                <div>
-                  <span>NEXT CHALLENGER</span>
-                  <strong>{resultState.nextOpponent.name}</strong>
-                  <em>{resultState.nextOpponent.difficulty} / {resultState.nextOpponent.tagline}</em>
                 </div>
               </div>
             )}
@@ -1637,79 +1727,116 @@ function App() {
           <img className="settings-bg" src={SETTINGS_BG_SRC} alt="" />
           <div className="settings-vignette" />
           <div className="settings-panel">
-            <span className="settings-kicker">SYSTEM OPTIONS</span>
             <h2 id="settings-title"><span>SETTINGS</span></h2>
-            <div className="settings-group">
-              <strong className="settings-section-art">AUDIO</strong>
+            <div className="settings-group settings-audio-group">
+              <strong>AUDIO MODE</strong>
               <div className="settings-options" role="group" aria-label="Audio mode">
                 <button type="button" className={'settings-toggle' + (audioMode === 'full' ? ' selected' : '')} onClick={() => updateAudioMode('full')}>
                   <span className="settings-toggle-label">FULL AUDIO</span>
-                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
                 <button type="button" className={'settings-toggle' + (audioMode === 'sfx' ? ' selected' : '')} onClick={() => updateAudioMode('sfx')}>
                   <span className="settings-toggle-label">SFX ONLY</span>
-                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
                 <button type="button" className={'settings-toggle' + (audioMode === 'muted' ? ' selected' : '')} onClick={() => updateAudioMode('muted')}>
                   <span className="settings-toggle-label">MUTED</span>
-                  <span className="settings-toggle-switch" aria-hidden="true" />
                 </button>
               </div>
             </div>
-            <div className="settings-readout">
-              <span>MONIKER: ONLINE</span>
-              <span>AUDIO: {audioMode === 'full' ? 'FULL AUDIO' : audioMode === 'sfx' ? 'SFX ONLY' : 'MUTED'}</span>
-              <span>VOLUME: {audioVolume}%</span>
+            <label className="settings-volume" htmlFor="audio-volume">
+              <span>OUTPUT LEVEL <strong>{audioVolume}%</strong></span>
+              <span
+                className="settings-slider-shell"
+                style={{ '--settings-volume-progress': `${Math.min(100, Math.max(0, audioVolume / 2))}%` } as CSSProperties}
+              >
+                <input
+                  id="audio-volume"
+                  type="range"
+                  min="0"
+                  max="200"
+                  step="5"
+                  value={audioVolume}
+                  onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
+                />
+              </span>
+            </label>
+            <div className="settings-group settings-playlist">
+              <strong>SOUNDTRACK</strong>
+              <div className="settings-track-control">
+                <button
+                  type="button"
+                  className="settings-track-step"
+                  aria-label="Previous song"
+                  disabled={musicControlsDisabled}
+                  onClick={() => switchSoundtrackSong(soundtrackIndex - 1)}
+                >
+                  <span aria-hidden="true">PREV</span>
+                </button>
+                <div className="settings-track-now" aria-live="polite">
+                  <span>NOW PLAYING</span>
+                  <strong>{soundtrackTitle}</strong>
+                </div>
+                <button
+                  type="button"
+                  className="settings-track-step"
+                  aria-label="Next song"
+                  disabled={musicControlsDisabled}
+                  onClick={() => switchSoundtrackSong(soundtrackIndex + 1)}
+                >
+                  <span aria-hidden="true">NEXT</span>
+                </button>
+              </div>
+              <div className="settings-track-list" role="listbox" aria-label="Soundtrack playlist" aria-disabled={musicControlsDisabled}>
+                {SOUNDTRACK_SOURCES.map((src, index) => {
+                  const title = getSoundtrackTitle(src);
+                  return (
+                    <button
+                      type="button"
+                      key={src}
+                      className={'settings-track-option' + (index === soundtrackIndex ? ' selected' : '')}
+                      role="option"
+                      aria-selected={index === soundtrackIndex}
+                      disabled={musicControlsDisabled}
+                      onClick={() => switchSoundtrackSong(index)}
+                    >
+                      <span>{String(index + 1).padStart(2, '0')}</span>
+                      <strong>{title}</strong>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
             {screen === 'playing' && (
               <div className="settings-group">
                 <strong>GAME</strong>
-	                <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
-	                  <button type="button" className="art-button art-button-reset" onClick={() => {
-	                    audioRef.current?.play('menu');
-	                    resetGame();
-	                    setSettingsOpen(false);
-	                  }}>
-	                    <span>RESET BOARD</span>
-	                  </button>
-	                  <button type="button" className="art-button art-button-back" onClick={() => {
-	                    audioRef.current?.play('menu');
-	                    setSettingsOpen(false);
-	                    openMenu();
-	                  }}>
-	                    <span>MAIN MENU</span>
-	                  </button>
-	                </div>
-	              </div>
-	            )}
-	            <label className="settings-volume" htmlFor="audio-volume">
-	              <span>OUTPUT LEVEL</span>
-	              <span
-	                className="settings-slider-shell"
-	                style={{ '--settings-volume-progress': `${Math.min(100, Math.max(0, audioVolume / 2))}%` } as CSSProperties}
-	              >
-	                <input
-	                  id="audio-volume"
-	                  type="range"
-	                  min="0"
-	                  max="200"
-	                  step="5"
-	                  value={audioVolume}
-	                  onChange={(event) => updateAudioVolume(Number(event.currentTarget.value))}
-	                />
-	              </span>
-	            </label>
-	            <div className="settings-actions">
-	              <button type="button" className="art-button art-button-close" onClick={() => {
-	                audioRef.current?.play('menu');
-	                setSettingsOpen(false);
-	              }}>
-	                <span>CLOSE</span>
-	              </button>
-	            </div>
-	          </div>
-	        </div>
-	      )}
+                <div className="settings-options settings-options-game" role="group" aria-label="Game controls">
+                  <button type="button" className="art-button art-button-reset" onClick={() => {
+                    audioRef.current?.play('menu');
+                    resetGame();
+                    setSettingsOpen(false);
+                  }}>
+                    <span>RESET BOARD</span>
+                  </button>
+                  <button type="button" className="art-button art-button-back" onClick={() => {
+                    audioRef.current?.play('menu');
+                    setSettingsOpen(false);
+                    openMenu();
+                  }}>
+                    <span>MAIN MENU</span>
+                  </button>
+                </div>
+              </div>
+            )}
+            <div className="settings-actions">
+              <button type="button" className="art-button art-button-close" onClick={() => {
+                audioRef.current?.play('menu');
+                setSettingsOpen(false);
+              }}>
+                <span>CLOSE</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }

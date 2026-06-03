@@ -1882,7 +1882,7 @@ function App() {
                   <div className="credits-roll">
                     <p>Game created by Frosty40 and Codex.</p>
                     <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
-                    <p>Static audio assets generated with ElevenLabs and Suno.</p>
+                    <p>Audio assets generated with ElevenLabs and Suno.</p>
                   </div>
                 </div>
                 <button type="button" className="art-button art-button-close" onClick={() => {
@@ -2019,7 +2019,6 @@ function App() {
                   <div className="settings-save-status" role="status" aria-live="polite">{settingsNotice}</div>
                 )}
               </div>
-              {!creditsOpen && (
               <div className="settings-actions">
                 <button type="button" className="art-button art-button-close" onClick={() => {
                   audioRef.current?.play('menu');
@@ -2028,7 +2027,6 @@ function App() {
                   <span>CLOSE</span>
                 </button>
               </div>
-              )}
             </div>
           </div>
         </div>

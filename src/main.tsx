@@ -1876,10 +1876,8 @@ function App() {
           <img className="settings-bg" src={SETTINGS_BG_SRC} alt="" />
           <div className="settings-vignette" />
           {creditsOpen && (
-            <div className="credits-modal" role="dialog" aria-labelledby="credits-title">
+            <div className="credits-modal" role="dialog" aria-label="Credits">
               <div className="credits-panel">
-                <span className="credits-kicker">CYBER CHESS</span>
-                <h3 id="credits-title">CREDITS</h3>
                 <div className="credits-roll-shell" aria-live="polite">
                   <div className="credits-roll">
                     <p>Game created by Frosty40 and Codex.</p>
@@ -2022,6 +2020,7 @@ function App() {
                   <div className="settings-save-status" role="status" aria-live="polite">{settingsNotice}</div>
                 )}
               </div>
+              {!creditsOpen && (
               <div className="settings-actions">
                 <button type="button" className="art-button art-button-close" onClick={() => {
                   audioRef.current?.play('menu');
@@ -2030,6 +2029,7 @@ function App() {
                   <span>CLOSE</span>
                 </button>
               </div>
+              )}
             </div>
           </div>
         </div>

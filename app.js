@@ -59978,9 +59978,7 @@ function App() {
     settingsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title", children: [
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
       /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
-      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-labelledby": "credits-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "credits-kicker", children: "CYBER CHESS" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h3", { id: "credits-title", children: "CREDITS" }),
+      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-panel", children: [
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and local chess agents." }),
@@ -60110,7 +60108,7 @@ function App() {
             ] }),
             settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
+          !creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
             audioRef.current?.play("menu");
             setSettingsOpen(false);
           }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })

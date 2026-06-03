@@ -1785,16 +1785,19 @@ function App() {
       />
 
       {window.cyberChessDesktop && (
-        <button
-          type="button"
-          className="electron-close"
-          aria-label="Close Cyber Chess"
-          onClick={() => {
-            window.cyberChessDesktop?.close().catch(() => undefined);
-          }}
-        >
-          X
-        </button>
+        <>
+          <div className="electron-drag-tag" aria-hidden="true" title="Drag window" />
+          <button
+            type="button"
+            className="electron-close"
+            aria-label="Close Cyber Chess"
+            onClick={() => {
+              window.cyberChessDesktop?.close().catch(() => undefined);
+            }}
+          >
+            X
+          </button>
+        </>
       )}
 
       {!settingsOpen && screen === 'intro' && menuStep === 'video' && (

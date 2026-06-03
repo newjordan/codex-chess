@@ -1,6 +1,6 @@
 import * as packagerModule from '@electron/packager';
 import { constants as fsConstants } from 'node:fs';
-import { access, cp, mkdir, readdir, rm, writeFile } from 'node:fs/promises';
+import { access, cp, mkdir, readdir, rename, rm, writeFile } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -13,6 +13,7 @@ const staticDir = resolve(stageDir, 'app');
 const outputDir = desktopDir;
 const desktopProductName = 'CC V0.5';
 const desktopAppVersion = '0.5.0';
+const desktopReleaseDirName = 'Cyber_Chess_0.5';
 
 const command = process.argv[2] ?? 'package';
 const runtimeMediaDirs = ['audio', 'avatars', 'bonus', 'buttons', 'enemies', 'engines', 'fonts', 'hud', 'intro', 'results', 'sfx'];
@@ -77,7 +78,9 @@ async function stageDesktopApp() {
 }
 
 async function packageWindows() {
-  await rm(resolve(outputDir, `${desktopProductName}-win32-x64`), { recursive: true, force: true });
+  const packagerDir = resolve(outputDir, `${desktopProductName}-win32-x64`);
+  const releaseDir = resolve(outputDir, desktopReleaseDirName);
+  await rm(packagerDir, { recursive: true, force: true });
   await packager({
     dir: stageDir,
     out: outputDir,
@@ -91,6 +94,12 @@ async function packageWindows() {
     prune: true,
     quiet: false,
   });
+  if (await exists(releaseDir)) {
+    await cp(stageDir, resolve(releaseDir, 'resources', 'app'), { recursive: true, force: true });
+    await rm(packagerDir, { recursive: true, force: true });
+  } else {
+    await rename(packagerDir, releaseDir);
+  }
 }
 
 if (!['stage', 'package'].includes(command)) {
@@ -103,5 +112,5 @@ console.log(`Staged Cyber Chess desktop app at ${stageDir}`);
 
 if (command === 'package') {
   await packageWindows();
-  console.log(`Packaged ${desktopProductName} for Windows at ${resolve(outputDir, `${desktopProductName}-win32-x64`)}`);
+  console.log(`Packaged ${desktopProductName} for Windows at ${resolve(outputDir, desktopReleaseDirName)}`);
 }

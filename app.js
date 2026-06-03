@@ -59938,18 +59938,21 @@ function App() {
       },
       `${selected.id}-${playerColor}-${playerName}`
     ),
-    window.cyberChessDesktop && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
-      "button",
-      {
-        type: "button",
-        className: "electron-close",
-        "aria-label": "Close Cyber Chess",
-        onClick: () => {
-          window.cyberChessDesktop?.close().catch(() => void 0);
-        },
-        children: "X"
-      }
-    ),
+    window.cyberChessDesktop && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "electron-drag-tag", "aria-hidden": "true", title: "Drag window" }),
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "electron-close",
+          "aria-label": "Close Cyber Chess",
+          onClick: () => {
+            window.cyberChessDesktop?.close().catch(() => void 0);
+          },
+          children: "X"
+        }
+      )
+    ] }),
     !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-launcher", "aria-label": "SETTINGS", onClick: () => {
       ensureAudioEngine()?.play("menu");
       setSettingsOpen(true);

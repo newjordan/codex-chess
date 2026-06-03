@@ -15,7 +15,7 @@ const desktopProductName = 'CC V0.5';
 const desktopAppVersion = '0.5.0';
 
 const command = process.argv[2] ?? 'package';
-const runtimeMediaDirs = ['audio', 'avatars', 'buttons', 'enemies', 'engines', 'fonts', 'hud', 'intro', 'results', 'sfx'];
+const runtimeMediaDirs = ['audio', 'avatars', 'bonus', 'buttons', 'enemies', 'engines', 'fonts', 'hud', 'intro', 'results', 'sfx'];
 
 async function exists(path) {
   try {

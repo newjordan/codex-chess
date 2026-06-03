@@ -14,6 +14,7 @@ const outputDir = desktopDir;
 const desktopProductName = 'CC V0.5';
 const desktopAppVersion = '0.5.0';
 const desktopReleaseDirName = 'Cyber_Chess_0.5';
+const desktopExecutableName = 'Codex_Cyber_Chess_0.5';
 
 const command = process.argv[2] ?? 'package';
 const runtimeMediaDirs = ['audio', 'avatars', 'bonus', 'buttons', 'enemies', 'engines', 'fonts', 'hud', 'intro', 'results', 'sfx'];
@@ -90,12 +91,18 @@ async function packageWindows() {
     overwrite: true,
     asar: false,
     appVersion: desktopAppVersion,
-    executableName: desktopProductName,
+    executableName: desktopExecutableName,
     prune: true,
     quiet: false,
   });
   if (await exists(releaseDir)) {
     await cp(stageDir, resolve(releaseDir, 'resources', 'app'), { recursive: true, force: true });
+    await copyIfPresent(resolve(packagerDir, `${desktopExecutableName}.exe`), resolve(releaseDir, `${desktopExecutableName}.exe`));
+    try {
+      await rm(resolve(releaseDir, `${desktopProductName}.exe`), { force: true });
+    } catch (error) {
+      console.warn(`Could not remove old executable ${desktopProductName}.exe; close it and delete it manually if it remains.`);
+    }
     await rm(packagerDir, { recursive: true, force: true });
   } else {
     await rename(packagerDir, releaseDir);

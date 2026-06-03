@@ -48901,6 +48901,16 @@ var THEME_COLORS = {
   razorblade: [1114886, 11809102, 12749368],
   gordo: [1049623, 12076968, 13208119]
 };
+var DEFAULT_CELLWAVE_DEV_CONTROLS = {
+  baseBrightness: 1.47,
+  alphaScale: 0.83,
+  audioInfluence: 1.8,
+  flowSpeed: 1.08,
+  noiseIntensity: 1.04,
+  ditherIntensity: 2.4,
+  gridIntensity: 0.54,
+  highColorBoost: 0.98
+};
 function createCellWaveEnvironment(theme) {
   const colors = THEME_COLORS[theme];
   const uniforms = {
@@ -48909,7 +48919,15 @@ function createCellWaveEnvironment(theme) {
     uMid: { value: new Color(colors[1]) },
     uHigh: { value: new Color(colors[2]) },
     uAudioLevel: { value: 0 },
-    uAudioPulse: { value: 0 }
+    uAudioPulse: { value: 0 },
+    uBaseBrightness: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.baseBrightness },
+    uAlphaScale: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.alphaScale },
+    uAudioInfluence: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.audioInfluence },
+    uFlowSpeed: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.flowSpeed },
+    uNoiseIntensity: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.noiseIntensity },
+    uDitherIntensity: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.ditherIntensity },
+    uGridIntensity: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.gridIntensity },
+    uHighColorBoost: { value: DEFAULT_CELLWAVE_DEV_CONTROLS.highColorBoost }
   };
   const material = new ShaderMaterial({
     uniforms,
@@ -48933,6 +48951,14 @@ function createCellWaveEnvironment(theme) {
       uniform vec3 uHigh;
       uniform float uAudioLevel;
       uniform float uAudioPulse;
+      uniform float uBaseBrightness;
+      uniform float uAlphaScale;
+      uniform float uAudioInfluence;
+      uniform float uFlowSpeed;
+      uniform float uNoiseIntensity;
+      uniform float uDitherIntensity;
+      uniform float uGridIntensity;
+      uniform float uHighColorBoost;
       varying vec3 vWorld;
 
       float hash21(vec2 p) {
@@ -48987,9 +49013,9 @@ function createCellWaveEnvironment(theme) {
 
       void main() {
         vec3 dir = normalize(vWorld);
-        float audioFlow = clamp(uAudioLevel * 0.34 + uAudioPulse * 0.16, 0.0, 1.0);
-        float audioStrength = clamp(uAudioLevel * 0.28 + uAudioPulse * 0.14, 0.0, 1.0);
-        float timeFlow = uTime * (0.82 + audioFlow * 0.16);
+        float audioFlow = clamp((uAudioLevel * 0.34 + uAudioPulse * 0.16) * uAudioInfluence, 0.0, 1.0);
+        float audioStrength = clamp((uAudioLevel * 0.28 + uAudioPulse * 0.14) * uAudioInfluence, 0.0, 1.0);
+        float timeFlow = uTime * (0.82 + audioFlow * 0.16) * uFlowSpeed;
         vec3 slowDrift = vec3(timeFlow * 0.10, -timeFlow * 0.07, timeFlow * 0.06);
         vec3 crossDrift = vec3(-timeFlow * 0.12, timeFlow * 0.09, -timeFlow * 0.05);
         float n1 = vnoise3(dir * 7.5 + slowDrift);
@@ -48997,17 +49023,17 @@ function createCellWaveEnvironment(theme) {
         float n3 = vnoise3(dir * (28.0 + audioStrength * 1.1) + vec3(timeFlow * 0.04, timeFlow * 0.03, -timeFlow * 0.05));
         float waveA = sin(dot(dir, normalize(vec3(2.4, 1.1, 1.5))) * (6.4 + audioStrength * 0.28) + n1 * 1.2 + timeFlow * 0.82) * 0.5 + 0.5;
         float waveB = sin(dot(dir, normalize(vec3(-1.2, -0.7, 2.8))) * (7.2 + audioStrength * 0.22) + n2 * 1.0 - timeFlow * 0.68) * 0.5 + 0.5;
-        float speedTone = smoothstep(0.16, 0.94, n1 * 0.38 + n2 * 0.24 + n3 * 0.08 + waveA * (0.2 + audioStrength * 0.018) + waveB * (0.1 + audioStrength * 0.012));
+        float speedTone = smoothstep(0.16, 0.94, (n1 * 0.38 + n2 * 0.24 + n3 * 0.08) * uNoiseIntensity + waveA * (0.2 + audioStrength * 0.018) + waveB * (0.1 + audioStrength * 0.012));
 
         vec2 pix = floor(gl_FragCoord.xy);
         float ordered = bayer4(pix / 2.0);
         float flux = vnoise3(dir * 10.0 + vec3(timeFlow * 0.16, timeFlow * 0.11, -timeFlow * 0.09));
         float blue = hash21(pix + floor(timeFlow * (16.0 + audioFlow * 2.5)));
-        float threshold = mix(ordered, blue, 0.16 + flux * (0.2 + audioStrength * 0.025));
+        float threshold = mix(ordered, blue, (0.16 + flux * (0.2 + audioStrength * 0.025)) * uDitherIntensity);
         float dither = speedTone > threshold ? 1.0 : 0.0;
 
         vec3 gradient = mix(uBase, uMid, speedTone);
-        gradient = mix(gradient, uHigh, smoothstep(0.68, 1.0, speedTone));
+        gradient = mix(gradient, uHigh * uHighColorBoost, smoothstep(0.68, 1.0, speedTone));
         vec3 color = mix(gradient * 0.84, gradient * (1.16 + audioStrength * 0.055), dither);
 
         float grid = max(
@@ -49015,8 +49041,8 @@ function createCellWaveEnvironment(theme) {
           band(dir, vec3(0.22, -0.42, 0.88), 12.5, uTime * 0.024)
         );
         float horizonFade = smoothstep(-0.72, -0.08, dir.y) * (1.0 - smoothstep(0.65, 0.95, dir.y));
-        float alpha = (0.094 + speedTone * (0.154 + audioStrength * 0.014) + grid * (0.028 + audioStrength * 0.006)) * (0.38 + horizonFade * 0.58);
-        color *= 1.09 + audioStrength * 0.045;
+        float alpha = (0.094 + speedTone * (0.154 + audioStrength * 0.014) + grid * (0.028 + audioStrength * 0.006) * uGridIntensity) * (0.38 + horizonFade * 0.58) * uAlphaScale;
+        color *= (1.09 + audioStrength * 0.045) * uBaseBrightness;
         gl_FragColor = vec4(color, alpha);
       }
     `
@@ -49025,6 +49051,16 @@ function createCellWaveEnvironment(theme) {
   mesh.renderOrder = -20;
   return {
     mesh,
+    setDevControls(params) {
+      if (params.baseBrightness != null) uniforms.uBaseBrightness.value = MathUtils.clamp(params.baseBrightness, 0, 3);
+      if (params.alphaScale != null) uniforms.uAlphaScale.value = MathUtils.clamp(params.alphaScale, 0, 3);
+      if (params.audioInfluence != null) uniforms.uAudioInfluence.value = MathUtils.clamp(params.audioInfluence, 0, 3);
+      if (params.flowSpeed != null) uniforms.uFlowSpeed.value = MathUtils.clamp(params.flowSpeed, 0, 3);
+      if (params.noiseIntensity != null) uniforms.uNoiseIntensity.value = MathUtils.clamp(params.noiseIntensity, 0, 3);
+      if (params.ditherIntensity != null) uniforms.uDitherIntensity.value = MathUtils.clamp(params.ditherIntensity, 0, 3);
+      if (params.gridIntensity != null) uniforms.uGridIntensity.value = MathUtils.clamp(params.gridIntensity, 0, 3);
+      if (params.highColorBoost != null) uniforms.uHighColorBoost.value = MathUtils.clamp(params.highColorBoost, 0, 3);
+    },
     setAudioReactivity(level, pulse) {
       uniforms.uAudioLevel.value = MathUtils.clamp(level, 0, 1);
       uniforms.uAudioPulse.value = MathUtils.clamp(pulse, 0, 1);
@@ -49203,6 +49239,26 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
   scene.add(new Points(starsGeo, new PointsMaterial({ size: 0.08, color: 6728447, transparent: true, opacity: 0.4 })));
   const cellWaveEnvironment = createCellWaveEnvironment(enemyTheme);
   scene.add(cellWaveEnvironment.mesh);
+  const chessGlobal = window.__chess;
+  const applyCellWaveDevControls = (params) => {
+    cellWaveEnvironment.setDevControls(params);
+    if (chessGlobal) {
+      chessGlobal.cellWaveDevControls = {
+        ...chessGlobal.cellWaveDevControls ?? {},
+        ...params
+      };
+    }
+  };
+  if (chessGlobal) {
+    chessGlobal.cellWaveDev = {
+      defaults: { ...DEFAULT_CELLWAVE_DEV_CONTROLS },
+      setParams: applyCellWaveDevControls,
+      reset() {
+        applyCellWaveDevControls(DEFAULT_CELLWAVE_DEV_CONTROLS);
+      }
+    };
+    cellWaveEnvironment.setDevControls(chessGlobal.cellWaveDevControls ?? DEFAULT_CELLWAVE_DEV_CONTROLS);
+  }
   const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
   scene.add(ambientCircuitLayer.group);
   const clock = new Clock();
@@ -49226,6 +49282,9 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
     tick() {
       const delta = clock.getDelta();
       const audioReactive = window.__chess?.audioReactive;
+      if (chessGlobal?.cellWaveDevControls) {
+        cellWaveEnvironment.setDevControls(chessGlobal.cellWaveDevControls);
+      }
       cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
@@ -49234,6 +49293,7 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
       ro.disconnect();
       controls.dispose();
       cellWaveEnvironment.dispose();
+      if (chessGlobal?.cellWaveDev?.setParams === applyCellWaveDevControls) delete chessGlobal.cellWaveDev;
       ambientCircuitLayer.dispose();
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
@@ -58407,6 +58467,16 @@ var AUDIO_MODE_KEY = "cyberChessAudioMode";
 var AUDIO_VOLUME_KEY = "cyberChessAudioVolume";
 var SAVE_GAME_KEY = "cyberChessSaveGameV1";
 var MAX_LEADERBOARD = 8;
+var CELLWAVE_DEV_CONTROL_DEFS = [
+  { key: "baseBrightness", label: "Brightness", min: 0, max: 2, step: 0.01 },
+  { key: "alphaScale", label: "Alpha", min: 0, max: 2, step: 0.01 },
+  { key: "audioInfluence", label: "Audio", min: 0, max: 2.5, step: 0.01 },
+  { key: "flowSpeed", label: "Flow", min: 0, max: 2.5, step: 0.01 },
+  { key: "noiseIntensity", label: "Noise", min: 0, max: 2.5, step: 0.01 },
+  { key: "ditherIntensity", label: "Dither", min: 0, max: 2.5, step: 0.01 },
+  { key: "gridIntensity", label: "Grid", min: 0, max: 2.5, step: 0.01 },
+  { key: "highColorBoost", label: "High Color", min: 0, max: 2.5, step: 0.01 }
+];
 var OPPONENTS = [
   {
     id: "goop",
@@ -58817,6 +58887,19 @@ function readLeaderboard() {
     return [];
   }
 }
+function isCellWaveDevControlAvailable() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return params.has("cellwaveDev") || window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  } catch (_) {
+    return false;
+  }
+}
+function clampCellWaveControl(key, value) {
+  const control = CELLWAVE_DEV_CONTROL_DEFS.find((item) => item.key === key);
+  if (!control || !Number.isFinite(value)) return DEFAULT_CELLWAVE_DEV_CONTROLS[key];
+  return Math.max(control.min, Math.min(control.max, value));
+}
 function getOpponentById(id) {
   return OPPONENTS.find((opponent) => opponent.id === id) ?? OPPONENTS[0];
 }
@@ -58990,6 +59073,9 @@ function App() {
   const [resultState, setResultState] = (0, import_react3.useState)(null);
   const [settingsNotice, setSettingsNotice] = (0, import_react3.useState)("");
   const [creditsOpen, setCreditsOpen] = (0, import_react3.useState)(false);
+  const [cellWaveDevEnabled] = (0, import_react3.useState)(isCellWaveDevControlAvailable);
+  const [cellWaveDevOpen, setCellWaveDevOpen] = (0, import_react3.useState)(false);
+  const [cellWaveDevControls, setCellWaveDevControls] = (0, import_react3.useState)({ ...DEFAULT_CELLWAVE_DEV_CONTROLS });
   const [gameState, setGameState] = (0, import_react3.useState)({
     status: "Loading pieces",
     fen: START,
@@ -59017,6 +59103,25 @@ function App() {
       setThinking(false);
     }
     setGameState(state);
+  };
+  const pushCellWaveDevControls = (next) => {
+    window.__chess.cellWaveDevControls = next;
+    window.__chess.cellWaveDev?.setParams?.(next);
+  };
+  const updateCellWaveDevControl = (key, value) => {
+    setCellWaveDevControls((current) => {
+      const next = {
+        ...current,
+        [key]: clampCellWaveControl(key, value)
+      };
+      pushCellWaveDevControls(next);
+      return next;
+    });
+  };
+  const resetCellWaveDevControls = () => {
+    const next = { ...DEFAULT_CELLWAVE_DEV_CONTROLS };
+    setCellWaveDevControls(next);
+    pushCellWaveDevControls(next);
   };
   const buildResultForFen = (fen) => {
     const game = new Chess(fen);
@@ -59073,6 +59178,7 @@ function App() {
     window.__chess.handle = ref.current;
     window.__chess.mounted = true;
     window.__chess.state = gameState;
+    if (cellWaveDevEnabled) window.__chess.cellWaveDevControls = cellWaveDevControls;
     document.body.setAttribute("data-chess-mounted", "1");
     const id = window.setTimeout(() => {
       try {
@@ -59082,6 +59188,10 @@ function App() {
     }, 400);
     return () => window.clearTimeout(id);
   }, []);
+  (0, import_react3.useEffect)(() => {
+    if (!cellWaveDevEnabled) return;
+    pushCellWaveDevControls(cellWaveDevControls);
+  }, [cellWaveDevEnabled]);
   (0, import_react3.useEffect)(() => () => {
     introMusicRef.current?.stop();
     introMusicRef.current = null;
@@ -59104,8 +59214,17 @@ function App() {
   }, []);
   (0, import_react3.useEffect)(() => {
     const onKeyDown2 = (event) => {
+      if (cellWaveDevEnabled && event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "w") {
+        event.preventDefault();
+        setCellWaveDevOpen((open) => !open);
+        return;
+      }
       if (event.key === "Escape") {
         event.preventDefault();
+        if (cellWaveDevOpen) {
+          setCellWaveDevOpen(false);
+          return;
+        }
         if (settingsOpen) {
           audioRef.current?.play("menu");
           if (creditsOpen) {
@@ -59132,7 +59251,7 @@ function App() {
     };
     window.addEventListener("keydown", onKeyDown2);
     return () => window.removeEventListener("keydown", onKeyDown2);
-  }, [creditsOpen, settingsOpen]);
+  }, [cellWaveDevEnabled, cellWaveDevOpen, creditsOpen, settingsOpen]);
   (0, import_react3.useEffect)(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
@@ -60175,6 +60294,55 @@ function App() {
           resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue result-primary", onClick: continueAfterLoss, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CONTINUE" }) }),
           resultState.kind === "game-over" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-play result-primary", onClick: restartCampaign, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NEW RUN" }) }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: openMenu, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MENU" }) })
+        ] })
+      ] })
+    ] }),
+    cellWaveDevEnabled && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "cellwave-dev-tab" + (cellWaveDevOpen ? " open" : ""),
+          "aria-expanded": cellWaveDevOpen,
+          "aria-controls": "cellwave-dev-panel",
+          onClick: () => setCellWaveDevOpen((open) => !open),
+          children: "CELLWAVE DEV"
+        }
+      ),
+      cellWaveDevOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-panel", id: "cellwave-dev-panel", role: "dialog", "aria-label": "Cellwave dev controls", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-head", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "EXPERIMENTAL" }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "Cellwave Backdrop" })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", "aria-label": "Close cellwave dev controls", onClick: () => setCellWaveDevOpen(false), children: "X" })
+        ] }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cellwave-dev-body", children: CELLWAVE_DEV_CONTROL_DEFS.map((control) => {
+          const value = cellWaveDevControls[control.key];
+          const progress = (value - control.min) / (control.max - control.min) * 100;
+          return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "cellwave-dev-control", htmlFor: `cellwave-dev-${control.key}`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("b", { children: control.label }),
+              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("code", { children: value.toFixed(2) })
+            ] }),
+            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+              "input",
+              {
+                id: `cellwave-dev-${control.key}`,
+                type: "range",
+                min: control.min,
+                max: control.max,
+                step: control.step,
+                value,
+                style: { "--cellwave-dev-progress": `${progress}%` },
+                onChange: (event) => updateCellWaveDevControl(control.key, Number(event.currentTarget.value))
+              }
+            )
+          ] }, control.key);
+        }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: resetCellWaveDevControls, children: "RESET" }),
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Ctrl+Shift+W" })
         ] })
       ] })
     ] }),

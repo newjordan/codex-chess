@@ -4,7 +4,8 @@ import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer
 import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
-import { createAmbientCircuitLayer, createCellWaveEnvironment } from './floor';
+import { createAmbientCircuitLayer, createCellWaveEnvironment, DEFAULT_CELLWAVE_DEV_CONTROLS } from './floor';
+import type { CellWaveDevControls } from './floor';
 import type { Board3DEnemyTheme, SceneContext } from './types';
 
 const DotMatrixShader = {
@@ -89,6 +90,35 @@ export function setupScene(
 
   const cellWaveEnvironment = createCellWaveEnvironment(enemyTheme);
   scene.add(cellWaveEnvironment.mesh);
+  const chessGlobal = (window as typeof window & {
+    __chess?: {
+      cellWaveDevControls?: Partial<CellWaveDevControls>;
+      cellWaveDev?: {
+        defaults: CellWaveDevControls;
+        setParams(params: Partial<CellWaveDevControls>): void;
+        reset(): void;
+      };
+    };
+  }).__chess;
+  const applyCellWaveDevControls = (params: Partial<CellWaveDevControls>) => {
+    cellWaveEnvironment.setDevControls(params);
+    if (chessGlobal) {
+      chessGlobal.cellWaveDevControls = {
+        ...(chessGlobal.cellWaveDevControls ?? {}),
+        ...params,
+      };
+    }
+  };
+  if (chessGlobal) {
+    chessGlobal.cellWaveDev = {
+      defaults: { ...DEFAULT_CELLWAVE_DEV_CONTROLS },
+      setParams: applyCellWaveDevControls,
+      reset() {
+        applyCellWaveDevControls(DEFAULT_CELLWAVE_DEV_CONTROLS);
+      },
+    };
+    cellWaveEnvironment.setDevControls(chessGlobal.cellWaveDevControls ?? DEFAULT_CELLWAVE_DEV_CONTROLS);
+  }
   const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
   scene.add(ambientCircuitLayer.group);
   const clock = new THREE.Clock();
@@ -116,6 +146,9 @@ export function setupScene(
       const audioReactive = (window as typeof window & {
         __chess?: { audioReactive?: { level?: number; pulse?: number } };
       }).__chess?.audioReactive;
+      if (chessGlobal?.cellWaveDevControls) {
+        cellWaveEnvironment.setDevControls(chessGlobal.cellWaveDevControls);
+      }
       cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
@@ -124,6 +157,7 @@ export function setupScene(
       ro.disconnect();
       controls.dispose();
       cellWaveEnvironment.dispose();
+      if (chessGlobal?.cellWaveDev?.setParams === applyCellWaveDevControls) delete chessGlobal.cellWaveDev;
       ambientCircuitLayer.dispose();
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();

@@ -4,6 +4,8 @@ import { createRoot } from 'react-dom/client';
 import { Chess } from 'chess.js';
 import { Board3DScene } from './Board3DScene';
 import type { Board3DGameState, Board3DHandle } from './board3d/types';
+import { DEFAULT_CELLWAVE_DEV_CONTROLS } from './board3d/floor';
+import type { CellWaveDevControls } from './board3d/floor';
 import { chooseAiMove, type AiProfileId, type PlayerColor } from './ai';
 
 const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
@@ -15,6 +17,23 @@ const AUDIO_MODE_KEY = 'cyberChessAudioMode';
 const AUDIO_VOLUME_KEY = 'cyberChessAudioVolume';
 const SAVE_GAME_KEY = 'cyberChessSaveGameV1';
 const MAX_LEADERBOARD = 8;
+
+const CELLWAVE_DEV_CONTROL_DEFS: Array<{
+  key: keyof CellWaveDevControls;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+}> = [
+  { key: 'baseBrightness', label: 'Brightness', min: 0, max: 2, step: 0.01 },
+  { key: 'alphaScale', label: 'Alpha', min: 0, max: 2, step: 0.01 },
+  { key: 'audioInfluence', label: 'Audio', min: 0, max: 2.5, step: 0.01 },
+  { key: 'flowSpeed', label: 'Flow', min: 0, max: 2.5, step: 0.01 },
+  { key: 'noiseIntensity', label: 'Noise', min: 0, max: 2.5, step: 0.01 },
+  { key: 'ditherIntensity', label: 'Dither', min: 0, max: 2.5, step: 0.01 },
+  { key: 'gridIntensity', label: 'Grid', min: 0, max: 2.5, step: 0.01 },
+  { key: 'highColorBoost', label: 'High Color', min: 0, max: 2.5, step: 0.01 },
+];
 
 const OPPONENTS: Array<{
   id: AiProfileId;
@@ -544,6 +563,25 @@ function readLeaderboard(): LeaderboardEntry[] {
   }
 }
 
+function isCellWaveDevControlAvailable() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    return (
+      params.has('cellwaveDev') ||
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '127.0.0.1'
+    );
+  } catch (_) {
+    return false;
+  }
+}
+
+function clampCellWaveControl(key: keyof CellWaveDevControls, value: number) {
+  const control = CELLWAVE_DEV_CONTROL_DEFS.find((item) => item.key === key);
+  if (!control || !Number.isFinite(value)) return DEFAULT_CELLWAVE_DEV_CONTROLS[key];
+  return Math.max(control.min, Math.min(control.max, value));
+}
+
 function getOpponentById(id: AiProfileId) {
   return OPPONENTS.find((opponent) => opponent.id === id) ?? OPPONENTS[0];
 }
@@ -734,6 +772,9 @@ function App() {
   const [resultState, setResultState] = useState<ResultState | null>(null);
   const [settingsNotice, setSettingsNotice] = useState('');
   const [creditsOpen, setCreditsOpen] = useState(false);
+  const [cellWaveDevEnabled] = useState(isCellWaveDevControlAvailable);
+  const [cellWaveDevOpen, setCellWaveDevOpen] = useState(false);
+  const [cellWaveDevControls, setCellWaveDevControls] = useState<CellWaveDevControls>({ ...DEFAULT_CELLWAVE_DEV_CONTROLS });
   const [gameState, setGameState] = useState<Board3DGameState>({
     status: 'Loading pieces',
     fen: START,
@@ -768,6 +809,28 @@ function App() {
       setThinking(false);
     }
     setGameState(state);
+  };
+
+  const pushCellWaveDevControls = (next: CellWaveDevControls) => {
+    window.__chess.cellWaveDevControls = next;
+    window.__chess.cellWaveDev?.setParams?.(next);
+  };
+
+  const updateCellWaveDevControl = (key: keyof CellWaveDevControls, value: number) => {
+    setCellWaveDevControls((current) => {
+      const next = {
+        ...current,
+        [key]: clampCellWaveControl(key, value),
+      };
+      pushCellWaveDevControls(next);
+      return next;
+    });
+  };
+
+  const resetCellWaveDevControls = () => {
+    const next = { ...DEFAULT_CELLWAVE_DEV_CONTROLS };
+    setCellWaveDevControls(next);
+    pushCellWaveDevControls(next);
   };
 
   const buildResultForFen = (fen: string): ResultState | null => {
@@ -833,6 +896,7 @@ function App() {
     window.__chess.handle = ref.current;
     window.__chess.mounted = true;
     window.__chess.state = gameState;
+    if (cellWaveDevEnabled) window.__chess.cellWaveDevControls = cellWaveDevControls;
     document.body.setAttribute('data-chess-mounted', '1');
     // FBX pieces load async inside the hook; nudge to the start position once.
     const id = window.setTimeout(() => {
@@ -840,6 +904,11 @@ function App() {
     }, 400);
     return () => window.clearTimeout(id);
   }, []);
+
+  useEffect(() => {
+    if (!cellWaveDevEnabled) return;
+    pushCellWaveDevControls(cellWaveDevControls);
+  }, [cellWaveDevEnabled]);
 
   useEffect(() => () => {
     introMusicRef.current?.stop();
@@ -864,8 +933,18 @@ function App() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      if (cellWaveDevEnabled && event.ctrlKey && event.shiftKey && event.key.toLowerCase() === 'w') {
+        event.preventDefault();
+        setCellWaveDevOpen((open) => !open);
+        return;
+      }
+
       if (event.key === 'Escape') {
         event.preventDefault();
+        if (cellWaveDevOpen) {
+          setCellWaveDevOpen(false);
+          return;
+        }
         if (settingsOpen) {
           audioRef.current?.play('menu');
           if (creditsOpen) {
@@ -893,7 +972,7 @@ function App() {
     };
     window.addEventListener('keydown', onKeyDown);
     return () => window.removeEventListener('keydown', onKeyDown);
-  }, [creditsOpen, settingsOpen]);
+  }, [cellWaveDevEnabled, cellWaveDevOpen, creditsOpen, settingsOpen]);
 
   useEffect(() => {
     const previousFen = previousFenRef.current;
@@ -2094,6 +2173,61 @@ function App() {
             </div>
           </div>
         </div>
+      )}
+
+      {cellWaveDevEnabled && (
+        <>
+          <button
+            type="button"
+            className={'cellwave-dev-tab' + (cellWaveDevOpen ? ' open' : '')}
+            aria-expanded={cellWaveDevOpen}
+            aria-controls="cellwave-dev-panel"
+            onClick={() => setCellWaveDevOpen((open) => !open)}
+          >
+            CELLWAVE DEV
+          </button>
+          {cellWaveDevOpen && (
+            <div className="cellwave-dev-panel" id="cellwave-dev-panel" role="dialog" aria-label="Cellwave dev controls">
+              <div className="cellwave-dev-head">
+                <div>
+                  <span>EXPERIMENTAL</span>
+                  <strong>Cellwave Backdrop</strong>
+                </div>
+                <button type="button" aria-label="Close cellwave dev controls" onClick={() => setCellWaveDevOpen(false)}>
+                  X
+                </button>
+              </div>
+              <div className="cellwave-dev-body">
+                {CELLWAVE_DEV_CONTROL_DEFS.map((control) => {
+                  const value = cellWaveDevControls[control.key];
+                  const progress = ((value - control.min) / (control.max - control.min)) * 100;
+                  return (
+                    <label className="cellwave-dev-control" key={control.key} htmlFor={`cellwave-dev-${control.key}`}>
+                      <span>
+                        <b>{control.label}</b>
+                        <code>{value.toFixed(2)}</code>
+                      </span>
+                      <input
+                        id={`cellwave-dev-${control.key}`}
+                        type="range"
+                        min={control.min}
+                        max={control.max}
+                        step={control.step}
+                        value={value}
+                        style={{ '--cellwave-dev-progress': `${progress}%` } as CSSProperties}
+                        onChange={(event) => updateCellWaveDevControl(control.key, Number(event.currentTarget.value))}
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              <div className="cellwave-dev-actions">
+                <button type="button" onClick={resetCellWaveDevControls}>RESET</button>
+                <span>Ctrl+Shift+W</span>
+              </div>
+            </div>
+          )}
+        </>
       )}
 
       {settingsOpen && (

@@ -2530,6 +2530,150 @@
       0 0 4px var(--neon-cyan),
       0 0 10px var(--neon-blue);
   }
+  .cellwave-dev-tab {
+    position: fixed;
+    z-index: 9600;
+    left: 10px;
+    bottom: 10px;
+    min-width: 116px;
+    min-height: 28px;
+    padding: 5px 9px 4px;
+    color: #9ffcff;
+    background: rgba(2, 8, 14, 0.76);
+    border: 1px solid rgba(80, 240, 255, 0.5);
+    box-shadow: 0 0 12px rgba(0, 220, 255, 0.18), inset 0 0 10px rgba(0, 220, 255, 0.08);
+    font: 900 10px/1 var(--font-label);
+    letter-spacing: 0.08em;
+    cursor: pointer;
+    pointer-events: auto;
+  }
+  .cellwave-dev-tab.open,
+  .cellwave-dev-tab:hover,
+  .cellwave-dev-tab:focus-visible {
+    color: #031014;
+    background: #7df7ff;
+    border-color: #d8ffff;
+    outline: none;
+  }
+  .cellwave-dev-panel {
+    position: fixed;
+    z-index: 9601;
+    left: 10px;
+    bottom: 46px;
+    box-sizing: border-box;
+    width: min(300px, calc(100vw - 20px));
+    max-height: calc(100vh - 64px);
+    overflow: auto;
+    padding: 10px;
+    color: #d7feff;
+    background:
+      linear-gradient(180deg, rgba(3, 13, 22, 0.96), rgba(0, 5, 10, 0.94)),
+      rgba(0, 0, 0, 0.86);
+    border: 1px solid rgba(93, 244, 255, 0.58);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.48), inset 0 0 18px rgba(0, 204, 255, 0.08);
+    font-family: var(--font-label);
+    pointer-events: auto;
+  }
+  .cellwave-dev-head {
+    display: flex;
+    align-items: start;
+    justify-content: space-between;
+    gap: 10px;
+    margin-bottom: 8px;
+    padding-bottom: 7px;
+    border-bottom: 1px solid rgba(93, 244, 255, 0.24);
+  }
+  .cellwave-dev-head span,
+  .cellwave-dev-actions span {
+    display: block;
+    color: #ffec70;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+  }
+  .cellwave-dev-head strong {
+    display: block;
+    margin-top: 2px;
+    color: #d8ffff;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+  }
+  .cellwave-dev-head button,
+  .cellwave-dev-actions button {
+    min-height: 24px;
+    color: #d8ffff;
+    background: rgba(20, 36, 46, 0.9);
+    border: 1px solid rgba(93, 244, 255, 0.52);
+    font: 900 10px var(--font-label);
+    cursor: pointer;
+  }
+  .cellwave-dev-head button {
+    width: 24px;
+    padding: 0;
+  }
+  .cellwave-dev-body {
+    display: grid;
+    gap: 8px;
+  }
+  .cellwave-dev-control {
+    display: grid;
+    gap: 4px;
+  }
+  .cellwave-dev-control span {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 8px;
+    color: #9ffcff;
+    font-size: 10px;
+  }
+  .cellwave-dev-control code {
+    color: #ffec70;
+    font: 900 10px var(--font-label);
+  }
+  .cellwave-dev-control input {
+    width: 100%;
+    height: 16px;
+    margin: 0;
+    appearance: none;
+    background:
+      linear-gradient(90deg, #7df7ff 0 var(--cellwave-dev-progress), rgba(93, 244, 255, 0.15) var(--cellwave-dev-progress) 100%);
+    border: 1px solid rgba(93, 244, 255, 0.42);
+    cursor: pointer;
+  }
+  .cellwave-dev-control input::-webkit-slider-thumb {
+    width: 10px;
+    height: 20px;
+    appearance: none;
+    background: #ffec70;
+    border: 1px solid #03080d;
+  }
+  .cellwave-dev-control input::-moz-range-thumb {
+    width: 10px;
+    height: 20px;
+    background: #ffec70;
+    border: 1px solid #03080d;
+    border-radius: 0;
+  }
+  .cellwave-dev-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    margin-top: 10px;
+    padding-top: 8px;
+    border-top: 1px solid rgba(93, 244, 255, 0.24);
+  }
+  @media (max-width: 520px) {
+    .cellwave-dev-tab {
+      left: 8px;
+      bottom: 8px;
+    }
+    .cellwave-dev-panel {
+      left: 8px;
+      bottom: 42px;
+      width: calc(100vw - 16px);
+    }
+  }
 </style>
 </head>
 <body>

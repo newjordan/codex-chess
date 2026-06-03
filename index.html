@@ -2118,8 +2118,8 @@
     display: grid;
     align-content: center;
     min-width: 0;
-    min-height: 46px;
-    padding: 7px 10px;
+    min-height: 50px;
+    padding: 7px 10px 8px;
     background: rgba(0, 0, 0, 0.74);
     border: 1px solid rgba(101, 230, 255, 0.66);
     box-shadow:
@@ -2135,12 +2135,13 @@
   }
   .settings-track-now strong {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
     color: #9af8ff;
-    font-size: 14px;
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 13px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
   .settings-track-list {
     display: grid;
@@ -2165,24 +2166,27 @@
   .settings-track-option {
     display: grid;
     grid-template-columns: 22px minmax(0, 1fr);
-    align-items: center;
+    align-items: start;
     gap: 5px;
-    min-height: 32px;
-    padding: 4px 7px;
+    min-height: 38px;
+    padding: 5px 7px 6px;
     text-align: left;
   }
   .settings-track-option span {
     color: #7dffcc;
     font-family: var(--font-label);
     font-size: 10px;
+    line-height: 1.05;
+    padding-top: 1px;
   }
   .settings-track-option strong {
     min-width: 0;
-    overflow: hidden;
-    font-size: 11px;
-    line-height: 1.05;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    overflow: visible;
+    font-size: 10px;
+    line-height: 1.08;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
   }
   .settings-track-option.selected {
     color: #00131c;

@@ -117,6 +117,12 @@ const SETTINGS_BG_SRC = 'media/settings-moniker-bg.jpg';
 const CYBER_CHESS_ANNOUNCER_SRC = 'media/audio/cyber-chess-announcer.mp3';
 const SOUNDTRACK_SOURCES = [
   'media/audio/the_pulse_long_song.mp3',
+  'media/audio/pawn2queen.mp3',
+  'media/audio/fapponacci_twister.mp3',
+  'media/audio/dont twist the bishop.mp3',
+  'media/audio/rooks and kings.mp3',
+  'media/audio/Synesthetic Circuit.mp3',
+  'media/audio/Velvet Queen.mp3',
   'media/audio/cyber_chess_music.mp3',
   'media/audio/Chrome Gambit.mp3',
   'media/audio/Chrome fresh.mp3',
@@ -641,6 +647,7 @@ function App() {
   const endMusicRef = useRef<HTMLAudioElement | null>(null);
   const endMusicSrcRef = useRef('');
   const announcerRef = useRef<HTMLAudioElement | null>(null);
+  const introAnnouncerPlayedRef = useRef(false);
   const loadingMusicIndexRef = useRef(0);
   const lastAnnouncedRef = useRef('');
   const audioModeRef = useRef<AudioMode>(readStoredAudioMode());
@@ -934,6 +941,22 @@ function App() {
   }, [audioMode, audioVolume, menuStep, screen]);
 
   useEffect(() => {
+    if (screen !== 'intro' || menuStep !== 'video' || !introVideoStarted) {
+      return;
+    }
+    if (introAnnouncerPlayedRef.current) return;
+
+    const id = window.setTimeout(() => {
+      if (introAnnouncerPlayedRef.current) return;
+      if (window.__chess.campaign?.screen !== 'intro') return;
+      introAnnouncerPlayedRef.current = true;
+      playAnnouncer(CYBER_CHESS_ANNOUNCER_SRC);
+    }, 10_000);
+
+    return () => window.clearTimeout(id);
+  }, [introVideoStarted, menuStep, screen]);
+
+  useEffect(() => {
     window.__chess.campaign = {
       selectedId,
       lives,
@@ -1031,6 +1054,9 @@ function App() {
     endMusicRef.current?.pause();
     endMusicRef.current = null;
     endMusicSrcRef.current = '';
+    announcerRef.current?.pause();
+    introAnnouncerPlayedRef.current = false;
+    setIntroVideoStarted(false);
     setMenuStep('video');
     setLives(MAX_LIVES);
     setResultState(null);
@@ -1356,6 +1382,7 @@ function App() {
   const startIntroSequence = () => {
     ensureAudioEngine()?.play('menu');
     startLoadingMusic();
+    introAnnouncerPlayedRef.current = false;
     setIntroVideoStarted(true);
     const video = introVideoRef.current;
     if (video) {

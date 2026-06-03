@@ -17,7 +17,7 @@ Keep `media/engines/lozza-LICENSE.txt` with any distribution that includes
 Lozza do not include an explicit copyright notice line, so confirm the exact
 copyright notice if a downstream distribution requires one.
 
-## ElevenLabs-Generated Audio
+## ElevenLabs and Suno Audio
 
 The following committed audio files contain embedded metadata identifying
 ElevenLabs / Eleven Labs Inc. as the creation or editing software agent:
@@ -61,6 +61,9 @@ ElevenLabs references:
 
 Local note: `media/sfx/README.md` contains prompt notes for future ElevenLabs
 sound effects, but no generated files are committed under `media/sfx/`.
+
+The soundtrack package includes tracks identified locally as Suno-generated in
+`media/cyber-chess-soundtrack/Cyber Chess Soundtrack/TRACKLIST.txt`.
 
 The following committed audio files did not show ElevenLabs metadata in the
 local scan and still need provenance/license confirmation:

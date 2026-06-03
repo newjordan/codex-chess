@@ -59985,7 +59985,7 @@ function App() {
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Built with React, Three.js, chess.js, and local chess agents." }),
           /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Static audio assets generated with ElevenLabs." })
+          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Static audio assets generated with ElevenLabs and Suno." })
         ] }) }),
         /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
           audioRef.current?.play("menu");

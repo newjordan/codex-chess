@@ -1885,7 +1885,7 @@ function App() {
                     <p>Game created by Frosty40 and Codex.</p>
                     <p>Built with React, Three.js, chess.js, and local chess agents.</p>
                     <p>GORDO uses the Lozza chess engine by Colin Jenkins.</p>
-                    <p>Static audio assets generated with ElevenLabs.</p>
+                    <p>Static audio assets generated with ElevenLabs and Suno.</p>
                   </div>
                 </div>
                 <button type="button" className="art-button art-button-close" onClick={() => {

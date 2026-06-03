@@ -134,4 +134,4 @@ Publish `dist/` from GitHub Pages or an Actions deploy step.
 
 ## Attributions
 
-See `ATTRIBUTIONS.md` for Lozza, ElevenLabs-generated audio notes, fonts, and asset notices.
+See `ATTRIBUTIONS.md` for Lozza, ElevenLabs/Suno audio notes, fonts, and asset notices.

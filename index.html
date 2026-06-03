@@ -2291,7 +2291,7 @@
   .credits-roll {
     display: grid;
     gap: clamp(9px, 1.6vh, 14px);
-    animation: credits-roll-up 12s linear infinite;
+    animation: credits-roll-in 1.8s steps(4, end) forwards;
   }
   .credits-panel p {
     margin: 0;
@@ -2307,16 +2307,15 @@
     width: clamp(110px, 20vw, 154px);
     margin-top: clamp(6px, 1.4vh, 14px);
   }
-  @keyframes credits-roll-up {
+  @keyframes credits-roll-in {
     0% {
-      transform: translate3d(0, 52%, 0);
+      opacity: 0;
+      transform: translate3d(0, 18px, 0);
       filter: saturate(1.7) brightness(1.12);
     }
-    10% {
-      filter: none;
-    }
     100% {
-      transform: translate3d(0, -112%, 0);
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
       filter: none;
     }
   }

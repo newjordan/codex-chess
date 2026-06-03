@@ -1271,9 +1271,9 @@
     transform: translateY(1px) scale(0.985);
   }
   .cyber-hud {
-    --player-health-filter: hue-rotate(265deg) saturate(1.85) brightness(1.12);
+    --player-health-image: url("media/hud/player_hp.png");
     --player-health-glow: rgba(178, 76, 255, 0.38);
-    --enemy-health-filter: hue-rotate(108deg) saturate(1.9) brightness(1.08);
+    --enemy-health-image: url("media/hud/goop_health_bar.png");
     --enemy-health-glow: rgba(72, 255, 76, 0.3);
     position: fixed;
     left: 50%;
@@ -1316,7 +1316,7 @@
     opacity: 0.35;
   }
   .cyber-hud.enemy-theme-goop {
-    --enemy-health-filter: hue-rotate(108deg) saturate(1.9) brightness(1.08);
+    --enemy-health-image: url("media/hud/goop_health_bar.png");
     --enemy-health-glow: rgba(72, 255, 76, 0.3);
     box-shadow: none;
   }
@@ -1324,7 +1324,7 @@
     content: "";
   }
   .cyber-hud.enemy-theme-frostd4d {
-    --enemy-health-filter: hue-rotate(186deg) saturate(1.5) brightness(1.08);
+    --enemy-health-image: url("media/hud/frostd4d_hp.png");
     --enemy-health-glow: rgba(69, 168, 255, 0.26);
     box-shadow: none;
   }
@@ -1332,7 +1332,7 @@
     content: "";
   }
   .cyber-hud.enemy-theme-razorblade {
-    --enemy-health-filter: hue-rotate(330deg) saturate(2.15) brightness(1.06);
+    --enemy-health-image: url("media/hud/razorblade_hp.png");
     --enemy-health-glow: rgba(255, 49, 92, 0.34);
     box-shadow: none;
   }
@@ -1340,7 +1340,7 @@
     content: "";
   }
   .cyber-hud.enemy-theme-gordo {
-    --enemy-health-filter: hue-rotate(340deg) saturate(2.2) brightness(1.05);
+    --enemy-health-image: url("media/hud/razorblade_hp.png");
     --enemy-health-glow: rgba(255, 49, 92, 0.32);
     box-shadow: none;
   }
@@ -1452,7 +1452,7 @@
     inset: 0;
     pointer-events: none;
     z-index: 0;
-    background: url("media/hud/left-health-bar.png") center / 100% 100% no-repeat;
+    background: var(--player-health-image) center / 100% 100% no-repeat;
     filter: brightness(0.28) saturate(0.75);
     opacity: 0.7;
   }
@@ -1470,8 +1470,7 @@
     inset: 0;
     z-index: 1;
     display: block;
-    background: url("media/hud/left-health-bar.png") center / 100% 100% no-repeat;
-    filter: var(--player-health-filter);
+    background: var(--player-health-image) center / 100% 100% no-repeat;
     -webkit-mask-image: linear-gradient(90deg, #000 0 var(--health), transparent var(--health) 100%);
     mask-image: linear-gradient(90deg, #000 0 var(--health), transparent var(--health) 100%);
     transition: -webkit-mask-image 220ms ease, mask-image 220ms ease;
@@ -1481,10 +1480,9 @@
   }
   .health-shell-enemy::before,
   .health-shell-enemy i {
-    background-image: url("media/hud/right-health-bar.png");
+    background-image: var(--enemy-health-image);
   }
   .health-shell-enemy i {
-    filter: var(--enemy-health-filter);
     -webkit-mask-image: linear-gradient(90deg, transparent 0 calc(100% - var(--health)), #000 calc(100% - var(--health)) 100%);
     mask-image: linear-gradient(90deg, transparent 0 calc(100% - var(--health)), #000 calc(100% - var(--health)) 100%);
   }

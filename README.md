@@ -87,17 +87,17 @@ All non-Lozza opponents are local chess heuristics written for this game. Codex 
 From a fresh clone:
 
 ```bash
-npm run play
+npm start
 ```
 
-That command installs locked dependencies, rebuilds `app.js`, and starts a local static server. Open `http://127.0.0.1:5173/`.
+That command installs locked dependencies when they are missing, rebuilds `app.js` when the source is newer, and starts a local static server. Open `http://127.0.0.1:5173/`.
 
 ## Local Development
 
 ```bash
 npm ci
 npm run build
-npm start
+npm run serve
 ```
 
 ## Rebuild

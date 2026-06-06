@@ -16,6 +16,7 @@ const LEADERBOARD_KEY = 'cyberChessLeaderboardV1';
 const AUDIO_MODE_KEY = 'cyberChessAudioMode';
 const AUDIO_VOLUME_KEY = 'cyberChessAudioVolume';
 const SAVE_GAME_KEY = 'cyberChessSaveGameV1';
+const SUPER_90S_KEY = 'cyberChessSuper90s';
 const MAX_LEADERBOARD = 8;
 
 const CELLWAVE_DEV_CONTROL_DEFS: Array<{
@@ -156,7 +157,6 @@ const SOUNDTRACK_SOURCES = [
   'media/audio/drummin_pawns.mp3',
   'media/audio/cybercrimes.mp3',
   'media/audio/The_Pulse_of_the_Board_2.mp3',
-  'media/audio/Pawns_of_Destiny.mp3',
   'media/audio/checkmeat_freakazoid.mp3',
   'media/audio/checkmeat_you_lose_song.mp3',
   'media/audio/victorious_1.mp3',
@@ -219,6 +219,7 @@ declare global {
     __chess: any;
     cyberChessDesktop?: {
       close: () => Promise<void>;
+      minimize: () => Promise<void>;
     };
   }
 }
@@ -551,6 +552,14 @@ function readStoredAudioVolume() {
   }
 }
 
+function readStoredSuper90s() {
+  try {
+    return window.localStorage.getItem(SUPER_90S_KEY) === '1';
+  } catch (_) {
+    return false;
+  }
+}
+
 function readLeaderboard(): LeaderboardEntry[] {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(LEADERBOARD_KEY) || '[]');
@@ -750,8 +759,10 @@ function App() {
   const lastAnnouncedRef = useRef('');
   const audioModeRef = useRef<AudioMode>(readStoredAudioMode());
   const audioVolumeRef = useRef(readStoredAudioVolume());
+  const super90sRef = useRef(readStoredSuper90s());
   const previousFenRef = useRef(START);
   const previousContinueSecondsRef = useRef(CONTINUE_SECONDS);
+  const lastCornerTapRef = useRef(0);
   const [screen, setScreen] = useState<ScreenState>('intro');
   const [menuStep, setMenuStep] = useState<MenuStep>('video');
   const [storyIndex, setStoryIndex] = useState(0);
@@ -763,6 +774,7 @@ function App() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [audioMode, setAudioMode] = useState<AudioMode>(audioModeRef.current);
   const [audioVolume, setAudioVolume] = useState(audioVolumeRef.current);
+  const [super90s, setSuper90s] = useState(super90sRef.current);
   const [soundtrackIndex, setSoundtrackIndex] = useState(loadingMusicIndexRef.current);
   const [introVideoReady, setIntroVideoReady] = useState(false);
   const [introVideoStarted, setIntroVideoStarted] = useState(false);
@@ -801,6 +813,15 @@ function App() {
         : selected.avatar;
   const soundtrackTitle = getSoundtrackTitle(SOUNDTRACK_SOURCES[soundtrackIndex]);
   const musicControlsDisabled = audioMode !== 'full';
+
+  const updateSuper90s = (enabled: boolean) => {
+    super90sRef.current = enabled;
+    setSuper90s(enabled);
+    try {
+      window.localStorage.setItem(SUPER_90S_KEY, enabled ? '1' : '0');
+    } catch (_) {}
+    ensureAudioEngine()?.play(enabled ? 'reveal' : 'tick');
+  };
 
   const updateGameState = (state: Board3DGameState) => {
     window.__chess.state = state;
@@ -1129,6 +1150,7 @@ function App() {
       leaderboard,
       audioMode,
       audioVolume,
+      super90s,
       settingsOpen,
       audioReady: Boolean(audioRef.current),
       soundtrackIndex,
@@ -1160,7 +1182,7 @@ function App() {
       audioRef.current?.play(forcedResult.kind === 'game-over' ? 'loss' : 'tick');
       setScreen('result');
     };
-  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
+  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, super90s, whiteName]);
 
   useEffect(() => {
     if (screen === 'intro' && menuStep === 'profile') setPlayerNameInput('');
@@ -1846,17 +1868,30 @@ function App() {
 
   const resultPresentation = resultState ? getResultPresentation(resultState, playerName) : null;
   const resultBackdrop = resultState ? getResultBackdrop(resultState) : '';
+  const minimizeDesktopWindow = () => {
+    window.cyberChessDesktop?.minimize().catch(() => undefined);
+  };
+  const handleCornerTap = () => {
+    const now = Date.now();
+    if (now - lastCornerTapRef.current <= 420) {
+      lastCornerTapRef.current = 0;
+      minimizeDesktopWindow();
+      return;
+    }
+    lastCornerTapRef.current = now;
+  };
 
   return (
     <>
       <Board3DScene
-        key={`${selected.id}-${playerColor}-${playerName}`}
+        key={`${selected.id}-${playerColor}-${playerName}-${super90s ? 'super90s' : 'standard'}`}
         ref={ref}
         whiteName={whiteName}
         blackName={blackName}
         inputEnabled={inputEnabled}
         enemyTheme={selected.theme}
         playerColor={playerColor}
+        super90sEnabled={super90s}
         onGameStateChange={updateGameState}
         onMoveStart={() => {
           playClip(PIECE_SLIDE_SFX_SRC);
@@ -1865,7 +1900,15 @@ function App() {
 
       {window.cyberChessDesktop && (
         <>
-          <div className="electron-drag-tag" aria-hidden="true" title="Drag window" />
+          <div className="electron-drag-tag" title="Drag window">
+            <button
+              type="button"
+              className="electron-corner-minimize"
+              aria-label="Minimize Cyber Chess"
+              onClick={handleCornerTap}
+              onDoubleClick={minimizeDesktopWindow}
+            />
+          </div>
           <button
             type="button"
             className="electron-close"
@@ -2291,6 +2334,20 @@ function App() {
                   />
                 </span>
               </label>
+              <div className="settings-group settings-visual-group">
+                <strong>VISUALS</strong>
+                <div className="settings-options settings-options-visual" role="group" aria-label="Visual effects">
+                  <button
+                    type="button"
+                    className={'settings-toggle settings-visual-toggle' + (super90s ? ' selected' : '')}
+                    aria-pressed={super90s}
+                    onClick={() => updateSuper90s(!super90s)}
+                  >
+                    <span className="settings-toggle-switch" aria-hidden="true" />
+                    <span className="settings-toggle-label">SUPER 90S</span>
+                  </button>
+                </div>
+              </div>
               <div className="settings-group settings-playlist">
                 <strong>SOUNDTRACK</strong>
                 <div className="settings-track-control">

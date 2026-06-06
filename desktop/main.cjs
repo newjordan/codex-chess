@@ -4,6 +4,7 @@ const { createServer } = require('node:http');
 const { extname, join, resolve } = require('node:path');
 
 const staticRoot = resolve(process.env.CYBER_CHESS_STATIC_ROOT || join(__dirname, 'app'));
+const appIcon = join(__dirname, 'icon.ico');
 const windowAspect = 1672 / 941;
 const targetWindow = { width: 1672, height: 941 };
 
@@ -78,6 +79,7 @@ async function createWindow() {
     fullscreenable: false,
     maximizable: false,
     title: 'Cyber Chess',
+    icon: appIcon,
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
@@ -95,6 +97,9 @@ app.commandLine.appendSwitch('autoplay-policy', 'no-user-gesture-required');
 app.whenReady().then(() => {
   ipcMain.handle('cyber-chess:close', () => {
     BrowserWindow.getFocusedWindow()?.close();
+  });
+  ipcMain.handle('cyber-chess:minimize', () => {
+    BrowserWindow.getFocusedWindow()?.minimize();
   });
   Menu.setApplicationMenu(null);
   return createWindow();

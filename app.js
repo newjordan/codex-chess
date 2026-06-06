@@ -12747,7 +12747,7 @@ var require_jsx_runtime = __commonJS({
 });
 
 // src/main.tsx
-var import_react3 = __toESM(require_react(), 1);
+var import_react4 = __toESM(require_react(), 1);
 var import_client = __toESM(require_client(), 1);
 
 // node_modules/chess.js/dist/esm/chess.js
@@ -16207,7 +16207,7 @@ var Chess = class {
 };
 
 // src/Board3DScene.tsx
-var import_react2 = __toESM(require_react(), 1);
+var import_react3 = __toESM(require_react(), 1);
 
 // src/board3d/useBoard3D.ts
 var import_react = __toESM(require_react(), 1);
@@ -49170,6 +49170,200 @@ function createAmbientCircuitLayer(theme) {
   };
 }
 
+// src/board3d/super90s.ts
+var TITLE_COLORS = [6792, 9044111, 35898, 14009344, 12910641, 39112, 7162571];
+var BUTTON_COLORS = [16722902, 16773632, 4587264];
+var FRAME_GRAY = 12171705;
+var DARK_GRAY = 4868682;
+var LIGHT_GRAY = 16777215;
+var MilkdropShader = {
+  uniforms: {
+    time: { value: 0 },
+    audioLevel: { value: 0 },
+    audioPulse: { value: 0 },
+    hueSeed: { value: 0 },
+    variant: { value: 0 }
+  },
+  vertexShader: `
+    varying vec2 vUv;
+    void main() {
+      vUv = uv;
+      gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+  `,
+  fragmentShader: `
+    precision highp float;
+    uniform float time;
+    uniform float audioLevel;
+    uniform float audioPulse;
+    uniform float hueSeed;
+    uniform float variant;
+    varying vec2 vUv;
+
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+    }
+
+    vec3 palette(float t) {
+      vec3 a = vec3(0.55, 0.45, 0.58);
+      vec3 b = vec3(0.52, 0.53, 0.45);
+      vec3 c = vec3(1.00, 1.00, 1.00);
+      vec3 d = vec3(0.00 + hueSeed, 0.28 + hueSeed * 0.5, 0.58 + hueSeed * 0.25);
+      return a + b * cos(6.28318 * (c * t + d));
+    }
+
+    void main() {
+      vec2 uv = vUv * 2.0 - 1.0;
+      float t = time * (0.34 + variant * 0.028);
+      float pulse = audioPulse * 2.2 + audioLevel * 0.9;
+
+      float angle = atan(uv.y, uv.x);
+      float radius = length(uv);
+      float folds = 3.0 + mod(variant, 5.0);
+      float kaleido = abs(fract((angle / 6.28318) * folds + 0.5) - 0.5) * 2.0;
+      vec2 warped = vec2(cos(kaleido * 6.28318), sin(kaleido * 6.28318)) * radius;
+
+      float radial = sin(24.0 * radius - t * 8.0 + pulse * 2.0);
+      float plasma = sin((warped.x + warped.y) * (8.0 + variant) + t * 4.0);
+      float bands = sin((uv.y * 18.0) + sin(uv.x * 9.0 + t) * 4.0 - t * 5.0);
+      float rings = sin(42.0 * radius + sin(angle * folds + t) * 5.0 - t * 9.0);
+
+      float signal = radial * 0.28 + plasma * 0.25 + bands * 0.22 + rings * 0.25;
+      signal += hash(floor(vUv * vec2(96.0, 54.0)) + time) * 0.18;
+      signal += pulse * (0.16 + smoothstep(0.75, 0.05, radius) * 0.26);
+
+      vec3 color = palette(signal + radius * 0.22 + time * 0.045);
+      color.rg += vec2(0.22, -0.08) * sin(t + variant);
+      color.b += 0.24 * cos(t * 1.7 + radius * 8.0);
+
+      float scanline = 0.82 + 0.18 * step(0.5, fract(vUv.y * 120.0));
+      float dither = step(0.45, hash(floor(vUv * vec2(160.0, 90.0)) + variant)) * 0.08;
+      float vignette = smoothstep(1.2, 0.18, radius);
+      color = (color + dither) * scanline * (0.58 + vignette * 0.52 + pulse * 0.16);
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `
+};
+function createBox(width, height, depth, color, x, y, z) {
+  const mesh = new Mesh(
+    new BoxGeometry(width, height, depth),
+    new MeshBasicMaterial({ color })
+  );
+  mesh.position.set(x, y, z);
+  return mesh;
+}
+function createWindowFrame(index) {
+  const group = new Group();
+  const width = 5.8 + index % 3 * 0.55;
+  const height = 3.7 + index % 2 * 0.4;
+  const depth = 0.1;
+  const titleHeight = 0.45;
+  const border = 0.16;
+  const back = createBox(width, height, depth, FRAME_GRAY, 0, 0, -0.04);
+  group.add(back);
+  const title = createBox(width - border * 2, titleHeight, depth + 0.025, TITLE_COLORS[index % TITLE_COLORS.length], 0, height / 2 - titleHeight / 2 - border, 0.04);
+  group.add(title);
+  const contentWidth = width - border * 2.4;
+  const contentHeight = height - titleHeight - border * 3.1;
+  const visual = new Mesh(
+    new PlaneGeometry(contentWidth, contentHeight),
+    new ShaderMaterial({
+      ...MilkdropShader,
+      uniforms: UniformsUtils.clone(MilkdropShader.uniforms),
+      side: DoubleSide
+    })
+  );
+  visual.position.set(0, -height / 2 + border + contentHeight / 2, 0.12);
+  group.add(visual);
+  group.add(createBox(width, border, depth + 0.05, LIGHT_GRAY, 0, height / 2 - border / 2, 0.08));
+  group.add(createBox(border, height, depth + 0.05, LIGHT_GRAY, -width / 2 + border / 2, 0, 0.08));
+  group.add(createBox(width, border, depth + 0.05, DARK_GRAY, 0, -height / 2 + border / 2, 0.09));
+  group.add(createBox(border, height, depth + 0.05, DARK_GRAY, width / 2 - border / 2, 0, 0.09));
+  for (let i = 0; i < 3; i += 1) {
+    const button = createBox(0.22, 0.22, depth + 0.06, BUTTON_COLORS[i], width / 2 - 0.42 - i * 0.32, height / 2 - titleHeight / 2 - border, 0.13);
+    group.add(button);
+  }
+  const insetLineMat = new LineBasicMaterial({ color: 2105376, transparent: true, opacity: 0.75 });
+  const points = [
+    new Vector3(-contentWidth / 2, -height / 2 + border, 0.135),
+    new Vector3(contentWidth / 2, -height / 2 + border, 0.135),
+    new Vector3(contentWidth / 2, -height / 2 + border + contentHeight, 0.135),
+    new Vector3(-contentWidth / 2, -height / 2 + border + contentHeight, 0.135),
+    new Vector3(-contentWidth / 2, -height / 2 + border, 0.135)
+  ];
+  group.add(new Line(new BufferGeometry().setFromPoints(points), insetLineMat));
+  const shaderMaterial = visual.material;
+  shaderMaterial.uniforms.hueSeed.value = index * 0.137;
+  shaderMaterial.uniforms.variant.value = index;
+  return { group, visual: shaderMaterial };
+}
+function createSuper90sEnvironment(playerColor) {
+  const group = new Group();
+  group.name = "super-90s-windows";
+  const behind = playerColor === "w" ? 1 : -1;
+  const placements = [
+    [-8.2, 5.2, behind * 10.2, 0.18],
+    [7.8, 4.5, behind * 9.3, -0.2],
+    [-11.4, 2.7, behind * 3.3, 0.55],
+    [11.3, 3, behind * 2.4, -0.58],
+    [-5.2, 8, behind * 13.5, 0.08],
+    [5.5, 7.4, behind * 12.6, -0.1],
+    [0, 6.7, behind * 16.4, 0]
+  ];
+  const windows = placements.map(([x, y, z, yaw], index) => {
+    const { group: root, visual } = createWindowFrame(index);
+    root.position.set(x, y, z);
+    root.rotation.set(-0.08 + index % 2 * 0.08, yaw + (playerColor === "w" ? Math.PI : 0), -0.04 + index * 0.018);
+    root.scale.setScalar(0.92 + index % 3 * 0.08);
+    group.add(root);
+    return {
+      root,
+      visual,
+      basePosition: root.position.clone(),
+      driftSeed: index * 1.91 + 0.6,
+      orbitRadius: 0.18 + index * 0.035,
+      spinSpeed: 0.12 + index * 0.018,
+      pulseScale: 1.04 + index * 0.025
+    };
+  });
+  let elapsed = 0;
+  return {
+    group,
+    tick(delta, audioLevel, audioPulse) {
+      elapsed += delta;
+      const level = Math.max(0, Math.min(1, audioLevel || 0));
+      const pulse = Math.max(0, Math.min(1, audioPulse || 0));
+      windows.forEach((entry, index) => {
+        const phase = elapsed * entry.spinSpeed + entry.driftSeed;
+        entry.root.position.set(
+          entry.basePosition.x + Math.sin(phase * 1.7) * entry.orbitRadius,
+          entry.basePosition.y + Math.sin(phase * 1.1) * (0.24 + level * 0.38),
+          entry.basePosition.z + Math.cos(phase * 1.3) * entry.orbitRadius
+        );
+        entry.root.rotation.y += delta * (0.035 + level * 0.08) * (index % 2 === 0 ? 1 : -1);
+        entry.root.rotation.z = Math.sin(phase) * 0.09;
+        const scale = entry.pulseScale + level * 0.08 + pulse * 0.14;
+        entry.root.scale.setScalar(scale);
+        entry.visual.uniforms.time.value = elapsed;
+        entry.visual.uniforms.audioLevel.value = level;
+        entry.visual.uniforms.audioPulse.value = pulse;
+      });
+    },
+    dispose() {
+      group.traverse((child) => {
+        const disposable = child;
+        disposable.geometry?.dispose();
+        if (disposable.material) {
+          const materials = Array.isArray(disposable.material) ? disposable.material : [disposable.material];
+          materials.forEach((material) => material.dispose());
+        }
+      });
+      group.clear();
+    }
+  };
+}
+
 // src/board3d/scene.ts
 var DotMatrixShader = {
   uniforms: {
@@ -49196,7 +49390,7 @@ var DotMatrixShader = {
     }
   `
 };
-function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
+function setupScene(canvas, enemyTheme = "goop", playerColor = "w", super90sEnabled = false) {
   const scene = new Scene();
   scene.fog = new FogExp2(1296, 0.015);
   const w = canvas.clientWidth || 800;
@@ -49261,6 +49455,13 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
   }
   const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
   scene.add(ambientCircuitLayer.group);
+  const super90sEnvironment = super90sEnabled ? createSuper90sEnvironment(playerColor) : null;
+  const super90sStatus = {
+    enabled: Boolean(super90sEnvironment),
+    windows: super90sEnvironment?.group.children.length ?? 0
+  };
+  if (chessGlobal) chessGlobal.super90s = super90sStatus;
+  if (super90sEnvironment) scene.add(super90sEnvironment.group);
   const clock = new Clock();
   const ro = new ResizeObserver(() => {
     const rw = canvas.clientWidth;
@@ -49288,6 +49489,7 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
       cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
+      super90sEnvironment?.tick(delta, audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
     },
     dispose() {
       ro.disconnect();
@@ -49295,6 +49497,8 @@ function setupScene(canvas, enemyTheme = "goop", playerColor = "w") {
       cellWaveEnvironment.dispose();
       if (chessGlobal?.cellWaveDev?.setParams === applyCellWaveDevControls) delete chessGlobal.cellWaveDev;
       ambientCircuitLayer.dispose();
+      super90sEnvironment?.dispose();
+      if (chessGlobal?.super90s === super90sStatus) delete chessGlobal.super90s;
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
       renderer.dispose();
@@ -57684,7 +57888,7 @@ function animateJump(instance, toSquare, effectsGroup, onComplete) {
 
 // src/board3d/useBoard3D.ts
 var START_FEN = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
-function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true, enemyTheme = "goop", playerColor = "w", onMoveStart) {
+function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true, enemyTheme = "goop", playerColor = "w", onMoveStart, super90sEnabled = false, onSetupError) {
   const canvasRef = (0, import_react.useRef)(null);
   const gameStateCallbackRef = (0, import_react.useRef)(onGameStateChange);
   const inputEnabledRef = (0, import_react.useRef)(inputEnabled);
@@ -57705,7 +57909,15 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
   (0, import_react.useEffect)(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = setupScene(canvas, enemyTheme, playerColor);
+    let ctx;
+    try {
+      ctx = setupScene(canvas, enemyTheme, playerColor, super90sEnabled);
+    } catch (error2) {
+      const reason = error2 instanceof Error ? error2.message : "webgl-renderer-failed";
+      console.warn("[Board3D] Falling back to the 2D board.", error2);
+      onSetupError?.(reason);
+      return;
+    }
     const { boardGroup } = createBoard(ctx.scene, whiteName, blackName);
     const piecesContainer = new Group();
     ctx.scene.add(piecesContainer);
@@ -58284,18 +58496,170 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
   return { canvasRef, handleRef };
 }
 
-// src/Board3DScene.tsx
+// src/Board2DFallback.tsx
+var import_react2 = __toESM(require_react(), 1);
 var import_jsx_runtime = __toESM(require_jsx_runtime(), 1);
-var Board3DScene = (0, import_react2.forwardRef)(
-  ({ whiteName = "White AI", blackName = "Black AI", inputEnabled = true, enemyTheme = "goop", playerColor = "w", onGameStateChange, onMoveStart }, ref) => {
-    const { canvasRef, handleRef } = useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled, enemyTheme, playerColor, onMoveStart);
+var PIECES = {
+  wp: "P",
+  wn: "N",
+  wb: "B",
+  wr: "R",
+  wq: "Q",
+  wk: "K",
+  bp: "p",
+  bn: "n",
+  bb: "b",
+  br: "r",
+  bq: "q",
+  bk: "k"
+};
+function statusFor(game) {
+  if (game.isCheckmate()) return `${game.turn() === "w" ? "Black" : "White"} wins by checkmate`;
+  if (game.isStalemate()) return "Draw by stalemate";
+  if (game.isDraw()) return "Draw";
+  const side = game.turn() === "w" ? "White" : "Black";
+  return game.isCheck() ? `${side} to move - check` : `${side} to move`;
+}
+var Board2DFallback = (0, import_react2.forwardRef)(
+  ({ initialFen, playerColor = "w", inputEnabled = true, onGameStateChange, onMoveStart, reason }, ref) => {
+    const [fen, setFen] = (0, import_react2.useState)(initialFen);
+    const [selectedSquare, setSelectedSquare] = (0, import_react2.useState)(null);
+    const [flashSquare, setFlashSquare] = (0, import_react2.useState)(null);
+    const game = (0, import_react2.useMemo)(() => new Chess(fen), [fen]);
+    const ranks = playerColor === "w" ? [8, 7, 6, 5, 4, 3, 2, 1] : [1, 2, 3, 4, 5, 6, 7, 8];
+    const files = playerColor === "w" ? ["a", "b", "c", "d", "e", "f", "g", "h"] : ["h", "g", "f", "e", "d", "c", "b", "a"];
+    const legalMoves2 = selectedSquare ? game.moves({ square: selectedSquare, verbose: true }) : [];
+    const legalTargets = new Set(legalMoves2.map((move) => move.to));
+    const emit = (nextGame, nextSelected) => {
+      onGameStateChange?.({
+        status: statusFor(nextGame),
+        fen: nextGame.fen(),
+        selectedSquare: nextSelected
+      });
+    };
+    const commitMove = (from, to, promotion = "q") => {
+      const nextGame = new Chess(fen);
+      const move = nextGame.move({ from, to, promotion });
+      if (!move) return false;
+      onMoveStart?.(Boolean(move.captured) || move.flags.includes("c") || move.flags.includes("e"));
+      setFen(nextGame.fen());
+      setSelectedSquare(null);
+      setFlashSquare(to);
+      window.setTimeout(() => setFlashSquare((current) => current === to ? null : current), 260);
+      emit(nextGame, null);
+      return true;
+    };
     (0, import_react2.useImperativeHandle)(ref, () => ({
-      applyMove: (...args) => handleRef.current.applyMove(...args),
-      resetToPosition: (fen) => handleRef.current.resetToPosition(fen),
-      highlightSquare: (sq) => handleRef.current.highlightSquare(sq),
-      flashSquare: (sq) => handleRef.current.flashSquare(sq)
+      applyMove(from, to, _isCapture, _flags, promotion) {
+        commitMove(from, to, promotion ?? "q");
+      },
+      resetToPosition(nextFen) {
+        const nextGame = new Chess(nextFen);
+        setFen(nextGame.fen());
+        setSelectedSquare(null);
+        emit(nextGame, null);
+      },
+      highlightSquare(square) {
+        setSelectedSquare(square);
+      },
+      flashSquare(square) {
+        setFlashSquare(square);
+        window.setTimeout(() => setFlashSquare((current) => current === square ? null : current), 260);
+      }
     }));
-    return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+    const selectSquare = (square) => {
+      if (!inputEnabled) return;
+      if (selectedSquare && legalTargets.has(square)) {
+        commitMove(selectedSquare, square);
+        return;
+      }
+      const piece = game.get(square);
+      if (!piece || piece.color !== game.turn()) {
+        setSelectedSquare(null);
+        emit(game, null);
+        return;
+      }
+      setSelectedSquare(square);
+      emit(game, square);
+    };
+    return /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "board2d-shell", "data-reason": reason ?? "webgl-unavailable", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime.jsxs)("div", { className: "board2d-status", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("strong", { children: "2D BOARD" }),
+        /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: statusFor(game) })
+      ] }),
+      /* @__PURE__ */ (0, import_jsx_runtime.jsx)("div", { className: "board2d-grid", role: "grid", "aria-label": "Cyber Chess fallback board", children: ranks.flatMap((rank2) => files.map((file2) => {
+        const square = `${file2}${rank2}`;
+        const piece = game.get(square);
+        const selected = selectedSquare === square;
+        const legal = legalTargets.has(square);
+        const dark = (files.indexOf(file2) + ranks.indexOf(rank2)) % 2 === 1;
+        return /* @__PURE__ */ (0, import_jsx_runtime.jsx)(
+          "button",
+          {
+            type: "button",
+            className: [
+              "board2d-square",
+              dark ? "board2d-dark" : "board2d-light",
+              selected ? "is-selected" : "",
+              legal ? "is-legal" : "",
+              flashSquare === square ? "is-flashing" : ""
+            ].filter(Boolean).join(" "),
+            "aria-label": `${square}${piece ? ` ${piece.color === "w" ? "white" : "black"} ${piece.type}` : ""}`,
+            onClick: () => selectSquare(square),
+            children: /* @__PURE__ */ (0, import_jsx_runtime.jsx)("span", { children: piece ? PIECES[`${piece.color}${piece.type}`] : "" })
+          },
+          square
+        );
+      })) })
+    ] });
+  }
+);
+Board2DFallback.displayName = "Board2DFallback";
+
+// src/Board3DScene.tsx
+var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
+function getWebGLBlockReason() {
+  if (typeof document === "undefined") return "";
+  const canvas = document.createElement("canvas");
+  try {
+    const gl = canvas.getContext("webgl2") ?? canvas.getContext("webgl") ?? canvas.getContext("experimental-webgl");
+    return gl ? "" : "webgl-unavailable";
+  } catch (error2) {
+    return error2 instanceof Error ? error2.message : "webgl-context-failed";
+  }
+}
+var Board3DScene = (0, import_react3.forwardRef)(
+  ({ whiteName = "White AI", blackName = "Black AI", inputEnabled = true, enemyTheme = "goop", playerColor = "w", super90sEnabled = false, onGameStateChange, onMoveStart }, ref) => {
+    const webglBlockReason = (0, import_react3.useMemo)(() => getWebGLBlockReason(), []);
+    const [setupError, setSetupError] = (0, import_react3.useState)("");
+    const fallbackReason = setupError || webglBlockReason;
+    const fallbackRef = (0, import_react3.useRef)(null);
+    const { canvasRef, handleRef } = useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled, enemyTheme, playerColor, onMoveStart, super90sEnabled, setSetupError);
+    (0, import_react3.useImperativeHandle)(ref, () => ({
+      applyMove: (...args) => (fallbackReason ? fallbackRef.current : handleRef.current)?.applyMove(...args),
+      resetToPosition: (fen) => (fallbackReason ? fallbackRef.current : handleRef.current)?.resetToPosition(fen),
+      highlightSquare: (sq) => (fallbackReason ? fallbackRef.current : handleRef.current)?.highlightSquare(sq),
+      flashSquare: (sq) => (fallbackReason ? fallbackRef.current : handleRef.current)?.flashSquare(sq)
+    }), [fallbackReason]);
+    if (fallbackReason) {
+      window.__chess.renderMode = "2d-fallback";
+      window.__chess.renderFallbackReason = fallbackReason;
+      return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        Board2DFallback,
+        {
+          ref: fallbackRef,
+          initialFen: "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1",
+          playerColor,
+          inputEnabled,
+          onGameStateChange,
+          onMoveStart,
+          reason: fallbackReason
+        }
+      );
+    }
+    window.__chess.renderMode = "3d";
+    window.__chess.renderFallbackReason = "";
+    return /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
       "canvas",
       {
         ref: canvasRef,
@@ -58457,7 +58821,7 @@ async function chooseAiMove(fen, profile, aiColor = "b") {
 }
 
 // src/main.tsx
-var import_jsx_runtime2 = __toESM(require_jsx_runtime(), 1);
+var import_jsx_runtime3 = __toESM(require_jsx_runtime(), 1);
 var START = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1";
 var MAX_LIVES = 2;
 var CONTINUE_SECONDS = 10;
@@ -58466,6 +58830,7 @@ var LEADERBOARD_KEY = "cyberChessLeaderboardV1";
 var AUDIO_MODE_KEY = "cyberChessAudioMode";
 var AUDIO_VOLUME_KEY = "cyberChessAudioVolume";
 var SAVE_GAME_KEY = "cyberChessSaveGameV1";
+var SUPER_90S_KEY = "cyberChessSuper90s";
 var MAX_LEADERBOARD = 8;
 var CELLWAVE_DEV_CONTROL_DEFS = [
   { key: "baseBrightness", label: "Brightness", min: 0, max: 2, step: 0.01 },
@@ -58579,7 +58944,6 @@ var SOUNDTRACK_SOURCES = [
   "media/audio/drummin_pawns.mp3",
   "media/audio/cybercrimes.mp3",
   "media/audio/The_Pulse_of_the_Board_2.mp3",
-  "media/audio/Pawns_of_Destiny.mp3",
   "media/audio/checkmeat_freakazoid.mp3",
   "media/audio/checkmeat_you_lose_song.mp3",
   "media/audio/victorious_1.mp3",
@@ -58878,6 +59242,13 @@ function readStoredAudioVolume() {
     return 100;
   }
 }
+function readStoredSuper90s() {
+  try {
+    return window.localStorage.getItem(SUPER_90S_KEY) === "1";
+  } catch (_) {
+    return false;
+  }
+}
 function readLeaderboard() {
   try {
     const parsed = JSON.parse(window.localStorage.getItem(LEADERBOARD_KEY) || "[]");
@@ -59028,55 +59399,58 @@ function createAudioEngine(getAudioMode, getAudioVolume) {
   };
 }
 function App() {
-  const ref = (0, import_react3.useRef)(null);
-  const aiBusyRef = (0, import_react3.useRef)(false);
-  const lastAiFenRef = (0, import_react3.useRef)("");
-  const aiRequestRef = (0, import_react3.useRef)(0);
-  const resultHandledFenRef = (0, import_react3.useRef)("");
-  const runStartedAtRef = (0, import_react3.useRef)(Date.now());
-  const recordedResultKeyRef = (0, import_react3.useRef)("");
-  const introVideoRef = (0, import_react3.useRef)(null);
-  const introMusicRef = (0, import_react3.useRef)(null);
-  const audioRef = (0, import_react3.useRef)(null);
-  const loadingMusicRef = (0, import_react3.useRef)(null);
-  const musicAnalyserRef = (0, import_react3.useRef)(null);
-  const loadingMusicPassRef = (0, import_react3.useRef)(0);
-  const loadingMusicFinishedRef = (0, import_react3.useRef)(false);
-  const loadingMusicHandlersRef = (0, import_react3.useRef)(null);
-  const endMusicRef = (0, import_react3.useRef)(null);
-  const endMusicSrcRef = (0, import_react3.useRef)("");
-  const announcerRef = (0, import_react3.useRef)(null);
-  const introAnnouncerPlayedRef = (0, import_react3.useRef)(false);
-  const loadingMusicIndexRef = (0, import_react3.useRef)(0);
-  const lastAnnouncedRef = (0, import_react3.useRef)("");
-  const audioModeRef = (0, import_react3.useRef)(readStoredAudioMode());
-  const audioVolumeRef = (0, import_react3.useRef)(readStoredAudioVolume());
-  const previousFenRef = (0, import_react3.useRef)(START);
-  const previousContinueSecondsRef = (0, import_react3.useRef)(CONTINUE_SECONDS);
-  const [screen, setScreen] = (0, import_react3.useState)("intro");
-  const [menuStep, setMenuStep] = (0, import_react3.useState)("video");
-  const [storyIndex, setStoryIndex] = (0, import_react3.useState)(0);
-  const [selectedId, setSelectedId] = (0, import_react3.useState)("goop");
-  const [playerColor, setPlayerColor] = (0, import_react3.useState)("w");
-  const [playerName, setPlayerName] = (0, import_react3.useState)(readStoredName);
-  const [playerNameInput, setPlayerNameInput] = (0, import_react3.useState)("");
-  const [leaderboard, setLeaderboard] = (0, import_react3.useState)(readLeaderboard);
-  const [settingsOpen, setSettingsOpen] = (0, import_react3.useState)(false);
-  const [audioMode, setAudioMode] = (0, import_react3.useState)(audioModeRef.current);
-  const [audioVolume, setAudioVolume] = (0, import_react3.useState)(audioVolumeRef.current);
-  const [soundtrackIndex, setSoundtrackIndex] = (0, import_react3.useState)(loadingMusicIndexRef.current);
-  const [introVideoReady, setIntroVideoReady] = (0, import_react3.useState)(false);
-  const [introVideoStarted, setIntroVideoStarted] = (0, import_react3.useState)(false);
-  const [thinking, setThinking] = (0, import_react3.useState)(false);
-  const [lives, setLives] = (0, import_react3.useState)(MAX_LIVES);
-  const [continueSeconds, setContinueSeconds] = (0, import_react3.useState)(CONTINUE_SECONDS);
-  const [resultState, setResultState] = (0, import_react3.useState)(null);
-  const [settingsNotice, setSettingsNotice] = (0, import_react3.useState)("");
-  const [creditsOpen, setCreditsOpen] = (0, import_react3.useState)(false);
-  const [cellWaveDevEnabled] = (0, import_react3.useState)(isCellWaveDevControlAvailable);
-  const [cellWaveDevOpen, setCellWaveDevOpen] = (0, import_react3.useState)(false);
-  const [cellWaveDevControls, setCellWaveDevControls] = (0, import_react3.useState)({ ...DEFAULT_CELLWAVE_DEV_CONTROLS });
-  const [gameState, setGameState] = (0, import_react3.useState)({
+  const ref = (0, import_react4.useRef)(null);
+  const aiBusyRef = (0, import_react4.useRef)(false);
+  const lastAiFenRef = (0, import_react4.useRef)("");
+  const aiRequestRef = (0, import_react4.useRef)(0);
+  const resultHandledFenRef = (0, import_react4.useRef)("");
+  const runStartedAtRef = (0, import_react4.useRef)(Date.now());
+  const recordedResultKeyRef = (0, import_react4.useRef)("");
+  const introVideoRef = (0, import_react4.useRef)(null);
+  const introMusicRef = (0, import_react4.useRef)(null);
+  const audioRef = (0, import_react4.useRef)(null);
+  const loadingMusicRef = (0, import_react4.useRef)(null);
+  const musicAnalyserRef = (0, import_react4.useRef)(null);
+  const loadingMusicPassRef = (0, import_react4.useRef)(0);
+  const loadingMusicFinishedRef = (0, import_react4.useRef)(false);
+  const loadingMusicHandlersRef = (0, import_react4.useRef)(null);
+  const endMusicRef = (0, import_react4.useRef)(null);
+  const endMusicSrcRef = (0, import_react4.useRef)("");
+  const announcerRef = (0, import_react4.useRef)(null);
+  const introAnnouncerPlayedRef = (0, import_react4.useRef)(false);
+  const loadingMusicIndexRef = (0, import_react4.useRef)(0);
+  const lastAnnouncedRef = (0, import_react4.useRef)("");
+  const audioModeRef = (0, import_react4.useRef)(readStoredAudioMode());
+  const audioVolumeRef = (0, import_react4.useRef)(readStoredAudioVolume());
+  const super90sRef = (0, import_react4.useRef)(readStoredSuper90s());
+  const previousFenRef = (0, import_react4.useRef)(START);
+  const previousContinueSecondsRef = (0, import_react4.useRef)(CONTINUE_SECONDS);
+  const lastCornerTapRef = (0, import_react4.useRef)(0);
+  const [screen, setScreen] = (0, import_react4.useState)("intro");
+  const [menuStep, setMenuStep] = (0, import_react4.useState)("video");
+  const [storyIndex, setStoryIndex] = (0, import_react4.useState)(0);
+  const [selectedId, setSelectedId] = (0, import_react4.useState)("goop");
+  const [playerColor, setPlayerColor] = (0, import_react4.useState)("w");
+  const [playerName, setPlayerName] = (0, import_react4.useState)(readStoredName);
+  const [playerNameInput, setPlayerNameInput] = (0, import_react4.useState)("");
+  const [leaderboard, setLeaderboard] = (0, import_react4.useState)(readLeaderboard);
+  const [settingsOpen, setSettingsOpen] = (0, import_react4.useState)(false);
+  const [audioMode, setAudioMode] = (0, import_react4.useState)(audioModeRef.current);
+  const [audioVolume, setAudioVolume] = (0, import_react4.useState)(audioVolumeRef.current);
+  const [super90s, setSuper90s] = (0, import_react4.useState)(super90sRef.current);
+  const [soundtrackIndex, setSoundtrackIndex] = (0, import_react4.useState)(loadingMusicIndexRef.current);
+  const [introVideoReady, setIntroVideoReady] = (0, import_react4.useState)(false);
+  const [introVideoStarted, setIntroVideoStarted] = (0, import_react4.useState)(false);
+  const [thinking, setThinking] = (0, import_react4.useState)(false);
+  const [lives, setLives] = (0, import_react4.useState)(MAX_LIVES);
+  const [continueSeconds, setContinueSeconds] = (0, import_react4.useState)(CONTINUE_SECONDS);
+  const [resultState, setResultState] = (0, import_react4.useState)(null);
+  const [settingsNotice, setSettingsNotice] = (0, import_react4.useState)("");
+  const [creditsOpen, setCreditsOpen] = (0, import_react4.useState)(false);
+  const [cellWaveDevEnabled] = (0, import_react4.useState)(isCellWaveDevControlAvailable);
+  const [cellWaveDevOpen, setCellWaveDevOpen] = (0, import_react4.useState)(false);
+  const [cellWaveDevControls, setCellWaveDevControls] = (0, import_react4.useState)({ ...DEFAULT_CELLWAVE_DEV_CONTROLS });
+  const [gameState, setGameState] = (0, import_react4.useState)({
     status: "Loading pieces",
     fen: START,
     selectedSquare: null
@@ -59096,6 +59470,15 @@ function App() {
   const enemyAvatarSrc = fightHud.enemyMood === "damaged" ? selected.avatarStates.damaged : fightHud.enemyMood === "dominating" ? selected.avatarStates.dominating : selected.avatar;
   const soundtrackTitle = getSoundtrackTitle(SOUNDTRACK_SOURCES[soundtrackIndex]);
   const musicControlsDisabled = audioMode !== "full";
+  const updateSuper90s = (enabled) => {
+    super90sRef.current = enabled;
+    setSuper90s(enabled);
+    try {
+      window.localStorage.setItem(SUPER_90S_KEY, enabled ? "1" : "0");
+    } catch (_) {
+    }
+    ensureAudioEngine()?.play(enabled ? "reveal" : "tick");
+  };
   const updateGameState = (state) => {
     window.__chess.state = state;
     if (turnFromFen(state.fen) !== aiColor) {
@@ -59174,7 +59557,7 @@ function App() {
     setLeaderboard(next);
     persistLeaderboard(next);
   };
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     window.__chess.handle = ref.current;
     window.__chess.mounted = true;
     window.__chess.state = gameState;
@@ -59188,11 +59571,11 @@ function App() {
     }, 400);
     return () => window.clearTimeout(id);
   }, []);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (!cellWaveDevEnabled) return;
     pushCellWaveDevControls(cellWaveDevControls);
   }, [cellWaveDevEnabled]);
-  (0, import_react3.useEffect)(() => () => {
+  (0, import_react4.useEffect)(() => () => {
     introMusicRef.current?.stop();
     introMusicRef.current = null;
     const handlers = loadingMusicHandlersRef.current;
@@ -59212,7 +59595,7 @@ function App() {
     audioRef.current?.stop();
     audioRef.current = null;
   }, []);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     const onKeyDown2 = (event) => {
       if (cellWaveDevEnabled && event.ctrlKey && event.shiftKey && event.key.toLowerCase() === "w") {
         event.preventDefault();
@@ -59252,7 +59635,7 @@ function App() {
     window.addEventListener("keydown", onKeyDown2);
     return () => window.removeEventListener("keydown", onKeyDown2);
   }, [cellWaveDevEnabled, cellWaveDevOpen, creditsOpen, settingsOpen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     const previousFen = previousFenRef.current;
     if (previousFen !== gameState.fen) {
       try {
@@ -59263,7 +59646,7 @@ function App() {
       previousFenRef.current = gameState.fen;
     }
   }, [gameState.fen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen !== "playing") return;
     const game = new Chess(gameState.fen);
     if (game.isGameOver() || game.turn() !== aiColor) {
@@ -59299,7 +59682,7 @@ function App() {
       aiRequestRef.current += 1;
     };
   }, [aiColor, gameState.fen, screen, selected]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen !== "playing" || resultHandledFenRef.current === gameState.fen) return;
     const result = buildResultForFen(gameState.fen);
     if (!result) return;
@@ -59319,7 +59702,7 @@ function App() {
     }
     setScreen("result");
   }, [gameState.fen, lives, nextOpponent, playerColor, screen, selected]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen !== "result" || resultState?.kind !== "loss") return;
     if (continueSeconds <= 0) {
       setResultState({ ...resultState, kind: "game-over", livesAfter: 0 });
@@ -59329,7 +59712,7 @@ function App() {
     const id = window.setTimeout(() => setContinueSeconds((current) => Math.max(0, current - 1)), 1e3);
     return () => window.clearTimeout(id);
   }, [continueSeconds, resultState, screen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen === "result" && resultState) {
       const resultMusicSrc = resultState.kind === "win" ? VICTORY_MUSIC_SOURCES[0] : resultState.kind === "clear" ? VICTORY_MUSIC_SOURCES[1] : "";
       if (!resultMusicSrc) {
@@ -59352,16 +59735,16 @@ function App() {
     endMusicSrcRef.current = "";
     window.__chess.endMusic = { active: false, src: "" };
   }, [resultState?.kind, screen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen === "result" && resultState?.kind === "loss" && continueSeconds !== previousContinueSecondsRef.current) {
       audioRef.current?.play("tick");
     }
     previousContinueSecondsRef.current = continueSeconds;
   }, [continueSeconds, resultState?.kind, screen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen === "intro" && menuStep !== "video") startLoadingMusic();
   }, [audioMode, audioVolume, menuStep, screen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     if (screen !== "intro" || menuStep !== "video" || !introVideoStarted) {
       return;
     }
@@ -59374,7 +59757,7 @@ function App() {
     }, 1e4);
     return () => window.clearTimeout(id);
   }, [introVideoStarted, menuStep, screen]);
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     window.__chess.campaign = {
       selectedId,
       lives,
@@ -59387,6 +59770,7 @@ function App() {
       leaderboard,
       audioMode,
       audioVolume,
+      super90s,
       settingsOpen,
       audioReady: Boolean(audioRef.current),
       soundtrackIndex,
@@ -59418,8 +59802,8 @@ function App() {
       audioRef.current?.play(forcedResult.kind === "game-over" ? "loss" : "tick");
       setScreen("result");
     };
-  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, whiteName]);
-  (0, import_react3.useEffect)(() => {
+  }, [audioMode, audioVolume, blackName, continueSeconds, leaderboard, lives, nextOpponent, playerName, resultState, screen, selected, selectedId, settingsOpen, soundtrackIndex, super90s, whiteName]);
+  (0, import_react4.useEffect)(() => {
     if (screen === "intro" && menuStep === "profile") setPlayerNameInput("");
   }, [menuStep, screen]);
   const resetGame = () => {
@@ -59758,7 +60142,7 @@ function App() {
     };
     return announcerRef.current;
   };
-  (0, import_react3.useEffect)(() => {
+  (0, import_react4.useEffect)(() => {
     ensureAudioEngine();
     const unlockAudio = () => {
       ensureAudioEngine()?.play("menu");
@@ -60040,8 +60424,20 @@ function App() {
   };
   const resultPresentation = resultState ? getResultPresentation(resultState, playerName) : null;
   const resultBackdrop = resultState ? getResultBackdrop(resultState) : "";
-  return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+  const minimizeDesktopWindow = () => {
+    window.cyberChessDesktop?.minimize().catch(() => void 0);
+  };
+  const handleCornerTap = () => {
+    const now = Date.now();
+    if (now - lastCornerTapRef.current <= 420) {
+      lastCornerTapRef.current = 0;
+      minimizeDesktopWindow();
+      return;
+    }
+    lastCornerTapRef.current = now;
+  };
+  return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
       Board3DScene,
       {
         ref,
@@ -60050,16 +60446,26 @@ function App() {
         inputEnabled,
         enemyTheme: selected.theme,
         playerColor,
+        super90sEnabled: super90s,
         onGameStateChange: updateGameState,
         onMoveStart: () => {
           playClip(PIECE_SLIDE_SFX_SRC);
         }
       },
-      `${selected.id}-${playerColor}-${playerName}`
+      `${selected.id}-${playerColor}-${playerName}-${super90s ? "super90s" : "standard"}`
     ),
-    window.cyberChessDesktop && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "electron-drag-tag", "aria-hidden": "true", title: "Drag window" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    window.cyberChessDesktop && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "electron-drag-tag", title: "Drag window", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
+        "button",
+        {
+          type: "button",
+          className: "electron-corner-minimize",
+          "aria-label": "Minimize Cyber Chess",
+          onClick: handleCornerTap,
+          onDoubleClick: minimizeDesktopWindow
+        }
+      ) }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "button",
         {
           type: "button",
@@ -60072,26 +60478,26 @@ function App() {
         }
       )
     ] }),
-    !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-launcher", "aria-label": "SETTINGS", onClick: () => {
+    !settingsOpen && screen === "intro" && menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-launcher", "aria-label": "SETTINGS", onClick: () => {
       ensureAudioEngine()?.play("menu");
       setSettingsOpen(true);
-    }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }),
-    screen === "intro" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cyber-menu" + (menuStep === "video" ? " video-menu" : "") + (menuStep === "opponent" ? " tower-menu" : "") + (menuStep === "story" ? " story-menu" : "") + (menuStep === "profile" ? " profile-menu" : "") + (menuStep === "side" ? " side-menu" : ""), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-panel" + (menuStep === "video" ? " video-panel" : "") + (menuStep === "opponent" ? " tower-panel" : "") + (menuStep === "story" ? " story-panel" : "") + (menuStep === "profile" ? " profile-panel-shell" : "") + (menuStep === "side" ? " side-panel" : ""), children: [
-      menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step menu-step-video" + (introVideoStarted ? " pan-started" : ""), children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "intro-video-shell ready", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "intro-poster", src: HEADER_IMAGE_SRC, alt: "" }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "SETTINGS" }) }),
+    screen === "intro" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "cyber-menu" + (menuStep === "video" ? " video-menu" : "") + (menuStep === "opponent" ? " tower-menu" : "") + (menuStep === "story" ? " story-menu" : "") + (menuStep === "profile" ? " profile-menu" : "") + (menuStep === "side" ? " side-menu" : ""), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "cyber-panel" + (menuStep === "video" ? " video-panel" : "") + (menuStep === "opponent" ? " tower-panel" : "") + (menuStep === "story" ? " story-panel" : "") + (menuStep === "profile" ? " profile-panel-shell" : "") + (menuStep === "side" ? " side-panel" : ""), children: [
+      menuStep === "video" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "menu-step menu-step-video" + (introVideoStarted ? " pan-started" : ""), children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "intro-video-shell ready", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "intro-poster", src: HEADER_IMAGE_SRC, alt: "" }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "button",
           {
             type: "button",
             className: "cyber-start cyber-start-art",
             "aria-label": "PLAY",
             onClick: introVideoStarted ? beginIntroStory : startIntroSequence,
-            children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: introVideoStarted ? "PLAY" : "PLAY" })
+            children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: introVideoStarted ? "PLAY" : "PLAY" })
           }
         )
       ] }),
-      menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "menu-step story-step", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-image-frame", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      menuStep === "story" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "menu-step story-step", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "story-image-frame", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "img",
           {
             className: "story-art" + (currentStory.title === "TOO DEEP" ? " story-art-too-deep" : ""),
@@ -60101,11 +60507,11 @@ function App() {
           },
           currentStory.image
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-scanline" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-copy", "aria-live": "polite", "aria-labelledby": `story-title-${storyIndex}`, children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "story-kicker", children: currentStory.kicker }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: `story-title-${storyIndex}`, className: "story-title", children: currentStory.title }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "story-scanline" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "story-copy", "aria-live": "polite", "aria-labelledby": `story-title-${storyIndex}`, children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "story-kicker", children: currentStory.kicker }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { id: `story-title-${storyIndex}`, className: "story-title", children: currentStory.title }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
             "p",
             {
               className: "story-terminal-text",
@@ -60116,23 +60522,23 @@ function App() {
             },
             `${storyIndex}-${currentStoryBody}`
           ),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "story-progress", "aria-hidden": "true", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) })
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "story-progress", "aria-hidden": "true", children: INTRO_STORY.map((_, index) => /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("i", { className: index === storyIndex ? "active" : "" }, index)) })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "story-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SKIP" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "story-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: retreatIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "BACK" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: advanceIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: storyIndex >= INTRO_STORY.length - 1 ? "LOAD GAME" : "NEXT" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-skip", onClick: finishIntroStory, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "SKIP" }) })
         ] })
       ] }) }),
-      menuStep === "profile" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step profile-step", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "profile-bg", src: PROFILE_BG_SRC, alt: "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "profile-vignette" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "profile-title-art", src: "media/cyber_chess_title_hero.png", alt: "Cyber Chess" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-panel", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "profile-kicker", children: "BATTLE READY" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("label", { htmlFor: "player-name", children: "Name your hero" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "profile-row", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      menuStep === "profile" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "menu-step profile-step", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "profile-bg", src: PROFILE_BG_SRC, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "profile-vignette" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "profile-title-art", src: "media/cyber_chess_title_hero.png", alt: "Cyber Chess" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "profile-panel", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "profile-kicker", children: "BATTLE READY" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("label", { htmlFor: "player-name", children: "Name your hero" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "profile-row", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "input",
               {
                 id: "player-name",
@@ -60145,21 +60551,21 @@ function App() {
                 }
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue", onClick: savePlayerProfile, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOCK IN" }) })
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-continue", onClick: savePlayerProfile, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "LOCK IN" }) })
           ] })
         ] })
       ] }),
-      menuStep === "side" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step side-step", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "side-bg", src: SIDE_SELECTION_BG_SRC, alt: "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "side-vignette" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "side-footer", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
+      menuStep === "side" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "menu-step side-step", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "side-bg", src: SIDE_SELECTION_BG_SRC, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "side-vignette" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "side-footer", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
             audioRef.current?.play("menu");
             setStoryIndex(1);
             setMenuStep("story");
-          }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "BACK" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "color-picker", role: "group", "aria-label": "Choose your color", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "BACK" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "color-picker", role: "group", "aria-label": "Choose your color", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "button",
               {
                 type: "button",
@@ -60167,10 +60573,10 @@ function App() {
                 onClick: () => {
                   setPlayerColor("w");
                 },
-                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Play White" })
+                children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "Play White" })
               }
             ),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "button",
               {
                 type: "button",
@@ -60178,40 +60584,40 @@ function App() {
                 onClick: () => {
                   setPlayerColor("b");
                 },
-                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Play Black" })
+                children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "Play Black" })
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: () => {
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-continue selected", onClick: () => {
             audioRef.current?.play("menu");
             setMenuStep("opponent");
-          }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CONTINUE" }) })
+          }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "CONTINUE" }) })
         ] })
       ] }),
-      menuStep === "opponent" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "menu-step tower-step", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "tower-bg", src: FLOPPY_TOWER_SRC, alt: "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "tower-overlay" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "tower-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
+      menuStep === "opponent" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "menu-step tower-step", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "tower-bg", src: FLOPPY_TOWER_SRC, alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "tower-overlay" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "tower-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: () => {
             audioRef.current?.play("menu");
             setMenuStep("side");
-          }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Back" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-play selected", onClick: startCampaign, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "ASCEND" }) })
+          }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "Back" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-play selected", onClick: startCampaign, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "ASCEND" }) })
         ] })
       ] })
     ] }) }),
-    screen === "loading" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "enemy-load-screen enemy-theme-" + selected.theme, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "enemy-load-bg", src: selected.hero, alt: "" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "enemy-load-vignette" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "enemy-load-copy", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CYBER CHESS LOADING" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: selected.name }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: selected.tagline })
+    screen === "loading" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "enemy-load-screen enemy-theme-" + selected.theme, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "enemy-load-bg", src: selected.hero, alt: "" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "enemy-load-vignette" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "enemy-load-copy", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "CYBER CHESS LOADING" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { children: selected.name }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: selected.tagline })
       ] })
     ] }),
-    screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cyber-hud enemy-theme-" + selected.theme, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-card fighter-card-player", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    screen === "playing" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "cyber-hud enemy-theme-" + selected.theme, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "fighter-card fighter-card-player", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "img",
           {
             className: "fighter-portrait fighter-portrait-player",
@@ -60222,15 +60628,15 @@ function App() {
             }
           }
         ),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "fighter-readout", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "health-shell", "aria-label": `${playerName} health ${fightHud.playerHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { style: { "--health": `${fightHud.playerHealth}%` } }) }) })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "fighter-readout", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "health-shell", "aria-label": `${playerName} health ${fightHud.playerHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("i", { style: { "--health": `${fightHud.playerHealth}%` } }) }) })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "versus-core", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "VS" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: thinking ? `${selected.name} THINKING` : fightHud.pressure })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "versus-core", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "VS" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: thinking ? `${selected.name} THINKING` : fightHud.pressure })
       ] }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "fighter-card fighter-card-enemy", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "fighter-readout", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "health-shell health-shell-enemy", "aria-label": `${selected.name} health ${fightHud.enemyHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("i", { style: { "--health": `${fightHud.enemyHealth}%` } }) }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "fighter-card fighter-card-enemy", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "fighter-readout", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "health-shell health-shell-enemy", "aria-label": `${selected.name} health ${fightHud.enemyHealth}%`, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("i", { style: { "--health": `${fightHud.enemyHealth}%` } }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
           "img",
           {
             className: "fighter-portrait",
@@ -60243,8 +60649,8 @@ function App() {
         )
       ] })
     ] }),
-    screen === "result" && resultState && resultPresentation && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-screen result-screen-" + resultState.kind + " enemy-theme-" + resultState.opponent.theme, children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    screen === "result" && resultState && resultPresentation && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-screen result-screen-" + resultState.kind + " enemy-theme-" + resultState.opponent.theme, children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "img",
         {
           className: "result-portrait",
@@ -60252,53 +60658,53 @@ function App() {
           alt: ""
         }
       ),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "result-vignette" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-copy", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "result-kicker", children: resultPresentation.status }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h1", { children: resultPresentation.title }),
-        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: resultPresentation.body }),
-        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-stats", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "result-vignette" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-copy", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "result-kicker", children: resultPresentation.status }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h1", { children: resultPresentation.title }),
+        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: resultPresentation.body }),
+        (resultState.kind === "loss" || resultState.kind === "game-over") && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-stats", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
             "PLAYER: ",
             playerName
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
             "OPPONENT: ",
             resultState.opponent.name
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: resultPresentation.badge }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: resultPresentation.badge }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
             "LIVES: ",
             resultState.livesAfter
           ] }),
-          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-countdown", "aria-label": `Continue in ${continueSeconds} seconds`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "hud-label", children: "CONTINUE" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "timer-frame", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { className: "cyber-timer", children: String(continueSeconds).padStart(2, "0") }) })
+          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-countdown", "aria-label": `Continue in ${continueSeconds} seconds`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "hud-label", children: "CONTINUE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "timer-frame", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { className: "cyber-timer", children: String(continueSeconds).padStart(2, "0") }) })
           ] })
         ] }),
-        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-enemy-card", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { src: resultState.opponent.avatar, alt: "" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: resultState.kind === "win" ? "DEFEATED ENEMY" : "ACTIVE THREAT" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: resultState.opponent.name }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("em", { children: [
+        resultState.kind !== "clear" && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-enemy-card", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { src: resultState.opponent.avatar, alt: "" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: resultState.kind === "win" ? "DEFEATED ENEMY" : "ACTIVE THREAT" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: resultState.opponent.name }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("em", { children: [
               resultState.opponent.difficulty,
               " / ",
               resultState.opponent.tagline
             ] })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "result-actions", children: [
-          resultState.kind === "win" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue result-primary", onClick: advanceAfterWin, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NEXT OPPONENT" }) }),
-          resultState.kind === "clear" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-play result-primary", onClick: advanceAfterWin, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "RUN IT BACK" }) }),
-          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-continue result-primary", onClick: continueAfterLoss, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CONTINUE" }) }),
-          resultState.kind === "game-over" && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-play result-primary", onClick: restartCampaign, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NEW RUN" }) }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: openMenu, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "MENU" }) })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "result-actions", children: [
+          resultState.kind === "win" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-continue result-primary", onClick: advanceAfterWin, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "NEXT OPPONENT" }) }),
+          resultState.kind === "clear" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-play result-primary", onClick: advanceAfterWin, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "RUN IT BACK" }) }),
+          resultState.kind === "loss" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-continue result-primary", onClick: continueAfterLoss, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "CONTINUE" }) }),
+          resultState.kind === "game-over" && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-play result-primary", onClick: restartCampaign, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "NEW RUN" }) }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-back", onClick: openMenu, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "MENU" }) })
         ] })
       ] })
     ] }),
-    cellWaveDevEnabled && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(import_jsx_runtime2.Fragment, { children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+    cellWaveDevEnabled && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(import_jsx_runtime3.Fragment, { children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
         "button",
         {
           type: "button",
@@ -60309,23 +60715,23 @@ function App() {
           children: "CELLWAVE DEV"
         }
       ),
-      cellWaveDevOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-panel", id: "cellwave-dev-panel", role: "dialog", "aria-label": "Cellwave dev controls", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-head", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "EXPERIMENTAL" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "Cellwave Backdrop" })
+      cellWaveDevOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "cellwave-dev-panel", id: "cellwave-dev-panel", role: "dialog", "aria-label": "Cellwave dev controls", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "cellwave-dev-head", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "EXPERIMENTAL" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "Cellwave Backdrop" })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", "aria-label": "Close cellwave dev controls", onClick: () => setCellWaveDevOpen(false), children: "X" })
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", "aria-label": "Close cellwave dev controls", onClick: () => setCellWaveDevOpen(false), children: "X" })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "cellwave-dev-body", children: CELLWAVE_DEV_CONTROL_DEFS.map((control) => {
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "cellwave-dev-body", children: CELLWAVE_DEV_CONTROL_DEFS.map((control) => {
           const value = cellWaveDevControls[control.key];
           const progress = (value - control.min) / (control.max - control.min) * 100;
-          return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "cellwave-dev-control", htmlFor: `cellwave-dev-${control.key}`, children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("b", { children: control.label }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("code", { children: value.toFixed(2) })
+          return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { className: "cellwave-dev-control", htmlFor: `cellwave-dev-${control.key}`, children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("b", { children: control.label }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("code", { children: value.toFixed(2) })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "input",
               {
                 id: `cellwave-dev-${control.key}`,
@@ -60340,53 +60746,53 @@ function App() {
             )
           ] }, control.key);
         }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "cellwave-dev-actions", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", onClick: resetCellWaveDevControls, children: "RESET" }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "Ctrl+Shift+W" })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "cellwave-dev-actions", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", onClick: resetCellWaveDevControls, children: "RESET" }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "Ctrl+Shift+W" })
         ] })
       ] })
     ] }),
-    settingsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title", children: [
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-vignette" }),
-      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-panel", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll-set", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+    settingsOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-screen", role: "dialog", "aria-modal": "true", "aria-labelledby": "settings-title", children: [
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "settings-bg", src: SETTINGS_BG_SRC, alt: "" }),
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-vignette" }),
+      creditsOpen && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "credits-modal", role: "dialog", "aria-label": "Credits", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "credits-panel", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "credits-roll-shell", "aria-live": "polite", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "credits-roll", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "credits-roll-set", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "credits-roll-set", "aria-hidden": "true", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "credits-roll-set", "aria-hidden": "true", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "Game created by Frosty40 and Codex." }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "GORDO uses the Lozza chess engine by Colin Jenkins." }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("p", { children: "Audio assets generated with ElevenLabs and Suno." })
         ] })
       ] }) }) }) }),
-      /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel", children: [
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("img", { className: "settings-panel-frame", src: "media/buttons/settings_bg_frame.png", alt: "" }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SETTINGS" }) }) }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-panel-body", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-audio-group", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "AUDIO MODE" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }) })
+      /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-panel", children: [
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("img", { className: "settings-panel-frame", src: "media/buttons/settings_bg_frame.png", alt: "" }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-panel-header", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("h2", { id: "settings-title", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "SETTINGS" }) }) }),
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-panel-body", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-group settings-audio-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "AUDIO MODE" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-options", role: "group", "aria-label": "Audio mode", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "full" ? " selected" : ""), onClick: () => updateAudioMode("full"), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "settings-toggle-label", children: "FULL AUDIO" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "sfx" ? " selected" : ""), onClick: () => updateAudioMode("sfx"), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "settings-toggle-label", children: "SFX ONLY" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle" + (audioMode === "muted" ? " selected" : ""), onClick: () => updateAudioMode("muted"), children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "settings-toggle-label", children: "MUTED" }) })
             ] })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("span", { children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("label", { className: "settings-volume", htmlFor: "audio-volume", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("span", { children: [
               "OUTPUT LEVEL ",
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("strong", { children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("strong", { children: [
                 audioVolume,
                 "%"
               ] })
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
               "span",
               {
                 className: "settings-slider-shell",
                 style: { "--settings-volume-progress": `${Math.min(100, Math.max(0, audioVolume / 2))}%` },
-                children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+                children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
                   "input",
                   {
                     id: "audio-volume",
@@ -60401,10 +60807,26 @@ function App() {
               }
             )
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-playlist", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "SOUNDTRACK" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-control", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-group settings-visual-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "VISUALS" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-options settings-options-visual", role: "group", "aria-label": "Visual effects", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
+              "button",
+              {
+                type: "button",
+                className: "settings-toggle settings-visual-toggle" + (super90s ? " selected" : ""),
+                "aria-pressed": super90s,
+                onClick: () => updateSuper90s(!super90s),
+                children: [
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "settings-toggle-switch", "aria-hidden": "true" }),
+                  /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { className: "settings-toggle-label", children: "SUPER 90S" })
+                ]
+              }
+            ) })
+          ] }),
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-group settings-playlist", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "SOUNDTRACK" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-track-control", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
                 "button",
                 {
                   type: "button",
@@ -60412,14 +60834,14 @@ function App() {
                   "aria-label": "Previous song",
                   disabled: musicControlsDisabled,
                   onClick: () => switchSoundtrackSong(soundtrackIndex - 1),
-                  children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "PREV" })
+                  children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { "aria-hidden": "true", children: "PREV" })
                 }
               ),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-track-now", "aria-live": "polite", children: [
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "NOW PLAYING" }),
-                /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: soundtrackTitle })
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-track-now", "aria-live": "polite", children: [
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "NOW PLAYING" }),
+                /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: soundtrackTitle })
               ] }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)(
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)(
                 "button",
                 {
                   type: "button",
@@ -60427,13 +60849,13 @@ function App() {
                   "aria-label": "Next song",
                   disabled: musicControlsDisabled,
                   onClick: () => switchSoundtrackSong(soundtrackIndex + 1),
-                  children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { "aria-hidden": "true", children: "NEXT" })
+                  children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { "aria-hidden": "true", children: "NEXT" })
                 }
               )
             ] }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-track-list", role: "listbox", "aria-label": "Soundtrack playlist", "aria-disabled": musicControlsDisabled, children: SOUNDTRACK_SOURCES.map((src, index) => {
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-track-list", role: "listbox", "aria-label": "Soundtrack playlist", "aria-disabled": musicControlsDisabled, children: SOUNDTRACK_SOURCES.map((src, index) => {
               const title = getSoundtrackTitle(src);
-              return /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)(
+              return /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)(
                 "button",
                 {
                   type: "button",
@@ -60443,8 +60865,8 @@ function App() {
                   disabled: musicControlsDisabled,
                   onClick: () => switchSoundtrackSong(index),
                   children: [
-                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
-                    /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: title })
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: String(index + 1).padStart(2, "0") }),
+                    /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: title })
                   ]
                 },
                 src
@@ -60452,30 +60874,30 @@ function App() {
             }) })
           ] })
         ] }),
-        /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-footer", children: [
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-group settings-save-group", children: [
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("strong", { children: "GAME DATA" }),
-            /* @__PURE__ */ (0, import_jsx_runtime2.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "SAVE GAME" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "LOAD GAME" }) }),
-              /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "settings-toggle settings-command" + (creditsOpen ? " selected" : ""), onClick: () => {
+        /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-footer", children: [
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-group settings-save-group", children: [
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("strong", { children: "GAME DATA" }),
+            /* @__PURE__ */ (0, import_jsx_runtime3.jsxs)("div", { className: "settings-options settings-options-save", role: "group", "aria-label": "Save and credits controls", children: [
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: saveGame, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "SAVE GAME" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle settings-command", onClick: loadGame, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "LOAD GAME" }) }),
+              /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "settings-toggle settings-command" + (creditsOpen ? " selected" : ""), onClick: () => {
                 audioRef.current?.play("menu");
                 setCreditsOpen((open) => !open);
-              }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CREDITS" }) })
+              }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "CREDITS" }) })
             ] }),
-            settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
+            settingsNotice && /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-save-status", role: "status", "aria-live": "polite", children: settingsNotice })
           ] }),
-          /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
+          /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("div", { className: "settings-actions", children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("button", { type: "button", className: "art-button art-button-close", onClick: () => {
             audioRef.current?.play("menu");
             setSettingsOpen(false);
-          }, children: /* @__PURE__ */ (0, import_jsx_runtime2.jsx)("span", { children: "CLOSE" }) }) })
+          }, children: /* @__PURE__ */ (0, import_jsx_runtime3.jsx)("span", { children: "CLOSE" }) }) })
         ] })
       ] })
     ] })
   ] });
 }
 var el = document.getElementById("root");
-(0, import_client.createRoot)(el).render(/* @__PURE__ */ (0, import_jsx_runtime2.jsx)(App, {}));
+(0, import_client.createRoot)(el).render(/* @__PURE__ */ (0, import_jsx_runtime3.jsx)(App, {}));
 /*! Bundled license information:
 
 react/cjs/react.production.js:

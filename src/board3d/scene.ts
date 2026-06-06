@@ -6,6 +6,7 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
 import { createAmbientCircuitLayer, createCellWaveEnvironment, DEFAULT_CELLWAVE_DEV_CONTROLS } from './floor';
 import type { CellWaveDevControls } from './floor';
+import { createSuper90sEnvironment } from './super90s';
 import type { Board3DEnemyTheme, SceneContext } from './types';
 
 const DotMatrixShader = {
@@ -37,7 +38,8 @@ const DotMatrixShader = {
 export function setupScene(
   canvas: HTMLCanvasElement,
   enemyTheme: Board3DEnemyTheme = 'goop',
-  playerColor: 'w' | 'b' = 'w'
+  playerColor: 'w' | 'b' = 'w',
+  super90sEnabled = false
 ): SceneContext {
   const scene = new THREE.Scene();
   scene.fog = new THREE.FogExp2(0x000510, 0.015);
@@ -121,6 +123,13 @@ export function setupScene(
   }
   const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
   scene.add(ambientCircuitLayer.group);
+  const super90sEnvironment = super90sEnabled ? createSuper90sEnvironment(playerColor) : null;
+  const super90sStatus = {
+    enabled: Boolean(super90sEnvironment),
+    windows: super90sEnvironment?.group.children.length ?? 0,
+  };
+  if (chessGlobal) chessGlobal.super90s = super90sStatus;
+  if (super90sEnvironment) scene.add(super90sEnvironment.group);
   const clock = new THREE.Clock();
 
   const ro = new ResizeObserver(() => {
@@ -152,6 +161,7 @@ export function setupScene(
       cellWaveEnvironment.setAudioReactivity(audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
       cellWaveEnvironment.tick(delta);
       ambientCircuitLayer.tick(delta);
+      super90sEnvironment?.tick(delta, audioReactive?.level ?? 0, audioReactive?.pulse ?? 0);
     },
     dispose() {
       ro.disconnect();
@@ -159,6 +169,8 @@ export function setupScene(
       cellWaveEnvironment.dispose();
       if (chessGlobal?.cellWaveDev?.setParams === applyCellWaveDevControls) delete chessGlobal.cellWaveDev;
       ambientCircuitLayer.dispose();
+      super90sEnvironment?.dispose();
+      if (chessGlobal?.super90s === super90sStatus) delete chessGlobal.super90s;
       composer.renderTarget1.dispose();
       composer.renderTarget2.dispose();
       renderer.dispose();

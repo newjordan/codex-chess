@@ -31,7 +31,9 @@ export function useBoard3D(
   inputEnabled = true,
   enemyTheme: Board3DEnemyTheme = 'goop',
   playerColor: 'w' | 'b' = 'w',
-  onMoveStart?: (isCapture: boolean) => void
+  onMoveStart?: (isCapture: boolean) => void,
+  super90sEnabled = false,
+  onSetupError?: (reason: string) => void
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const gameStateCallbackRef = useRef(onGameStateChange);
@@ -52,7 +54,15 @@ export function useBoard3D(
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const ctx = setupScene(canvas, enemyTheme, playerColor);
+    let ctx: ReturnType<typeof setupScene>;
+    try {
+      ctx = setupScene(canvas, enemyTheme, playerColor, super90sEnabled);
+    } catch (error) {
+      const reason = error instanceof Error ? error.message : 'webgl-renderer-failed';
+      console.warn('[Board3D] Falling back to the 2D board.', error);
+      onSetupError?.(reason);
+      return;
+    }
     const { boardGroup } = createBoard(ctx.scene, whiteName, blackName);
     const piecesContainer = new THREE.Group();
     ctx.scene.add(piecesContainer);

@@ -1,6 +1,6 @@
 {
   "name": "codex-chess",
-  "version": "1.0.0",
+  "version": "0.8.0",
   "private": true,
   "type": "module",
   "description": "Cyber Chess: a playable 3D browser chess game packaged for the Codex game challenge.",
@@ -12,9 +12,10 @@
     "package:music-zip": "node scripts/package-long-music.mjs",
     "package:win": "npm run build && node scripts/package-desktop.mjs package",
     "setup": "npm ci && npm run build",
-    "play": "npm run setup && npm start",
+    "play": "npm start",
     "preflight": "npm run build && npm run smoke",
-    "start": "node scripts/static-server.mjs",
+    "serve": "node scripts/static-server.mjs",
+    "start": "node scripts/start.mjs",
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {

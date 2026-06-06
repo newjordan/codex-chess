@@ -8,23 +8,27 @@ Current in-game playlist:
 | 02 | pawn2queen | 4:18 | Suno |
 | 03 | fapponocci twist | 7:59 | Suno |
 | 04 | dont twist the bishop | 4:10 | Suno |
-| 05 | rooks and kings | 3:58 | Suno |
-| 06 | Synesthetic Circuit | 7:59 | Suno |
-| 07 | Velvet Queen | 4:10 | Suno |
-| 08 | cyber_chess_music | 3:00 | 11labs |
-| 09 | Chrome Gambit | 6:43 | Suno |
-| 10 | Chrome fresh | 3:35 | Suno |
-| 11 | Chrome Chess Mode | 3:13 | Suno |
-| 12 | Chrome city | 3:22 | Suno |
-| 13 | boogie knights | 3:30 | Suno |
-| 14 | drummin pawns | 3:25 | Suno |
-| 15 | cybercrimes | 0:36 | Suno |
-| 16 | The Pulse of the Board 2 | 2:00 | 11labs |
-| 17 | Pawns of Destiny | 2:00 | 11labs |
-| 18 | checkmeat freakazoid | 1:00 | 11labs |
-| 19 | checkmeat you lose song | 1:00 | 11labs |
-| 20 | victorious 1 | 0:30 | 11labs |
-| 21 | synthetic dreams cyber eyes | 3:30 | 11labs |
+| 05 | floppie discs | 2:14 | Suno |
+| 06 | rooks and kings | 3:58 | Suno |
+| 07 | Synesthetic Circuit | 7:59 | Suno |
+| 08 | Velvet Queen | 4:10 | Suno |
+| 09 | Glitch Relaxor | 5:44 | Suno |
+| 10 | Glitch Reliable | 4:33 | Suno |
+| 11 | Moonbowl Smoke | 3:15 | Suno |
+| 12 | Pixelot | 2:50 | Suno |
+| 13 | cyber_chess_music | 3:00 | 11labs |
+| 14 | Chrome Gambit | 6:43 | Suno |
+| 15 | Chrome fresh | 3:35 | Suno |
+| 16 | Chrome Chess Mode | 3:13 | Suno |
+| 17 | Chrome city | 3:22 | Suno |
+| 18 | boogie knights | 3:30 | Suno |
+| 19 | drummin pawns | 3:25 | Suno |
+| 20 | cybercrimes | 0:36 | Suno |
+| 21 | The Pulse of the Board 2 | 2:00 | 11labs |
+| 22 | checkmeat freakazoid | 1:00 | 11labs |
+| 23 | checkmeat you lose song | 1:00 | 11labs |
+| 24 | victorious 1 | 0:30 | 11labs |
+| 25 | synthetic dreams cyber eyes | 3:30 | 11labs |
 
 Attributions:
 

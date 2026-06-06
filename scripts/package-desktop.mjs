@@ -11,10 +11,10 @@ const desktopDir = resolve(rootDir, 'dist-desktop');
 const stageDir = resolve(desktopDir, 'stage');
 const staticDir = resolve(stageDir, 'app');
 const outputDir = desktopDir;
-const desktopProductName = 'CC V0.5';
-const desktopAppVersion = '0.5.0';
-const desktopReleaseDirName = 'Cyber_Chess_0.5';
-const desktopExecutableName = 'Codex_Cyber_Chess_0.5';
+const desktopProductName = 'CC V0.8';
+const desktopAppVersion = '0.8.0';
+const desktopReleaseDirName = 'Cyber_Chess_0.8';
+const desktopExecutableName = 'Codex_Cyber_Chess_0.8';
 
 const command = process.argv[2] ?? 'package';
 const runtimeMediaDirs = ['audio', 'avatars', 'bonus', 'buttons', 'enemies', 'engines', 'fonts', 'hud', 'intro', 'results', 'sfx'];
@@ -50,6 +50,7 @@ async function stageDesktopApp() {
 
   await copyIfPresent(resolve(rootDir, 'desktop/main.cjs'), resolve(stageDir, 'main.cjs'));
   await copyIfPresent(resolve(rootDir, 'desktop/preload.cjs'), resolve(stageDir, 'preload.cjs'));
+  await copyIfPresent(resolve(rootDir, 'desktop/icon.ico'), resolve(stageDir, 'icon.ico'));
   await copyIfPresent(resolve(rootDir, 'index.html'), resolve(staticDir, 'index.html'));
   await copyIfPresent(resolve(rootDir, 'app.js'), resolve(staticDir, 'app.js'));
   await copyIfPresent(resolve(rootDir, 'avatars'), resolve(staticDir, 'avatars'));
@@ -97,7 +98,13 @@ async function packageWindows() {
   });
   if (await exists(releaseDir)) {
     await cp(stageDir, resolve(releaseDir, 'resources', 'app'), { recursive: true, force: true });
-    await copyIfPresent(resolve(packagerDir, `${desktopExecutableName}.exe`), resolve(releaseDir, `${desktopExecutableName}.exe`));
+    const releaseExecutable = resolve(releaseDir, `${desktopExecutableName}.exe`);
+    try {
+      await copyIfPresent(resolve(packagerDir, `${desktopExecutableName}.exe`), releaseExecutable);
+    } catch (error) {
+      if (!(await exists(releaseExecutable))) throw error;
+      console.warn(`Could not replace ${desktopExecutableName}.exe; close the app and rerun packaging if the Electron wrapper changes.`);
+    }
     try {
       await rm(resolve(releaseDir, `${desktopProductName}.exe`), { force: true });
     } catch (error) {

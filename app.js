@@ -49531,7 +49531,7 @@ function createCellDepthStack() {
   );
   for (let rank2 = 0; rank2 < 8; rank2++) {
     for (let file2 = 0; file2 < 8; file2++) {
-      const isLightSquare = (file2 + rank2) % 2 === 0;
+      const isLightSquare = (7 - file2 + rank2) % 2 === 0;
       if (!isLightSquare) continue;
       const x = file2 - (OFFSET - 0.5);
       const z = rank2 - (OFFSET - 0.5);
@@ -49576,7 +49576,7 @@ function createLightSquareDotOverlay() {
   });
   for (let rank2 = 0; rank2 < 8; rank2++) {
     for (let file2 = 0; file2 < 8; file2++) {
-      const isLightSquare = (file2 + rank2) % 2 === 0;
+      const isLightSquare = (7 - file2 + rank2) % 2 === 0;
       if (!isLightSquare) continue;
       const x = file2 - (OFFSET - 0.5);
       const z = rank2 - (OFFSET - 0.5);
@@ -49619,7 +49619,7 @@ function createBoardSurface() {
         vec2 board = vUv * 8.0;
         vec2 square = floor(board);
         vec2 squareUv = fract(board);
-        float parity = mod(square.x + square.y, 2.0);
+        float parity = mod((7.0 - square.x) + square.y, 2.0);
         float lightMask = parity;
         float darkMask = 1.0 - parity;
 
@@ -49726,11 +49726,11 @@ function addCoordinates(parent, whiteName, blackName) {
   const lineMat = new LineBasicMaterial({ color: 4500223, transparent: true, opacity: 0.5 });
   for (let i = 0; i < 8; i++) {
     const x = i - (OFFSET - 0.5);
-    const tFront = createTextSprite(letters[i]);
+    const tFront = createTextSprite(letters[7 - i]);
     tFront.position.set(x, yPos, tabDist);
     tFront.rotation.x = -Math.PI / 2;
     parent.add(tFront);
-    const tBack = createTextSprite(letters[7 - i]);
+    const tBack = createTextSprite(letters[i]);
     tBack.position.set(x, yPos, -tabDist);
     tBack.rotation.x = -Math.PI / 2;
     tBack.rotation.z = Math.PI;
@@ -53018,7 +53018,7 @@ function slice(a, b, from, to) {
 function squareToXZ(square) {
   const file2 = square.charCodeAt(0) - 97;
   const rank2 = parseInt(square[1]);
-  return { x: file2 - 3.5, z: rank2 - 4.5 };
+  return { x: 3.5 - file2, z: rank2 - 4.5 };
 }
 
 // src/board3d/pieces.ts
@@ -58048,7 +58048,7 @@ function useBoard3D(whiteName, blackName, onGameStateChange, inputEnabled = true
       clearInteractionMarkers();
     };
     const boardPointToSquare = (point) => {
-      const file2 = Math.floor(point.x + 4);
+      const file2 = 7 - Math.floor(point.x + 4);
       const rankIndex = Math.floor(point.z + 4);
       if (file2 < 0 || file2 > 7 || rankIndex < 0 || rankIndex > 7) return null;
       return `${String.fromCharCode(97 + file2)}${rankIndex + 1}`;

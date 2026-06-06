@@ -26,7 +26,7 @@ function createCellDepthStack(): THREE.Group {
 
   for (let rank = 0; rank < 8; rank++) {
     for (let file = 0; file < 8; file++) {
-      const isLightSquare = (file + rank) % 2 === 0;
+      const isLightSquare = ((7 - file) + rank) % 2 === 0;
       if (!isLightSquare) continue;
 
       const x = file - (OFFSET - 0.5);
@@ -79,7 +79,7 @@ function createLightSquareDotOverlay(): THREE.Group {
 
   for (let rank = 0; rank < 8; rank++) {
     for (let file = 0; file < 8; file++) {
-      const isLightSquare = (file + rank) % 2 === 0;
+      const isLightSquare = ((7 - file) + rank) % 2 === 0;
       if (!isLightSquare) continue;
 
       const x = file - (OFFSET - 0.5);
@@ -124,7 +124,7 @@ function createBoardSurface(): THREE.Mesh {
         vec2 board = vUv * 8.0;
         vec2 square = floor(board);
         vec2 squareUv = fract(board);
-        float parity = mod(square.x + square.y, 2.0);
+        float parity = mod((7.0 - square.x) + square.y, 2.0);
         float lightMask = parity;
         float darkMask = 1.0 - parity;
 
@@ -229,11 +229,11 @@ function addCoordinates(parent: THREE.Group, whiteName: string, blackName: strin
 
   for (let i = 0; i < 8; i++) {
     const x = i - (OFFSET - 0.5);
-    const tFront = createTextSprite(letters[i]);
+    const tFront = createTextSprite(letters[7 - i]);
     tFront.position.set(x, yPos, tabDist);
     tFront.rotation.x = -Math.PI / 2;
     parent.add(tFront);
-    const tBack = createTextSprite(letters[7 - i]);
+    const tBack = createTextSprite(letters[i]);
     tBack.position.set(x, yPos, -tabDist);
     tBack.rotation.x = -Math.PI / 2;
     tBack.rotation.z = Math.PI;

@@ -211,7 +211,7 @@ export function useBoard3D(
     };
 
     const boardPointToSquare = (point: THREE.Vector3) => {
-      const file = Math.floor(point.x + 4);
+      const file = 7 - Math.floor(point.x + 4);
       const rankIndex = Math.floor(point.z + 4);
       if (file < 0 || file > 7 || rankIndex < 0 || rankIndex > 7) return null;
       return `${String.fromCharCode(97 + file)}${rankIndex + 1}`;

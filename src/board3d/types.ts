@@ -1,6 +1,6 @@
 import type * as THREE from 'three';
-import type { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import type { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import type { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Board3DEnemyTheme } from './floor';
 
 export interface Board3DHandle {
@@ -22,7 +22,7 @@ export interface SceneContext {
   renderer: THREE.WebGLRenderer;
   composer: EffectComposer;
   controls: OrbitControls;
-  tick(): void;
+  tick(now?: number): void;
   dispose(): void;
 }
 

@@ -87,8 +87,6 @@ The page loads `media/fonts/upheavtt.ttf`.
 
 | Asset | Attribution / license information found locally | Packaging note |
 | --- | --- | --- |
-| Asset | Attribution / license information found locally | Packaging note |
-| --- | --- | --- |
 | `media/fonts/upheavtt.ttf` | Upheaval TT by Brian Kent / AEnigma Fonts. The original archive readme permits broad use but asks that the text file remain with the font and restricts selling, profit distribution, and modification without permission. | The original readme is bundled at `media/fonts/upheaval.txt`; keep it with any distribution that includes the font. |
 
 Previously tested fonts that are not required by the current runtime were
@@ -97,8 +95,7 @@ audit.
 
 ## Direct JavaScript Dependencies
 
-The committed `app.js` is a bundled build. Direct dependency license data from
-`package-lock.json`:
+The playable site is the Vite build in `dist/`, produced in CI and deployed by the Pages workflow. Direct dependency license data from `package-lock.json`:
 
 | Package | Version in lockfile | License recorded in lockfile |
 | --- | --- | --- |
@@ -106,8 +103,11 @@ The committed `app.js` is a bundled build. Direct dependency license data from
 | `gsap` | 3.15.0 | Standard "no charge" license: https://gsap.com/standard-license |
 | `react` | 19.2.7 | MIT |
 | `react-dom` | 19.2.7 | MIT |
-| `three` | 0.184.0 | MIT |
-| `esbuild` | 0.28.0 | MIT |
+| `three` | 0.187.0 | MIT |
+| `vite` | 8.3.8 | MIT |
+| `@vitejs/plugin-react` | 6.3.0 | MIT |
+| `vitest` | 5.1.2 | MIT |
+| `typescript` | 5.9.3 | Apache-2.0 |
 | `playwright` | 1.60.0 | Apache-2.0 |
 
 This table covers direct dependencies only. A full release package should also

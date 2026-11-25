@@ -1,9 +1,9 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
-import { EffectComposer } from 'three/examples/jsm/postprocessing/EffectComposer.js';
-import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
-import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
-import { ShaderPass } from 'three/examples/jsm/postprocessing/ShaderPass.js';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { EffectComposer } from 'three/addons/postprocessing/EffectComposer.js';
+import { RenderPass } from 'three/addons/postprocessing/RenderPass.js';
+import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js';
+import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { createAmbientCircuitLayer, createCellWaveEnvironment } from './floor';
 import type { Board3DEnemyTheme, SceneContext } from './types';
 
@@ -91,7 +91,8 @@ export function setupScene(
   scene.add(cellWaveEnvironment.mesh);
   const ambientCircuitLayer = createAmbientCircuitLayer(enemyTheme);
   scene.add(ambientCircuitLayer.group);
-  const clock = new THREE.Clock();
+  const timer = new THREE.Timer();
+  timer.connect(document);
 
   const ro = new ResizeObserver(() => {
     const rw = canvas.clientWidth;
@@ -111,8 +112,9 @@ export function setupScene(
     renderer,
     composer,
     controls,
-    tick() {
-      const delta = clock.getDelta();
+    tick(now?: number) {
+      timer.update(now);
+      const delta = timer.getDelta();
       const audioReactive = (window as typeof window & {
         __chess?: { audioReactive?: { level?: number; pulse?: number } };
       }).__chess?.audioReactive;
@@ -122,6 +124,7 @@ export function setupScene(
     },
     dispose() {
       ro.disconnect();
+      timer.dispose();
       controls.dispose();
       cellWaveEnvironment.dispose();
       ambientCircuitLayer.dispose();

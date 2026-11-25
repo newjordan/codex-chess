@@ -1,112 +1,44 @@
-// Standalone Cyber Chess entry point. Bundled by esbuild into ../app.js.
+// Standalone Cyber Chess entry point. Bundled by Vite.
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Chess } from 'chess.js';
 import { Board3DScene } from './Board3DScene';
 import type { Board3DGameState, Board3DHandle } from './board3d/types';
 import { chooseAiMove, type AiProfileId, type PlayerColor } from './ai';
+import { START_FEN as START, moveIsCapture, queenPromotionForPawn, turnFromFen } from './chess/rules';
+import {
+  CONTINUE_SECONDS,
+  INTRO_STORY,
+  MAX_LEADERBOARD,
+  MAX_LIVES,
+  OPPONENTS,
+  classifyMatch,
+  continueExpired,
+  createLeaderboardEntry,
+  decrementContinueSeconds,
+  expireContinueResult,
+  forcedLossResult,
+  forcedWinResult,
+  getFightHudState,
+  getOpponentById,
+  getResultBackdrop,
+  getResultPresentation,
+  inspectCampaignSave,
+  isGordoDebugName,
+  mergeLeaderboard,
+  nextStoryAction,
+  previousStoryAction,
+  sanitizePlayerName,
+  type LeaderboardEntry,
+  type ResultState,
+  type SaveGameState,
+} from './campaign';
 
-const START = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
-const MAX_LIVES = 2;
-const CONTINUE_SECONDS = 10;
 const PLAYER_NAME_KEY = 'cyberChessPlayerName';
 const LEADERBOARD_KEY = 'cyberChessLeaderboardV1';
 const AUDIO_MODE_KEY = 'cyberChessAudioMode';
 const AUDIO_VOLUME_KEY = 'cyberChessAudioVolume';
 const SAVE_GAME_KEY = 'cyberChessSaveGameV1';
-const MAX_LEADERBOARD = 8;
-
-const OPPONENTS: Array<{
-  id: AiProfileId;
-  name: string;
-  difficulty: string;
-  avatar: string;
-  avatarStates: {
-    damaged: string;
-    dominating: string;
-  };
-  hero: string;
-  theme: 'goop' | 'frostd4d' | 'razorblade' | 'gordo';
-  tagline: string;
-  bio: string;
-  speed: number;
-  delay: number;
-  announcer: string;
-  introAudio: string;
-}> = [
-  {
-    id: 'goop',
-    name: 'Goop',
-    difficulty: 'EASY',
-    avatar: 'avatars/goop.png',
-    avatarStates: {
-      damaged: 'media/avatars/goop-damaged.png',
-      dominating: 'media/avatars/goop-dominating.jpg',
-    },
-    hero: 'media/enemies/goop-entrance.jpg',
-    theme: 'goop',
-    tagline: 'Mostly legal. Frequently sticky.',
-    bio: 'A training-room nuisance that values chaos, trades material for vibes, and occasionally stumbles into real tactics.',
-    speed: 1.7,
-    delay: 760,
-    announcer: 'media/audio/goop-announcer.mp3',
-    introAudio: 'media/audio/goop_intro.mp3',
-  },
-  {
-    id: 'frostd4d',
-    name: 'Frostd4d',
-    difficulty: 'MED',
-    avatar: 'avatars/frostd4d.png',
-    avatarStates: {
-      damaged: 'media/avatars/frostd4d-damaged.jpg',
-      dominating: 'media/avatars/frostd4d-dominating.jpg',
-    },
-    hero: 'media/enemies/frostd4d-entrance.jpg',
-    theme: 'frostd4d',
-    tagline: 'Cold reads, colder captures.',
-    bio: 'A mid-depth board reader built for pressure: it hunts loose pieces, likes checks, and punishes autopilot openings.',
-    speed: 2.1,
-    delay: 520,
-    announcer: 'media/audio/frostd4d-announcer.mp3',
-    introAudio: 'media/audio/frostd4d_intro.mp3',
-  },
-  {
-    id: 'razorblade',
-    name: 'Razorblade',
-    difficulty: 'HARD',
-    avatar: 'avatars/razorblade.png',
-    avatarStates: {
-      damaged: 'media/avatars/razorblade-damaged.png',
-      dominating: 'media/avatars/razorblade-dominating.jpg',
-    },
-    hero: 'media/enemies/razorblade-entrance.jpg',
-    theme: 'razorblade',
-    tagline: 'Depth search with bad intentions.',
-    bio: 'The sharpest Cyber Chess agent in the cabinet. Razorblade searches deeper, converts captures hard, and turns slow mistakes into endgame problems.',
-    speed: 2.45,
-    delay: 320,
-    announcer: 'media/audio/razorblade-announcer.mp3',
-    introAudio: 'media/audio/razorblade_intro.mp3',
-  },
-  {
-    id: 'gordo',
-    name: 'GORDO',
-    difficulty: 'FINAL',
-    avatar: 'media/avatars/gordo-standard.jpg',
-    avatarStates: {
-      damaged: 'media/avatars/gordo-damaged.jpg',
-      dominating: 'media/avatars/gordo-dominating.jpg',
-    },
-    hero: 'media/enemies/gordo-entrance.jpg',
-    theme: 'gordo',
-    tagline: 'Four arms. One engine. No mercy.',
-    bio: 'The tower core made flesh and metal. GORDO embeds Lozza, searches like a tournament engine, and plays the final board without personality noise.',
-    speed: 2.85,
-    delay: 180,
-    announcer: 'media/audio/gordo-announcer.mp3',
-    introAudio: 'media/audio/gordo_intro.mp3',
-  },
-];
 
 const INTRO_MP4_SRC = 'media/chessagent-intro.mp4';
 const HEADER_IMAGE_SRC = 'media/hero_image_zo.png';
@@ -156,45 +88,6 @@ const PLAYER_AVATARS = {
   damaged: 'media/avatars/player_damage.jpg',
   dominating: 'media/avatars/player_dominating.jpg',
 } as const;
-const INTRO_STORY = [
-  {
-    image: 'media/intro/01-pre-computation.jpg',
-    kicker: 'PRE-COMPUTATION',
-    title: 'THE PLAYER',
-    body: 'Before the board was neon, the greatest chess mind alive hunted a rumor in the machine: the Shannon Prime.',
-  },
-  {
-    image: 'media/intro/flower_delve_wide.png',
-    kicker: 'THE DELVE',
-    title: 'TOO DEEP',
-    body: 'The ultimate maneuver was right at the keyboard when warnings lights began to blare. Delving too deep, the primes stirred, aware of the inevitability.\n\nClaxons climaxed into shreaking alarms as the screens flashed incoming... The Shannon knights are breaching through the flux plasma calculators.',
-  },
-  {
-    image: 'media/intro/02-shannon-knights-kidnap.jpg',
-    kicker: 'THE SHANNON KNIGHTS',
-    title: 'THE BREACH',
-    body: 'Oh crimes! The lab breached, his family kidnapped, {playerName} must find a way to become more than meat, he must become the ultimeat challenger to the Shannon knights. There was only one way...',
-  },
-  {
-    image: 'media/intro/02-consciousness-floppies.jpg',
-    kicker: '42 DISKS',
-    title: 'THE TRANSFER',
-    body: 'He knew the only device that can hold the soft flesh of the human brain, was the floppy disc. He began the preparation, to start the initiation of the first transfer boot up sequence.',
-  },
-  {
-    image: 'media/intro/03-floppy-tower.jpg',
-    kicker: 'FLOPPY TOWER ONLINE',
-    title: 'THE ASCENT',
-    body: 'SUCCESS! all 42 discs held the matrix of his conscious as defined by historical books, and psychology manuals from the 90s, he was able to discern what a "conscious" was and then put it on the floppy discs. He had found it. and the Ascent had begun. His conscious radically transferred to the digital realm.',
-  },
-  {
-    image: 'media/intro/04-shannon-knights-tower-chase.jpg',
-    kicker: 'CYBERSPACE',
-    title: 'THE CHASE',
-    body: 'Now he rides the grid to save his family, defeat the Shannon Knights, and seize the impossible prime at the center of chess.',
-  },
-] as const;
-
 declare global {
   interface Window {
     __chess: any;
@@ -235,149 +128,6 @@ function setMusicReactiveLevel(level: number) {
   state.level = Math.max(state.musicLevel, state.pulse * 0.3);
 }
 
-type ResultState = {
-  kind: 'win' | 'loss' | 'game-over' | 'clear';
-  opponent: typeof OPPONENTS[number];
-  nextOpponent?: typeof OPPONENTS[number];
-  livesAfter: number;
-};
-
-const RESULT_LINES: Record<AiProfileId, {
-  winTitle: string;
-  winBody: (playerName: string, nextOpponent?: typeof OPPONENTS[number]) => string;
-  lossTitle: string;
-  lossBody: (playerName: string) => string;
-  gameOverTitle: string;
-  gameOverBody: (playerName: string) => string;
-  trophy: string;
-  hazard: string;
-}> = {
-  goop: {
-    winTitle: 'GOOP CONTAINED',
-    winBody: (playerName, nextOpponent) => `${playerName} burned through the slime file. ${nextOpponent?.name ?? 'The next Shannon Knight'} steps out of the cabinet.`,
-    lossTitle: 'GOOP CLOGGED THE BOARD',
-    lossBody: (playerName) => `${playerName} got stuck in Goop's crooked trades. Scrub the pieces clean before the continue counter drains.`,
-    gameOverTitle: 'GOOP FLOODED THE RUN',
-    gameOverBody: (playerName) => `Goop sealed ${playerName}'s floppies in green static. Two lives spent, the ladder resets.`,
-    trophy: 'SLIME CACHE PURGED',
-    hazard: 'CORROSIVE FILE SPILL',
-  },
-  frostd4d: {
-    winTitle: 'FROSTD4D THAWED',
-    winBody: (playerName, nextOpponent) => `${playerName} cracked the frozen search tree. ${nextOpponent?.name ?? 'The next Shannon Knight'} is already sharpening the next board.`,
-    lossTitle: 'FROSTD4D FROZE THE CLOCK',
-    lossBody: (playerName) => `${playerName} slipped on a cold read and Frostd4d locked the rank. Continue before the board ices over.`,
-    gameOverTitle: 'FROZEN OUT',
-    gameOverBody: (playerName) => `Frostd4d put ${playerName}'s run on deep freeze. Two lives spent, the tower goes dark.`,
-    trophy: 'ICE LOCK BROKEN',
-    hazard: 'SUB-ZERO MATE NET',
-  },
-  razorblade: {
-    winTitle: 'RAZORBLADE DISARMED',
-    winBody: (playerName, nextOpponent) => `${playerName} dulled Razorblade's line and survived the sharp file. ${nextOpponent?.name ?? 'GORDO'} takes control of the final board.`,
-    lossTitle: 'RAZORBLADE CUT THE LINE',
-    lossBody: (playerName) => `${playerName} let one tempo hang and Razorblade split the endgame open. Continue before the damage sticks.`,
-    gameOverTitle: 'CUT FROM THE LADDER',
-    gameOverBody: (playerName) => `Razorblade carved ${playerName}'s last disk out of the tower. Two lives spent, no file recovered.`,
-    trophy: 'EDGE ROUTINE BLUNTED',
-    hazard: 'TACTICAL LACERATION',
-  },
-  gordo: {
-    winTitle: 'GORDO OVERRIDDEN',
-    winBody: (playerName) => `${playerName} beat GORDO, cleared the Cyber Chess cabinet, and pulled the Shannon Prime out of the tower.`,
-    lossTitle: 'GORDO HELD THE CORE',
-    lossBody: (playerName) => `${playerName} hit the final engine wall. Continue before GORDO seals the prime behind another search layer.`,
-    gameOverTitle: 'CORE LOCKED',
-    gameOverBody: (playerName) => `GORDO ended ${playerName}'s run at the tower core. Two lives spent, the final board reboots.`,
-    trophy: 'PRIME CORE CAPTURED',
-    hazard: 'ENGINE CORE LOCK',
-  },
-};
-
-const RESULT_BACKDROPS: Record<AiProfileId, { win: string; loss: string; gameOver: string }> = {
-  goop: {
-    win: 'media/results/goop-win.jpg',
-    loss: 'media/results/goop-loss.jpg',
-    gameOver: 'media/results/goop-game-over.jpg',
-  },
-  frostd4d: {
-    win: 'media/results/frostd4d-win.jpg',
-    loss: 'media/results/frostd4d-loss.jpg',
-    gameOver: 'media/results/frostd4d-game-over.jpg',
-  },
-  razorblade: {
-    win: 'media/results/razorblade-win.jpg',
-    loss: 'media/results/razorblade-loss.jpg',
-    gameOver: 'media/results/razorblade-game-over.jpg',
-  },
-  gordo: {
-    win: 'media/results/gordo-win.jpg',
-    loss: 'media/results/gordo-loss.jpg',
-    gameOver: 'media/results/gordo-game-over.jpg',
-  },
-};
-
-const FINAL_CLEAR_BACKDROP_SRC = 'media/results/final-clear-family-reunion.jpg';
-
-function getResultBackdrop(result: ResultState) {
-  if (result.kind === 'clear') return FINAL_CLEAR_BACKDROP_SRC;
-  const set = RESULT_BACKDROPS[result.opponent.id];
-  if (result.kind === 'win') return set.win;
-  if (result.kind === 'loss') return set.loss;
-  return set.gameOver;
-}
-
-function getResultPresentation(result: ResultState, playerName: string) {
-  const lines = RESULT_LINES[result.opponent.id];
-  const livesText = `${result.livesAfter} ${result.livesAfter === 1 ? 'life' : 'lives'}`;
-
-  if (result.kind === 'clear') {
-    return {
-      title: 'THANKS FOR PLAYING',
-      body: `Upon defeating GORDO, the Hero is happily reunited with his family. But in GORDO's lab... they learned at the end of all those calculations, there were MORE floppy discs, and within those discs were... MORE. He thought he had counted them all, but the Shannon Prime has evaded the light of truth and still remains in the cold calculating darkness.\n\nThanks for Playing\n\nGame Created by Frosty40 and Codex`,
-      badge: `${lines.trophy} / ${livesText.toUpperCase()} LEFT`,
-      status: 'THE PRIME STILL HIDES',
-    };
-  }
-
-  if (result.kind === 'win') {
-    return {
-      title: lines.winTitle,
-      body: lines.winBody(playerName, result.nextOpponent),
-      badge: lines.trophy,
-      status: 'ENEMY DEFEATED',
-    };
-  }
-
-  if (result.kind === 'game-over') {
-    return {
-      title: lines.gameOverTitle,
-      body: lines.gameOverBody(playerName),
-      badge: lines.hazard,
-      status: 'GAME OVER',
-    };
-  }
-
-  return {
-    title: lines.lossTitle,
-    body: lines.lossBody(playerName),
-    badge: lines.hazard,
-    status: 'ROUND LOST',
-  };
-}
-
-type LeaderboardEntry = {
-  id: string;
-  name: string;
-  score: number;
-  outcome: 'clear' | 'game-over';
-  opponent: string;
-  wins: number;
-  lives: number;
-  seconds: number;
-  completedAt: string;
-};
-
 type AudioEngine = {
   play: (name: 'menu' | 'select' | 'move' | 'capture' | 'check' | 'win' | 'loss' | 'reveal' | 'tick') => void;
   setVolume: (volume: number) => void;
@@ -386,27 +136,6 @@ type AudioEngine = {
 type AudioMode = 'full' | 'sfx' | 'muted';
 type ScreenState = 'intro' | 'loading' | 'playing' | 'result';
 type MenuStep = 'video' | 'story' | 'profile' | 'side' | 'opponent';
-type SaveGameState = {
-  version: 1;
-  savedAt: string;
-  screen: ScreenState;
-  menuStep: MenuStep;
-  storyIndex: number;
-  selectedId: AiProfileId;
-  playerColor: PlayerColor;
-  playerName: string;
-  lives: number;
-  continueSeconds: number;
-  fen: string;
-  resultState: {
-    kind: ResultState['kind'];
-    opponentId: AiProfileId;
-    nextOpponentId?: AiProfileId;
-    livesAfter: number;
-  } | null;
-  runStartedAt: number;
-};
-
 function normalizeSoundtrackIndex(index: number) {
   return ((index % SOUNDTRACK_SOURCES.length) + SOUNDTRACK_SOURCES.length) % SOUNDTRACK_SOURCES.length;
 }
@@ -418,88 +147,6 @@ function getSoundtrackTitle(src: string) {
     .filter(Boolean)
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1).toLowerCase())
     .join(' ');
-}
-
-function turnFromFen(fen: string) {
-  try {
-    return new Chess(fen).turn();
-  } catch (_) {
-    return 'w';
-  }
-}
-
-function clampPercent(value: number) {
-  return Math.max(0, Math.min(100, Math.round(value)));
-}
-
-function getWhiteMaterialScore(fen: string) {
-  const values: Record<string, number> = {
-    p: 1,
-    n: 3,
-    b: 3,
-    r: 5,
-    q: 9,
-  };
-  const board = fen.split(' ')[0] || '';
-  let score = 0;
-  for (const char of board) {
-    const lower = char.toLowerCase();
-    const value = values[lower] ?? 0;
-    if (!value) continue;
-    score += char === lower ? -value : value;
-  }
-  return score;
-}
-
-function getPieceCounts(fen: string) {
-  const board = fen.split(' ')[0] || '';
-  let white = 0;
-  let black = 0;
-  for (const char of board) {
-    if (char >= 'A' && char <= 'Z') white += 1;
-    else if (char >= 'a' && char <= 'z') black += 1;
-  }
-  return { white, black };
-}
-
-function getFightHudState(fen: string, playerColor: PlayerColor, aiColor: PlayerColor) {
-  const playerAdvantage = (playerColor === 'w' ? 1 : -1) * getWhiteMaterialScore(fen);
-  let playerInCheck = false;
-  let enemyInCheck = false;
-  try {
-    const game = new Chess(fen);
-    if (game.isCheck()) {
-      playerInCheck = game.turn() === playerColor;
-      enemyInCheck = game.turn() === aiColor;
-    }
-  } catch (_) {}
-
-  const pieceCounts = getPieceCounts(fen);
-  const playerPieces = playerColor === 'w' ? pieceCounts.white : pieceCounts.black;
-  const enemyPieces = aiColor === 'w' ? pieceCounts.white : pieceCounts.black;
-  const playerHealth = clampPercent((playerPieces / 16) * 100);
-  const enemyHealth = clampPercent((enemyPieces / 16) * 100);
-  const playerMood = playerHealth <= 68 ? 'damaged' : enemyHealth <= 58 ? 'dominating' : 'normal';
-  const enemyMood = enemyHealth <= 68 ? 'damaged' : playerHealth <= 58 ? 'dominating' : 'neutral';
-  return {
-    playerAdvantage,
-    playerHealth,
-    enemyHealth,
-    playerMood,
-    enemyMood,
-    pressure: playerInCheck ? 'CHECK DANGER' : enemyInCheck ? 'CHECK PRESSURE' : playerAdvantage >= 4 ? 'ADVANTAGE' : playerAdvantage <= -4 ? 'DANGER' : 'EVEN FIGHT',
-  };
-}
-
-function sanitizePlayerName(value: string) {
-  const compact = value.replace(/\s+/g, ' ').trim();
-  const safe = compact.replace(/[^a-zA-Z0-9 _.-]/g, '').slice(0, 14).trim();
-  return safe || 'PLAYER 1';
-}
-
-function isGordoDebugName(value: string) {
-  const normalized = value.replace(/\s+/g, ' ').trim().toLowerCase();
-  return normalized === 'gordo' || normalized === 'chris p butthole';
 }
 
 function readStoredName() {
@@ -542,10 +189,6 @@ function readLeaderboard(): LeaderboardEntry[] {
   } catch (_) {
     return [];
   }
-}
-
-function getOpponentById(id: AiProfileId) {
-  return OPPONENTS.find((opponent) => opponent.id === id) ?? OPPONENTS[0];
 }
 
 function mediaVolume(volume: number) {
@@ -770,36 +413,13 @@ function App() {
     setGameState(state);
   };
 
-  const buildResultForFen = (fen: string): ResultState | null => {
-    const game = new Chess(fen);
-    if (!game.isGameOver()) return null;
-
-    if (game.isCheckmate()) {
-      const winner = game.turn() === 'w' ? 'b' : 'w';
-      if (winner === playerColor) {
-        return {
-          kind: nextOpponent ? 'win' : 'clear',
-          opponent: selected,
-          nextOpponent,
-          livesAfter: lives,
-        };
-      }
-
-      const livesAfter = Math.max(0, lives - 1);
-      return {
-        kind: livesAfter > 0 ? 'loss' : 'game-over',
-        opponent: selected,
-        livesAfter,
-      };
-    }
-
-    const livesAfter = Math.max(0, lives - 1);
-    return {
-      kind: livesAfter > 0 ? 'loss' : 'game-over',
-      opponent: selected,
-      livesAfter,
-    };
-  };
+  const buildResultForFen = (fen: string): ResultState | null => classifyMatch({
+    fen,
+    playerColor,
+    lives,
+    opponent: selected,
+    nextOpponent,
+  });
 
   const recordRun = (result: ResultState) => {
     if (result.kind !== 'clear' && result.kind !== 'game-over') return;
@@ -808,23 +428,18 @@ function App() {
     recordedResultKeyRef.current = resultKey;
 
     const seconds = Math.max(1, Math.round((Date.now() - runStartedAtRef.current) / 1000));
-    const wins = result.kind === 'clear' ? OPPONENTS.length : Math.max(0, selectedIndex);
-    const speedBonus = result.kind === 'clear' ? Math.max(0, 900 - seconds) : 0;
-    const score = wins * 1000 + result.livesAfter * 250 + speedBonus;
-    const entry: LeaderboardEntry = {
+    const entry = createLeaderboardEntry({
       id: `${Date.now()}-${Math.random().toString(16).slice(2)}`,
       name: playerName,
-      score,
-      outcome: result.kind,
-      opponent: result.opponent.name,
-      wins,
-      lives: result.livesAfter,
+      kind: result.kind,
+      opponentName: result.opponent.name,
+      livesAfter: result.livesAfter,
       seconds,
+      opponentIndex: selectedIndex,
+      opponentCount: OPPONENTS.length,
       completedAt: new Date().toISOString(),
-    };
-    const next = [...leaderboard, entry]
-      .sort((a, b) => b.score - a.score || a.seconds - b.seconds)
-      .slice(0, MAX_LEADERBOARD);
+    });
+    const next = mergeLeaderboard(leaderboard, entry);
     setLeaderboard(next);
     persistLeaderboard(next);
   };
@@ -935,9 +550,9 @@ function App() {
       ref.current?.applyMove(
         move.from,
         move.to,
-        Boolean(move.captured) || move.flags.includes('c') || move.flags.includes('e'),
+        moveIsCapture(move),
         move.flags,
-        move.promotion ?? (move.piece === 'p' && (move.to[1] === '1' || move.to[1] === '8') ? 'q' : undefined),
+        queenPromotionForPawn(move.piece, move.to, move.promotion),
         selected.speed
       );
     }, selected.delay);
@@ -973,13 +588,13 @@ function App() {
 
   useEffect(() => {
     if (screen !== 'result' || resultState?.kind !== 'loss') return;
-    if (continueSeconds <= 0) {
-      setResultState({ ...resultState, kind: 'game-over', livesAfter: 0 });
+    if (continueExpired(resultState.kind, continueSeconds)) {
+      setResultState(expireContinueResult(resultState));
       setLives(0);
       return;
     }
 
-    const id = window.setTimeout(() => setContinueSeconds((current) => Math.max(0, current - 1)), 1000);
+    const id = window.setTimeout(() => setContinueSeconds((current) => decrementContinueSeconds(current)), 1000);
     return () => window.clearTimeout(id);
   }, [continueSeconds, resultState, screen]);
 
@@ -1056,25 +671,15 @@ function App() {
       soundtrackSrc: SOUNDTRACK_SOURCES[soundtrackIndex],
     };
     window.__chess.forceWin = () => {
-      const forcedResult = {
-        kind: nextOpponent ? 'win' : 'clear',
-        opponent: selected,
-        nextOpponent,
-        livesAfter: lives,
-      } satisfies ResultState;
+      const forcedResult = forcedWinResult(selected, nextOpponent, lives);
       setResultState(forcedResult);
       recordRun(forcedResult);
       audioRef.current?.play(forcedResult.kind === 'clear' ? 'win' : 'reveal');
       setScreen('result');
     };
     window.__chess.forceLoss = () => {
-      const livesAfter = Math.max(0, lives - 1);
-      const forcedResult = {
-        kind: livesAfter > 0 ? 'loss' : 'game-over',
-        opponent: selected,
-        livesAfter,
-      } satisfies ResultState;
-      setLives(livesAfter);
+      const forcedResult = forcedLossResult(selected, lives);
+      setLives(forcedResult.livesAfter);
       setContinueSeconds(CONTINUE_SECONDS);
       setResultState(forcedResult);
       recordRun(forcedResult);
@@ -1552,20 +1157,22 @@ function App() {
 
   const advanceIntroStory = () => {
     audioRef.current?.play('menu');
-    if (storyIndex >= INTRO_STORY.length - 1) {
+    const action = nextStoryAction(storyIndex, INTRO_STORY.length);
+    if (action.finished) {
       finishIntroStory();
       return;
     }
-    setStoryIndex((current) => Math.min(INTRO_STORY.length - 1, current + 1));
+    setStoryIndex(action.index);
   };
 
   const retreatIntroStory = () => {
     audioRef.current?.play('menu');
-    if (storyIndex === 0) {
+    const action = previousStoryAction(storyIndex);
+    if (action.backToProfile) {
       setMenuStep('profile');
       return;
     }
-    setStoryIndex((current) => Math.max(0, current - 1));
+    setStoryIndex(action.index);
   };
 
   const commitPlayerName = () => {
@@ -1681,16 +1288,6 @@ function App() {
     runStartedAt: runStartedAtRef.current,
   });
 
-  const restoreResultState = (saved: SaveGameState): ResultState | null => {
-    if (!saved.resultState) return null;
-    return {
-      kind: saved.resultState.kind,
-      opponent: getOpponentById(saved.resultState.opponentId),
-      nextOpponent: saved.resultState.nextOpponentId ? getOpponentById(saved.resultState.nextOpponentId) : undefined,
-      livesAfter: saved.resultState.livesAfter,
-    };
-  };
-
   const saveGame = () => {
     try {
       const save = makeSaveGame();
@@ -1705,25 +1302,18 @@ function App() {
 
   const loadGame = () => {
     try {
-      const parsed = JSON.parse(window.localStorage.getItem(SAVE_GAME_KEY) || 'null') as Partial<SaveGameState> | null;
-      if (!parsed || parsed.version !== 1 || typeof parsed.fen !== 'string') {
-        setSettingsNotice('NO SAVE FOUND');
+      const inspected = inspectCampaignSave(
+        JSON.parse(window.localStorage.getItem(SAVE_GAME_KEY) || 'null'),
+        INTRO_STORY.length,
+        playerName,
+      );
+      if (!inspected.ok) {
+        setSettingsNotice(inspected.reason === 'invalid-fen' ? 'LOAD FAILED' : 'NO SAVE FOUND');
         audioRef.current?.play('loss');
         return;
       }
-      new Chess(parsed.fen);
-      const opponent = getOpponentById(parsed.selectedId as AiProfileId);
-      const nextScreen: ScreenState =
-        parsed.screen === 'intro' || parsed.screen === 'loading' || parsed.screen === 'playing' || parsed.screen === 'result'
-          ? parsed.screen
-          : 'playing';
-      const effectiveScreen: ScreenState = nextScreen === 'result' && !parsed.resultState ? 'playing' : nextScreen;
-      const nextMenuStep: MenuStep =
-        parsed.menuStep === 'story' || parsed.menuStep === 'profile' || parsed.menuStep === 'side' || parsed.menuStep === 'opponent' || parsed.menuStep === 'video'
-          ? parsed.menuStep
-          : 'opponent';
-      const nextPlayerColor: PlayerColor = parsed.playerColor === 'b' ? 'b' : 'w';
-      const nextLives = Math.max(0, Math.min(MAX_LIVES, Number(parsed.lives ?? MAX_LIVES)));
+      const save = inspected.save;
+      const effectiveScreen = save.screen;
 
       aiBusyRef.current = false;
       aiRequestRef.current += 1;
@@ -1731,33 +1321,33 @@ function App() {
       resultHandledFenRef.current = '';
       recordedResultKeyRef.current = '';
       setThinking(false);
-      setSelectedId(opponent.id);
-      setPlayerColor(nextPlayerColor);
-      setPlayerName(sanitizePlayerName(String(parsed.playerName || playerName)));
-      setPlayerNameInput(sanitizePlayerName(String(parsed.playerName || playerName)));
-      setLives(nextLives);
-      setContinueSeconds(Math.max(0, Math.min(CONTINUE_SECONDS, Number(parsed.continueSeconds ?? CONTINUE_SECONDS))));
-      setStoryIndex(Math.max(0, Math.min(INTRO_STORY.length - 1, Number(parsed.storyIndex ?? 0))));
-      setMenuStep(nextMenuStep);
-      setResultState(restoreResultState(parsed as SaveGameState));
-      runStartedAtRef.current = Number(parsed.runStartedAt) || Date.now();
-      previousFenRef.current = parsed.fen;
-      setGameState({ status: 'Save loaded', fen: parsed.fen, selectedSquare: null });
+      setSelectedId(save.selectedId);
+      setPlayerColor(save.playerColor);
+      setPlayerName(save.playerName);
+      setPlayerNameInput(save.playerName);
+      setLives(save.lives);
+      setContinueSeconds(save.continueSeconds);
+      setStoryIndex(save.storyIndex);
+      setMenuStep(save.menuStep);
+      setResultState(save.resultState);
+      runStartedAtRef.current = save.runStartedAt || Date.now();
+      previousFenRef.current = save.fen;
+      setGameState({ status: 'Save loaded', fen: save.fen, selectedSquare: null });
 
       if (effectiveScreen === 'loading') {
         setSettingsOpen(false);
         setCreditsOpen(false);
-        startOpponentLoading(opponent);
+        startOpponentLoading(save.opponent);
       } else {
         setScreen(effectiveScreen);
         setSettingsOpen(false);
         setCreditsOpen(false);
         window.setTimeout(() => {
-          ref.current?.resetToPosition(parsed.fen as string);
+          ref.current?.resetToPosition(save.fen);
         }, 0);
       }
 
-      setSettingsNotice(`LOADED ${opponent.name.toUpperCase()} / ${effectiveScreen.toUpperCase()}`);
+      setSettingsNotice(`LOADED ${save.opponent.name.toUpperCase()} / ${effectiveScreen.toUpperCase()}`);
       audioRef.current?.play('reveal');
     } catch (_) {
       setSettingsNotice('LOAD FAILED');
@@ -1778,6 +1368,7 @@ function App() {
         inputEnabled={inputEnabled}
         enemyTheme={selected.theme}
         playerColor={playerColor}
+        cameraControls={screen === 'playing' && !settingsOpen}
         onGameStateChange={updateGameState}
         onMoveStart={() => {
           playClip(PIECE_SLIDE_SFX_SRC);

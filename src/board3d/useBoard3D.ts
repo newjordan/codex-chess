@@ -1,17 +1,29 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Chess } from 'chess.js';
 import type { Square } from 'chess.js';
 import * as THREE from 'three';
+import type { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import type { Board3DEnemyTheme, Board3DGameState, Board3DHandle, PieceInstance } from './types';
 import { setupScene } from './scene';
 import { createBoard } from './board';
 import { loadPieceGeometries, initPiecesFromFen, clearPieces, type Geometries } from './pieces';
 import { animateTurnDestinationPing, animateLightningStrike, animateCapture, animateJump, setReplayAnimationSpeed } from './animations';
 import { squareToXZ } from './squareUtils';
-
-const START_FEN = 'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1';
+import {
+  START_FEN,
+  boardPointToSquare as pointToSquare,
+  castlingRookTransit,
+  enPassantCapturedSquare,
+  findCastlingMoveForRookClick,
+  moveIsCapture,
+  preferredTargetMove,
+  queenPromotionForPawn,
+  type RulesMove,
+} from '../chess/rules';
+import { isPrimaryPointer, isTap, pieceRayThreshold } from './pointer';
+import { WEBGL_FALLBACK_DETAIL, webglUnavailableMessage } from '../webgl';
 
 type VerboseMove = {
   from: string;
@@ -34,6 +46,8 @@ export function useBoard3D(
   onMoveStart?: (isCapture: boolean) => void
 ) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const controlsRef = useRef<OrbitControls | null>(null);
+  const [webglError, setWebglError] = useState<string | null>(null);
   const gameStateCallbackRef = useRef(onGameStateChange);
   const inputEnabledRef = useRef(inputEnabled);
   const moveStartCallbackRef = useRef(onMoveStart);
@@ -51,8 +65,21 @@ export function useBoard3D(
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
+    const unavailable = webglUnavailableMessage();
+    if (unavailable) {
+      setWebglError(unavailable);
+      return;
+    }
 
-    const ctx = setupScene(canvas, enemyTheme, playerColor);
+    let ctx;
+    try {
+      ctx = setupScene(canvas, enemyTheme, playerColor);
+    } catch (error) {
+      console.warn('[Board3D] WebGL setup failed.', error);
+      setWebglError(WEBGL_FALLBACK_DETAIL);
+      return;
+    }
+    controlsRef.current = ctx.controls;
     const { boardGroup } = createBoard(ctx.scene, whiteName, blackName);
     const piecesContainer = new THREE.Group();
     ctx.scene.add(piecesContainer);
@@ -182,7 +209,7 @@ export function useBoard3D(
         inst.haloGroup.visible = true;
       }
 
-      moves.forEach((move) => createSquareMarker(move.to, Boolean(move.captured) || move.flags.includes('c') || move.flags.includes('e')));
+      moves.forEach((move) => createSquareMarker(move.to, moveIsCapture(move)));
     };
 
     const clearSelection = () => {
@@ -200,12 +227,7 @@ export function useBoard3D(
       clearInteractionMarkers();
     };
 
-    const boardPointToSquare = (point: THREE.Vector3) => {
-      const file = Math.floor(point.x + 4);
-      const rankIndex = Math.floor(point.z + 4);
-      if (file < 0 || file > 7 || rankIndex < 0 || rankIndex > 7) return null;
-      return `${String.fromCharCode(97 + file)}${rankIndex + 1}`;
-    };
+    const boardPointToSquare = (point: THREE.Vector3) => pointToSquare(point.x, point.z);
 
     const clearEffects = () => {
       effectsGroup.traverse((child) => {
@@ -352,11 +374,10 @@ export function useBoard3D(
         };
 
         // Handle castling: teleport rook before king animation
-        if (actualFlags.includes('k') || actualFlags.includes('q')) {
-          const isKingside = actualFlags.includes('k');
-          const rank = from[1]; // '1' for white, '8' for black
-          const rookFrom = (isKingside ? 'h' : 'a') + rank;
-          const rookTo = (isKingside ? 'f' : 'd') + rank;
+        const rookTransit = castlingRookTransit(from, actualFlags);
+        if (rookTransit) {
+          const rookFrom = rookTransit.rookFrom;
+          const rookTo = rookTransit.rookTo;
           const rook = pieceMap.get(rookFrom);
           if (rook) {
             const { x, z } = squareToXZ(rookTo);
@@ -400,7 +421,7 @@ export function useBoard3D(
 
             if (actualIsCapture) {
               // For en passant, the captured pawn is on the same file as `to` but same rank as `from`
-              const capturedSquare = actualFlags.includes('e') ? to[0] + from[1] : to;
+              const capturedSquare = enPassantCapturedSquare(from, to, actualFlags) ?? to;
               const victim = pieceMap.get(capturedSquare);
               if (victim && capturedSquare !== to) pieceMap.delete(capturedSquare);
               if (victim) {
@@ -451,9 +472,9 @@ export function useBoard3D(
     });
 
     let animId: number;
-    const tick = () => {
+    const tick = (now: number) => {
       animId = requestAnimationFrame(tick);
-      ctx.tick();
+      ctx.tick(now);
       ctx.controls.update();
       pieceMap.forEach(inst => {
         inst.haloGroup.position.x = inst.group.position.x;
@@ -461,14 +482,14 @@ export function useBoard3D(
       });
       ctx.composer.render();
     };
-    tick();
+    requestAnimationFrame(tick);
 
     const raycaster = new THREE.Raycaster();
     raycaster.params.Line.threshold = 0.14;
     const pointer = new THREE.Vector2();
     const boardPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const boardHit = new THREE.Vector3();
-    let pointerDown: { x: number; y: number } | null = null;
+    let pointerDown: { x: number; y: number; pointerType: string } | null = null;
 
     const chessGlobal = (window as typeof window & { __chess?: any }).__chess;
     let boardDebugApi: { squareToClient(square: string): { x: number; y: number } | null } | null = null;
@@ -546,25 +567,8 @@ export function useBoard3D(
       emitGameState(`${piece.color === 'w' ? 'White' : 'Black'} selected ${square}`);
     };
 
-    const getCastlingMoveForRookClick = (square: string) => {
-      if (!selectedSquare) return null;
-
-      const selectedPiece = logicalChess.get(selectedSquare as Square);
-      const clickedPiece = logicalChess.get(square as Square);
-      if (
-        selectedPiece?.type !== 'k' ||
-        !clickedPiece ||
-        clickedPiece.type !== 'r' ||
-        clickedPiece.color !== selectedPiece.color ||
-        selectedPiece.color !== logicalChess.turn() ||
-        selectedSquare[1] !== square[1]
-      ) {
-        return null;
-      }
-
-      const castleFlag = square[0] > selectedSquare[0] ? 'k' : 'q';
-      return selectedMoves.find((move) => move.from === selectedSquare && move.flags.includes(castleFlag)) ?? null;
-    };
+    const getCastlingMoveForRookClick = (square: string) =>
+      findCastlingMoveForRookClick(logicalChess, selectedSquare, selectedMoves as RulesMove[], square);
 
     const playSelectedMove = (move: VerboseMove) => {
       inputLocked = true;
@@ -582,9 +586,9 @@ export function useBoard3D(
             runMove(
               move.from,
               move.to,
-              Boolean(move.captured) || move.flags.includes('c') || move.flags.includes('e'),
+              moveIsCapture(move),
               move.flags,
-              move.promotion ?? (move.piece === 'p' && (move.to[1] === '1' || move.to[1] === '8') ? 'q' : undefined),
+              queenPromotionForPawn(move.piece, move.to, move.promotion),
               2.2,
               version
             ),
@@ -607,23 +611,26 @@ export function useBoard3D(
     };
 
     const handlePointerDown = (event: PointerEvent) => {
-      if (event.button !== 0) return;
+      if (!isPrimaryPointer(event)) return;
       if (inputLocked || !inputEnabledRef.current || !ready || logicalChess.isGameOver()) return;
-      pointerDown = { x: event.clientX, y: event.clientY };
-      canvas.setPointerCapture?.(event.pointerId);
+      if (event.pointerType === 'touch') event.preventDefault();
+      pointerDown = { x: event.clientX, y: event.clientY, pointerType: event.pointerType };
+      raycaster.params.Line.threshold = pieceRayThreshold(event.pointerType);
+      if (event.pointerType !== 'touch') canvas.setPointerCapture?.(event.pointerId);
     };
 
     const handlePointerUp = (event: PointerEvent) => {
       if (canvas.hasPointerCapture?.(event.pointerId)) canvas.releasePointerCapture(event.pointerId);
-      if (event.button !== 0 || !pointerDown || inputLocked || !inputEnabledRef.current || !ready || logicalChess.isGameOver()) {
+      if (!pointerDown || !isPrimaryPointer(event) || inputLocked || !inputEnabledRef.current || !ready || logicalChess.isGameOver()) {
         pointerDown = null;
         return;
       }
 
       const dx = event.clientX - pointerDown.x;
       const dy = event.clientY - pointerDown.y;
+      const pointerType = pointerDown.pointerType;
       pointerDown = null;
-      if (Math.hypot(dx, dy) > 8) return;
+      if (!isTap(dx, dy, pointerType)) return;
 
       const square = eventToSquare(event);
       if (!square) {
@@ -637,8 +644,7 @@ export function useBoard3D(
         return;
       }
 
-      const targetMoves = selectedMoves.filter((move) => move.to === square);
-      const chosenMove = targetMoves.find((move) => move.promotion === 'q') ?? targetMoves[0];
+      const chosenMove = preferredTargetMove(selectedMoves, square);
       if (selectedSquare && chosenMove) {
         playSelectedMove(chosenMove);
         return;
@@ -652,7 +658,7 @@ export function useBoard3D(
       pointerDown = null;
     };
 
-    canvas.addEventListener('pointerdown', handlePointerDown);
+    canvas.addEventListener('pointerdown', handlePointerDown, { passive: false });
     canvas.addEventListener('pointerup', handlePointerUp);
     canvas.addEventListener('pointercancel', handlePointerCancel);
     canvas.addEventListener('lostpointercapture', handlePointerCancel);
@@ -734,10 +740,11 @@ export function useBoard3D(
       if (chessGlobal?.boardLabels?.whiteName === whiteName && chessGlobal?.boardLabels?.blackName === blackName) {
         delete chessGlobal.boardLabels;
       }
+      controlsRef.current = null;
       ctx.dispose();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  return { canvasRef, handleRef };
+  return { canvasRef, handleRef, controlsRef, webglError };
 }

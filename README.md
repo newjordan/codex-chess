@@ -41,24 +41,44 @@ No API keys, `.env` files, backend services, or runtime AI API calls are require
 
 If the video player does not appear in your browser, open `media/chessagent-intro.mp4`.
 
+## Screenshots
+
+<p align="center">
+  <img src="docs/screenshots/title.png" alt="Cyber Chess title screen with the PLAY button" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/tower.png" alt="Floppy tower ascent with Goop, Frostd4d, Razorblade, and GORDO" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/board.png" alt="In-game neon wireframe board against Goop" width="900">
+</p>
+
+<p align="center">
+  <img src="docs/screenshots/touch.png" alt="Phone layout with TURN and ZOOM camera buttons under the board" width="390">
+</p>
+
 ## How To Play
 
-1. Click `CLICK TO ENTER`.
-2. Watch or skip the story sequence.
-3. Enter your fighter name.
-4. Choose `Play White` or `Play Black`.
-5. Press `CONTINUE`, review the tower floor, then press `ASCEND`.
-6. Click a piece, then click a legal destination square.
+1. Press `PLAY` to boot the cabinet, then press `PLAY` again to name your fighter.
+2. Enter your fighter name and press `LOCK IN`.
+3. Watch the story, or press `SKIP`.
+4. Choose `Play White` or `Play Black`, then press `CONTINUE`.
+5. Review the tower floor, then press `ASCEND`.
+6. Click or tap a piece, then click or tap a legal destination square.
 7. Checkmate the current enemy to climb to the next floor.
 8. Clear Goop, Frostd4d, Razorblade, and GORDO to post a local leaderboard score.
 
 ## Controls
 
-- Mouse or trackpad: select and move pieces.
+- Mouse, trackpad, or touch: select and move pieces. A tap stays a tap, so dragging the camera does not play a move.
+- Touch screens, while a match is on: `TURN L`, `TURN R`, `ZOOM +`, and `ZOOM -` sit under the board.
 - `Esc`: open the in-game pause/settings panel.
 - `RESET BOARD`: restart the current matchup from the pause panel.
 - `MAIN MENU`: return to the intro and setup flow.
 - `CONTINUE`: spend one remaining life after a loss.
+- If the browser cannot create a WebGL2 context, the board is replaced by a display-link failure message instead of a blank canvas.
 
 ## What Is In The Cartridge
 
@@ -90,29 +110,33 @@ From a fresh clone:
 npm run play
 ```
 
-That command installs locked dependencies, rebuilds `app.js`, and starts a local static server. Open `http://127.0.0.1:5173/`.
+That command installs locked dependencies, builds the Vite bundle into `dist/`, and starts the local preview. Open `http://127.0.0.1:5173/`.
 
 ## Local Development
 
 ```bash
 npm ci
-npm run build
-npm start
+npm run dev
 ```
 
-## Rebuild
+`npm run dev` serves the source with Vite on `http://127.0.0.1:5173/`. `npm start` previews the production build on the same address.
 
-The built `app.js` is committed so GitHub Pages can serve the game directly.
+## Rebuild
 
 ```bash
 npm run build
 ```
+
+Vite writes `dist/` with a relative asset base, so the same output works for a local preview and for GitHub Pages at `/codex-chess/`. The build copies `media/`, `avatars/`, `pieces_fbx/`, and `music/` next to `index.html`. `dist/` is not committed.
 
 ## Verify
 
 ```bash
+npm test
 npm run preflight
 ```
+
+`npm test` runs the chess rules, perft, campaign, pointer, and WebGL checks. Perft covers the standard starting position and positions 2 through 6. `npm run preflight` builds, tests, and plays the campaign in a headless browser.
 
 To verify a deployed copy:
 
@@ -122,15 +146,9 @@ SMOKE_URL=https://newjordan.github.io/codex-chess/ npm run smoke
 
 ## Hosting
 
-Serve the repository root so `index.html`, `app.js`, `media/`, `avatars/`, and `pieces_fbx/` are all available at the same base path.
+GitHub Actions builds and deploys `dist/` to GitHub Pages on every push to `main` (`.github/workflows/pages.yml`). Pull requests run the test and production build (`.github/workflows/ci.yml`).
 
-To generate a Pages-friendly static output directory:
-
-```bash
-npm run build:pages
-```
-
-Publish `dist/` from GitHub Pages or an Actions deploy step.
+To publish somewhere else, run `npm run build` and serve `dist/` as a static site. The page, hashed assets, and copied media folders need to stay together.
 
 ## Attributions
 

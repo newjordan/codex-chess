@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { FBXLoader } from 'three/examples/jsm/loaders/FBXLoader.js';
+import { FBXLoader } from 'three/addons/loaders/FBXLoader.js';
 import { Chess } from 'chess.js';
 import type { PieceInstance } from './types';
 import { squareToXZ } from './squareUtils';

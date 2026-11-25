@@ -32,7 +32,7 @@
   }
   html, body { margin: 0; height: 100%; overflow: hidden; background: #0a0a12; font-family: var(--font-type); }
   #root { width: 100vw; height: 100vh; }
-  #root canvas { display: block; width: 100% !important; height: 100% !important; }
+  #root canvas { display: block; width: 100% !important; height: 100% !important; touch-action: none; }
   button,
   input,
   select,
@@ -2530,12 +2530,76 @@
       0 0 4px var(--neon-cyan),
       0 0 10px var(--neon-blue);
   }
+  .webgl-fallback {
+    position: fixed;
+    inset: 0;
+    z-index: 30;
+    display: grid;
+    align-content: center;
+    justify-items: center;
+    gap: 12px;
+    padding: 24px;
+    text-align: center;
+    color: #dff;
+    background:
+      repeating-linear-gradient(0deg, rgba(0, 0, 0, 0.28) 0 2px, rgba(255, 255, 255, 0.03) 2px 4px),
+      radial-gradient(circle at center, rgba(255, 0, 190, 0.16), rgba(2, 5, 12, 0.96) 62%);
+    font-family: var(--font-type);
+  }
+  .webgl-fallback p,
+  .webgl-fallback h1 {
+    max-width: 680px;
+    margin: 0;
+  }
+  .webgl-fallback-kicker {
+    color: #7dffcc;
+    font-size: 13px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+  }
+  .webgl-fallback h1 {
+    color: #fff200;
+    font-size: clamp(28px, 5vw, 54px);
+    line-height: 0.95;
+    text-shadow: 0 3px 0 #000, 0 0 18px rgba(255, 242, 0, 0.45);
+  }
+  .webgl-fallback p {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 1.35;
+  }
+  .touch-controls {
+    position: fixed;
+    z-index: 14;
+    left: 50%;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    display: none;
+    width: min(312px, calc(100vw - 16px));
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    transform: translateX(-50%);
+    pointer-events: auto;
+  }
+  @media (pointer: coarse), (hover: none) {
+    .touch-controls { display: grid; }
+  }
+  .touch-controls button {
+    min-height: 64px;
+    padding: 6px;
+    color: #04140f;
+    background: #7dffcc;
+    border: 3px outset #d8fff2;
+    font: 900 12px var(--font-type);
+    letter-spacing: 0.04em;
+    cursor: pointer;
+    touch-action: manipulation;
+  }
+  .touch-controls button:active { border-style: inset; }
 </style>
 </head>
 <body>
 <div id="root"></div>
 <div id="loading">booting cyber chess...</div>
-<!-- esbuild bundle of src/main.tsx -->
-<script type="module" src="./app.js?v=20260601-bootfix"></script>
+<script type="module" src="/src/main.tsx"></script>
 </body>
 </html>
